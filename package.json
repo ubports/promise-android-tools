@@ -1,0 +1,29 @@
+{
+  "name": "system-image-node-module",
+  "version": "1.0.0",
+  "description": "System image module",
+  "main": "./src/module.js",
+  "scripts": {
+    "test": "mocha ./tests/unit-tests/*",
+    "test-travis": "./node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha -- -R spec ./tests/unit-tests/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ubports/system-image-node-module.git"
+  },
+  "author": "Marius Gripsgard <marius@ubports.com>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/ubports/system-image-node-module/issues"
+  },
+  "homepage": "https://github.com/ubports/system-image-node-module#readme",
+  "dependencies": {
+    "chai": "^4.1.2",
+    "istanbul": "^0.4.5",
+    "mkdirp": "^0.5.1",
+    "mocha": "^4.0.1",
+    "request": "^2.83.0",
+    "sinon": "^4.1.3",
+    "sinon-chai": "^2.14.0"
+  }
+}
