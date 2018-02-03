@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * Copyright (C) 2017 Marius Gripsgard <marius@ubports.com>
+ * Copyright (C) 2017-2018 Marius Gripsgard <marius@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +23,15 @@ const fs = require("fs");
 const path = require("path");
 const mkdirp = require('mkdirp');
 
+const time = () => Math.floor(new Date() / 1000);
+
 const startCommands = "format system\n\
 load_keyring image-master.tar.xz image-master.tar.xz.asc\n\
 load_keyring image-signing.tar.xz image-signing.tar.xz.asc\n\
 mount system"
 const endCommands = "\nunmount system\n"
 const DEFAULT_HOST = "https://system-image.ubports.com/";
+const DEFAULT_CACHE_TIME = 180; // 3 minutes
 const downloadPath = "./test";
 const ubuntuCommandFile = "ubuntu_command";
 const ubuntuPushDir = "/cache/recovery/"
@@ -37,8 +40,12 @@ const gpg = ["image-signing.tar.xz", "image-signing.tar.xz.asc", "image-master.t
 class Client {
   constructor(options) {
     this.host = DEFAULT_HOST;
+    this.cache_time = DEFAULT_CACHE_TIME;
     this.path = downloadPath;
-    this.deviceIndex = [];
+    this.deviceIndex = {};
+    this.deviceIndexCache = 0;
+    this.channelsIndex = {};
+    this.channelsIndexCache = 0;
 
     if (options) {
       if (options.host)
@@ -47,6 +54,8 @@ class Client {
         this.port = options.port
       if (options.path)
         this.path = options.path
+      if (options.cache_time)
+        this.cache_time = options.cache_time;
     }
   }
 
@@ -82,8 +91,11 @@ class Client {
 
   // HTTP functions
   getChannelsIndex() {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
+      var now=time();
+      if (_this.channelsIndexCache > now)
+        return resolve(_this.channelsIndex);
       http.get({
         url: _this.host + "channels.json",
         json: true
@@ -92,7 +104,9 @@ class Client {
           reject(err);
           return;
         }
-        resolve(bod);
+        _this.channelsIndex = bod;
+        _this.channelsIndexCache = time()+_this.cache_time;
+        resolve(_this.channelsIndex);
       });
     });
   }
@@ -100,6 +114,9 @@ class Client {
   getDeviceIndex(device, channel) {
     var _this = this;
     return new Promise(function(resolve, reject) {
+      var now=time();
+      if (_this.deviceIndexCache > now)
+        return resolve()
       http.get({
         url: _this.host + channel + "/" + device + "/index.json",
         json: true
@@ -108,7 +125,9 @@ class Client {
           reject(err);
           return;
         }
-        resolve(bod);
+        _this.deviceIndex = bod;
+        _this.deviceIndexCache = time()+_this.cache_time;
+        resolve(_this.deviceIndex);
       });
     });
   }
