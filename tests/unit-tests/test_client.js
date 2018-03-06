@@ -30,6 +30,7 @@ const channelJson = require("../test-data/normal-channels.json");
 const baconIndexJson = require("../test-data/bacon-index.json");
 const baconLatestVersionJson = require("../test-data/bacon-latest-version.json");
 const commandfileJson = require("../test-data/commandfile.json");
+const filesUrlsJson = require("../test-data/files-urls.json");
 
 describe('Client module', function() {
   describe("constructor()", function() {
@@ -225,21 +226,33 @@ describe('Client module', function() {
     });
   });
 
-  // describe("getFilesUrlsArray()", function() {
-  //   it("should return files urls", function() {
-  //     expect(something)
-  //   });
-  //   it("should return error", function() {
-  //     expect(something)
-  //   });
-  // });
-  //
-  // describe("getFilePushArray()", function() {
-  //   it("should return file push array", function() {
-  //     expect(something)
-  //   });
-  //   it("should return error", function() {
-  //     expect(something)
-  //   });
-  // });
+  describe("getFilesUrlsArray()", function() {
+    it("should return files urls", function() {
+      const sic = new SystemImageClient();
+      expect(sic.getFilesUrlsArray(baconLatestVersionJson)).to.eql(filesUrlsJson);
+    });
+    it("should return error", function() {
+      const sic = new SystemImageClient();
+      try {
+        sic.getFilesUrlsArray([]);
+      } catch (err) {
+        expect(err.message).to.eql("Cannot read property 'forEach' of undefined");
+      }
+    });
+  })
+
+  describe("getFilePushArray()", function() {
+    it("should return files urls", function() {
+      const sic = new SystemImageClient();
+      expect(sic.getFilePushArray(filesUrlsJson)).to.eql(require("../test-data/file-push.json"));
+    });
+    it("should return error", function() {
+      const sic = new SystemImageClient();
+      try {
+        sic.getFilePushArray([]);
+      } catch (err) {
+        expect(err.message).to.eql("Cannot read property 'forEach' of undefined");
+      }
+    });
+  });
 });
