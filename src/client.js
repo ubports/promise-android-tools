@@ -193,7 +193,7 @@ class Client {
     var gpgUrls = [];
     gpg.forEach((g) => {
       gpgUrls.push({
-        url: this.host + "/gpg/" + g,
+        url: this.host + "gpg/" + g,
         path: downloadPath + "gpg"
       });
     });
