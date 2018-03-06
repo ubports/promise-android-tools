@@ -18,4 +18,4 @@ sic.getDeviceChannels("bacon").then((channels) => console.log(channels));
 
 
 ## Server
-Access and maintain a system-image server backend
+Access and maintain a system-image server backend (not implemented yet)
