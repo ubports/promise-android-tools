@@ -22,20 +22,21 @@ const os = require("os");
 const fs = require("fs");
 const path = require("path");
 const mkdirp = require('mkdirp');
+const common = require("./common.js")
 
 const time = () => Math.floor(new Date() / 1000);
 
 const startCommands = "format system\n\
 load_keyring image-master.tar.xz image-master.tar.xz.asc\n\
 load_keyring image-signing.tar.xz image-signing.tar.xz.asc\n\
-mount system"
-const endCommands = "\nunmount system\n"
+mount system";
+const endCommands = "\nunmount system\n";
 const DEFAULT_HOST = "https://system-image.ubports.com/";
 const DEFAULT_CACHE_TIME = 180; // 3 minutes
 const downloadPath = "./test";
 const ubuntuCommandFile = "ubuntu_command";
-const ubuntuPushDir = "/cache/recovery/"
-const gpg = ["image-signing.tar.xz", "image-signing.tar.xz.asc", "image-master.tar.xz", "image-master.tar.xz.asc"]
+const ubuntuPushDir = "/cache/recovery/";
+const gpg = ["image-signing.tar.xz", "image-signing.tar.xz.asc", "image-master.tar.xz", "image-master.tar.xz.asc"];
 
 class Client {
   constructor(options) {
@@ -47,32 +48,45 @@ class Client {
     this.channelsIndex = {};
     this.channelsIndexCache = 0;
 
+    // accept options
     if (options) {
-      if (options.host)
-        this.host = options.host
-      if (options.port)
-        this.port = options.port
-      if (options.path)
-        this.path = options.path
-      if (options.cache_time)
+      if (options.host) {
+        // validate URL
+        if (options.host.match(/https?:\/\/(www\.)?[-a-z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-z0-9@:%_\+.~#?&//=]*)/i)) {
+          // ensure https
+          if (!options.allow_insecure && options.host.includes("http://")) {
+            throw new Error("Insecure URL! Call with allow_insecure to ignore.");
+          }
+          // ensure trailing slash
+          this.host = options.host + (options.host.slice(-1) != "/" ? "/" : "");
+        } else {
+          throw new Error("Host is not a valid URL!");
+        }
+      }
+      if (options.path) {
+        this.path = options.path;
+      }
+      if (options.cache_time) {
         this.cache_time = options.cache_time;
+      }
     }
   }
 
   // Install commands
+  // QUESTION Should this be public? Maybe call it from createInstallCommandsFile
   createInstallCommands(files, installerCheck, wipe, enable) {
     var cmd = startCommands;
-    if (wipe === true) cmd += "\nformat data"
+    if (wipe === true) cmd += "\nformat data";
     if (files.constructor !== Array)
       return false;
     files.forEach((file) => {
       cmd += "\nupdate " + path.basename(file.path) + " " + path.basename(file.signature);
-    })
+    });
     if (enable) {
       if (enable.constructor === Array) {
         enable.forEach((en) => {
           cmd += "\nenable " + en;
-        })
+        });
       }
     }
     cmd += endCommands;
@@ -84,12 +98,13 @@ class Client {
     if (!fs.existsSync(downloadPath + "/commandfile/")) {
       mkdirp.sync(downloadPath + "/commandfile/");
     }
-    var file = downloadPath + "/commandfile/" + ubuntuCommandFile + device + getRandomInt(1000, 9999);
+    var file = downloadPath + "/commandfile/" + ubuntuCommandFile + device + common.getRandomInt(1000, 9999);
     fs.writeFileSync(file, cmds);
     return file;
   }
 
   // HTTP functions
+  // QUESTION Should this be public?
   getChannelsIndex() {
     const _this = this;
     return new Promise(function(resolve, reject) {
@@ -111,12 +126,13 @@ class Client {
     });
   }
 
+  // QUESTION Should this be public?
   getDeviceIndex(device, channel) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       var now=time();
       if (_this.deviceIndexCache > now)
-        return resolve()
+        return resolve();
       http.get({
         url: _this.host + channel + "/" + device + "/index.json",
         json: true
@@ -144,7 +160,6 @@ class Client {
     });
   }
 
-
   getDeviceChannels(device) {
     return this.getChannelsIndex().then((channels) => {
       var deviceChannels = [];
@@ -159,6 +174,7 @@ class Client {
     });
   }
 
+  // FIXME: Some people might perfer to get the latest *version* instead
   getLatestVesion(device, channel) {
     return this.getDeviceIndex(device, channel).then((index) => {
       //TODO optimize with searching in reverse, but foreach is safer
@@ -168,7 +184,7 @@ class Client {
         if (img.type === "full" && (!latest || latest.version < img.version)) {
           latest = img;
         }
-      })
+      });
       return latest;
     });
   }
@@ -177,10 +193,10 @@ class Client {
     var gpgUrls = [];
     gpg.forEach((g) => {
       gpgUrls.push({
-        url: this.host + "/gpg/" + g,
+        url: this.host + "gpg/" + g,
         path: downloadPath + "gpg"
-      })
-    })
+      });
+    });
     return gpgUrls;
   }
 
@@ -191,15 +207,16 @@ class Client {
         url: this.host + file.path,
         path: downloadPath + "pool",
         checksum: file.checksum
-      })
+      });
       ret.push({
         url: this.host + file.signature,
         path: downloadPath + "pool"
-      })
-    })
+      });
+    });
     return ret;
   }
 
+  // QUESTION Is this still needed?
   getFileBasenameArray(urls) {
     var files = [];
     urls.forEach((url) => {
@@ -208,6 +225,7 @@ class Client {
     return files;
   }
 
+  // QUESTION Is this still needed?
   getFilePathArray(urls) {
     var files = [];
     urls.forEach((url) => {
@@ -228,4 +246,4 @@ class Client {
   }
 }
 
-module.exports = Client
+module.exports = Client;
