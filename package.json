@@ -1,6 +1,6 @@
 {
   "name": "system-image-node-module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "UBports System image client/server module",
   "main": "./src/module.js",
   "scripts": {
