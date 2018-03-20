@@ -86,6 +86,17 @@ describe('Client module', function() {
         expect(err.message).to.equal("Host is not a valid URL!");
       };
     });
+
+    it("should return invalid url with no host", function() {
+      try {
+        const sic = new SystemImageClient({
+          path: "./custom-test",
+          cache_time: 240
+        });
+      } catch (err) {
+        expect(err.message).to.equals("Host is not a valid URL!");
+      };
+    });
   });
 
   describe("createInstallCommands()", function() {
