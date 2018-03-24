@@ -175,7 +175,7 @@ class Client {
   }
 
   // FIXME: Some people might perfer to get the latest *version* instead
-  getLatestVesion(device, channel) {
+  getLatestVersion(device, channel) {
     return this.getDeviceIndex(device, channel).then((index) => {
       //TODO optimize with searching in reverse, but foreach is safer
       // to use now to be sure we get latest version

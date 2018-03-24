@@ -183,14 +183,14 @@ describe('Client module', function() {
     });
   });
 
-  describe("getLatestVesion()", function() {
+  describe("getLatestVersion()", function() {
     it("should return latest version", function() {
       const requestStub = this.sandbox.stub(request, 'get').callsFake(function(url, cb) {
         cb(false, {statusCode: 200}, baconIndexJson);
       });
 
       const sic = new SystemImageClient();
-      return sic.getLatestVesion("bacon", "ubports-touch/15.04/devel").then((result) => {
+      return sic.getLatestVersion("bacon", "ubports-touch/15.04/devel").then((result) => {
         expect(result).to.eql(baconLatestVersionJson);
         expect(requestStub).to.have.been.calledWith({
           url: "https://system-image.ubports.com/ubports-touch/15.04/devel/bacon/index.json",
@@ -204,7 +204,7 @@ describe('Client module', function() {
         cb(true, {statusCode: 500}, baconIndexJson);
       });
       const sic = new SystemImageClient();
-      return sic.getLatestVesion("bacon", "ubports-touch/15.04/devel").then(() => {}).catch((err) => {
+      return sic.getLatestVersion("bacon", "ubports-touch/15.04/devel").then(() => {}).catch((err) => {
         expect(err).to.eql(true);
         expect(requestStub).to.have.been.calledWith({
           url: "https://system-image.ubports.com/ubports-touch/15.04/devel/bacon/index.json",
