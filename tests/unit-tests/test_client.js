@@ -111,6 +111,25 @@ describe('Client module', function() {
       var result = sic.createInstallCommands(4, true, true, [1, 2, 3]);
       expect(result).to.eql(false);
     });
+
+    it("should not add 'format data' when wipe === false", function() {
+      const sic = new SystemImageClient();
+      var result = sic.createInstallCommands(baconLatestVersionJson.files, true, false, true, [1, 2, 3]);
+      expect(result).to.not.contain("\nformat data");
+    });
+
+    it("should not add 'enabled' when enable is set to false", function() {
+      const sic = new SystemImageClient();
+      var result = sic.createInstallCommands(baconLatestVersionJson.files, true, true, false, [1, 2, 3]);
+      expect(result).to.not.contain("\nenable\n");
+    });
+
+    it("should not add 'installer_check' when installerCheck === false", function() {
+      const sic = new SystemImageClient();
+      var result = sic.createInstallCommands(baconLatestVersionJson.files, false, true, true, [1, 2, 3]);
+      expect(result).to.not.contain("\ninstaller_check");
+    })
+
   });
 
   describe("createInstallCommandsFile()", function() {
