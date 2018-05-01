@@ -73,7 +73,6 @@ class Client {
   }
 
   // Install commands
-  // QUESTION Should this be public? Maybe call it from createInstallCommandsFile
   createInstallCommands(files, installerCheck, wipe, enable) {
     var cmd = startCommands;
     if (wipe === true) cmd += "\nformat data";
@@ -104,7 +103,6 @@ class Client {
   }
 
   // HTTP functions
-  // QUESTION Should this be public?
   getChannelsIndex() {
     const _this = this;
     return new Promise(function(resolve, reject) {
@@ -126,7 +124,6 @@ class Client {
     });
   }
 
-  // QUESTION Should this be public?
   getDeviceIndex(device, channel) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -213,24 +210,6 @@ class Client {
       });
     });
     return ret;
-  }
-
-  // QUESTION Is this still needed?
-  getFileBasenameArray(urls) {
-    var files = [];
-    urls.forEach((url) => {
-      files.push(path.basename(url.url));
-    });
-    return files;
-  }
-
-  // QUESTION Is this still needed?
-  getFilePathArray(urls) {
-    var files = [];
-    urls.forEach((url) => {
-      files.push(url.path + "/" + path.basename(url.url));
-    });
-    return files;
   }
 
   getFilePushArray(urls) {
