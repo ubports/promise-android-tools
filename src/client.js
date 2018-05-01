@@ -33,7 +33,7 @@ mount system";
 const endCommands = "\nunmount system\n";
 const DEFAULT_HOST = "https://system-image.ubports.com/";
 const DEFAULT_CACHE_TIME = 180; // 3 minutes
-const downloadPath = "./test";
+const DEFAULT_PATH = "./test";
 const ubuntuCommandFile = "ubuntu_command";
 const ubuntuPushDir = "/cache/recovery/";
 const gpg = ["image-signing.tar.xz", "image-signing.tar.xz.asc", "image-master.tar.xz", "image-master.tar.xz.asc"];
@@ -42,7 +42,7 @@ class Client {
   constructor(options) {
     this.host = DEFAULT_HOST;
     this.cache_time = DEFAULT_CACHE_TIME;
-    this.path = downloadPath;
+    this.path = DEFAULT_PATH;
     this.deviceIndex = {};
     this.deviceIndexCache = 0;
     this.channelsIndex = {};
@@ -95,10 +95,10 @@ class Client {
   }
 
   createInstallCommandsFile(cmds, device) {
-    if (!fs.existsSync(downloadPath + "/commandfile/")) {
-      mkdirp.sync(downloadPath + "/commandfile/");
+    if (!fs.existsSync(this.path + "/commandfile/")) {
+      mkdirp.sync(this.path + "/commandfile/");
     }
-    var file = downloadPath + "/commandfile/" + ubuntuCommandFile + device + common.getRandomInt(1000, 9999);
+    var file = this.path + "/commandfile/" + ubuntuCommandFile + device + common.getRandomInt(1000, 9999);
     fs.writeFileSync(file, cmds);
     return file;
   }
@@ -193,7 +193,7 @@ class Client {
     gpg.forEach((g) => {
       gpgUrls.push({
         url: this.host + "gpg/" + g,
-        path: downloadPath + "gpg"
+        path: this.path + "/gpg"
       });
     });
     return gpgUrls;
@@ -204,12 +204,12 @@ class Client {
     index.files.forEach((file) => {
       ret.push({
         url: this.host + file.path,
-        path: downloadPath + "pool",
+        path: this.path + "/pool",
         checksum: file.checksum
       });
       ret.push({
         url: this.host + file.signature,
-        path: downloadPath + "pool"
+        path: this.path + "/pool"
       });
     });
     return ret;
