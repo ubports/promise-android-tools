@@ -248,10 +248,10 @@ describe('Client module', function() {
     it("should return gpg urls array", function() {
       const sic = new SystemImageClient();
       expect(sic.getGgpUrlsArray()).to.eql([
-        { "path": "./testgpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz" },
-        { "path": "./testgpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz.asc" },
-        { "path": "./testgpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz" },
-        { "path": "./testgpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz.asc" }
+        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz" },
+        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz.asc" },
+        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz" },
+        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz.asc" }
       ]);
     });
   });
