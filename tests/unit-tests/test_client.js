@@ -142,6 +142,38 @@ describe('Client module', function() {
     // TODO introduce a test case with invalid input
   });
 
+  describe("getReleaseDate()", function() {
+    it("should return release date", function() {
+      const requestStub = this.sandbox.stub(request, 'get').callsFake(function(url, cb) {
+        cb(false, {statusCode: 200}, baconIndexJson);
+      });
+
+      const sic = new SystemImageClient();
+      return sic.getReleaseDate("bacon", "ubports-touch/15.04/stable").then((result) => {
+        expect(result).to.eql("Mon Dec 18 08:54:59 UTC 2017");
+        expect(requestStub).to.have.been.calledWith({
+          url: "https://system-image.ubports.com/ubports-touch/15.04/stable/bacon/index.json",
+          json: true
+        });
+      });
+    });
+
+    it("should return error", function() {
+      const requestStub = this.sandbox.stub(request, 'get').callsFake(function(url, cb) {
+        cb(true, {statusCode: 500}, baconIndexJson);
+      });
+
+      const sic = new SystemImageClient();
+      return sic.getReleaseDate("bacon", "ubports-touch/15.04/stable").then(() => {}).catch((err) => {
+        expect(err).to.eql(true);
+        expect(requestStub).to.have.been.calledWith({
+          url: "https://system-image.ubports.com/ubports-touch/15.04/stable/bacon/index.json",
+          json: true
+        });
+      });
+    });
+  });
+
   describe("getChannels()", function() {
     it("should return channels", function() {
       const requestStub = this.sandbox.stub(request, 'get').callsFake(function(url, cb) {

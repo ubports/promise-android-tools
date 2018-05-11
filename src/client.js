@@ -145,6 +145,12 @@ class Client {
     });
   }
 
+  getReleaseDate(device, channel) {
+    return this.getDeviceIndex(device, channel).then((deviceIndex) => {
+      return deviceIndex.global.generated_at;
+    })
+  }
+
   getChannels() {
     return this.getChannelsIndex().then((_channels) => {
       var channels = [];
