@@ -94,10 +94,10 @@ class Client {
   }
 
   createInstallCommandsFile(cmds, device) {
-    if (!fs.existsSync(this.path + "/commandfile/")) {
-      mkdirp.sync(this.path + "/commandfile/");
+    if (!fs.existsSync(path.join(this.path, "commandfile"))) {
+      mkdirp.sync(path.join(this.path, "commandfile"));
     }
-    var file = this.path + "/commandfile/" + ubuntuCommandFile + device + common.getRandomInt(1000, 9999);
+    var file = path.join(this.path, "commandfile", ubuntuCommandFile + device + common.getRandomInt(1000, 9999));
     fs.writeFileSync(file, cmds);
     return file;
   }
@@ -196,7 +196,7 @@ class Client {
     gpg.forEach((g) => {
       gpgUrls.push({
         url: this.host + "gpg/" + g,
-        path: this.path + "/gpg"
+        path: path.join(this.path, "gpg")
       });
     });
     return gpgUrls;
@@ -207,12 +207,12 @@ class Client {
     index.files.forEach((file) => {
       ret.push({
         url: this.host + file.path,
-        path: this.path + "/pool",
+        path: path.join(this.path, "pool"),
         checksum: file.checksum
       });
       ret.push({
         url: this.host + file.signature,
-        path: this.path + "/pool"
+        path: path.join(this.path, "pool")
       });
     });
     return ret;
@@ -222,7 +222,7 @@ class Client {
     var files = [];
     urls.forEach((url) => {
       files.push({
-        src: url.path + "/" + path.basename(url.url),
+        src: path.join(url.path, path.basename(url.url)),
         dest: ubuntuPushDir
       });
     });
