@@ -1,38 +1,38 @@
 [
   {
     "checksum": "777b2d05b2a0f26b2a9a302eb7804e7eab9bf536f130ffae2f15455a80bd509b",
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//pool/ubports-e5cf0885f061c9615931cf863a43f65d8590aa71027315ad71999252ce118868.tar.xz"
   },
   {
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//pool/ubports-e5cf0885f061c9615931cf863a43f65d8590aa71027315ad71999252ce118868.tar.xz.asc"
   },
   {
     "checksum": "234d719a32a01bc36d64dbb536fcf27d77957916f8c3851916e4d1e44d732364",
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//pool/device-f6863fe2f1f8b47cd90f5721af05ccb0ab4d41f2e1cc318075458646eeda28ee.tar.xz"
   },
   {
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//pool/device-f6863fe2f1f8b47cd90f5721af05ccb0ab4d41f2e1cc318075458646eeda28ee.tar.xz.asc"
   },
   {
     "checksum": "5b6e870acf8944330acb2a9dad6f5270bd06c377603a3115f805290e989ab421",
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//pool/keyring-4c4e7ef380ebcfa2c31084efa199138e93bfed8fc58aa3eb06bdf75a78af9b57.tar.xz"
   },
   {
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//pool/keyring-4c4e7ef380ebcfa2c31084efa199138e93bfed8fc58aa3eb06bdf75a78af9b57.tar.xz.asc"
   },
   {
     "checksum": "2624df95cbfc0c0dbdd0ff14a7cf6de78802bb38f5dd2a3fa75f0e99586dcba5",
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//ubports-touch/15.04/devel/bacon/version-261.tar.xz"
   },
   {
-    "path": "./test/pool",
+    "path": "test/pool",
     "url": "https://system-image.ubports.com//ubports-touch/15.04/devel/bacon/version-261.tar.xz.asc"
   }
 ]

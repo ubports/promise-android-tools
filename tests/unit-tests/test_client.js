@@ -136,7 +136,7 @@ describe('Client module', function() {
     it("should create install commands file", function() {
       const sic = new SystemImageClient();
       var file = sic.createInstallCommandsFile(commandfileJson, "bacon");
-      expect(file.indexOf("./test/commandfile/ubuntu_commandbacon") != -1).to.eql(true);
+      expect(file.indexOf("test/commandfile/ubuntu_commandbacon") != -1).to.eql(true);
       expect(fs.readFileSync(file).toString()).to.eql(commandfileJson);
     });
     // TODO introduce a test case with invalid input
@@ -280,10 +280,10 @@ describe('Client module', function() {
     it("should return gpg urls array", function() {
       const sic = new SystemImageClient();
       expect(sic.getGgpUrlsArray()).to.eql([
-        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz" },
-        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz.asc" },
-        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz" },
-        { "path": "./test/gpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz.asc" }
+        { "path": "test/gpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz" },
+        { "path": "test/gpg", "url": "https://system-image.ubports.com/gpg/image-signing.tar.xz.asc" },
+        { "path": "test/gpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz" },
+        { "path": "test/gpg", "url": "https://system-image.ubports.com/gpg/image-master.tar.xz.asc" }
       ]);
     });
   });
