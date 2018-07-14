@@ -129,7 +129,7 @@ class Client {
     return new Promise(function(resolve, reject) {
       var now=time();
       if (_this.deviceIndexCache > now)
-        return resolve();
+        return resolve(_this.deviceIndex);
       http.get({
         url: _this.host + channel + "/" + device + "/index.json",
         json: true
