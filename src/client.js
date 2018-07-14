@@ -43,10 +43,8 @@ class Client {
     this.host = DEFAULT_HOST;
     this.cache_time = DEFAULT_CACHE_TIME;
     this.path = DEFAULT_PATH;
-    this.deviceIndex = {};
-    this.deviceIndexCache = 0;
-    this.channelsIndex = {};
-    this.channelsIndexCache = 0;
+    this.deviceIndexCache = {};
+    this.channelsIndexCache = {expire: 0};
 
     // accept options
     if (options) {
@@ -107,8 +105,8 @@ class Client {
     const _this = this;
     return new Promise(function(resolve, reject) {
       var now=time();
-      if (_this.channelsIndexCache > now)
-        return resolve(_this.channelsIndex);
+      if (_this.channelsIndexCache && _this.channelsIndexCache.expire > now)
+        return resolve(_this.channelsIndexCache.data);
       http.get({
         url: _this.host + "channels.json",
         json: true
@@ -117,9 +115,9 @@ class Client {
           reject(err);
           return;
         }
-        _this.channelsIndex = bod;
-        _this.channelsIndexCache = time()+_this.cache_time;
-        resolve(_this.channelsIndex);
+        _this.channelsIndexCache.data = bod;
+        _this.channelsIndexCache.expire = time()+_this.cache_time;
+        resolve(_this.channelsIndexCache.data);
       });
     });
   }
@@ -128,8 +126,8 @@ class Client {
     var _this = this;
     return new Promise(function(resolve, reject) {
       var now=time();
-      if (_this.deviceIndexCache > now)
-        return resolve(_this.deviceIndex);
+      if (_this.deviceIndexCache[device] && _this.deviceIndexCache[device][channel] && _this.deviceIndexCache[device][channel].expire > now)
+        return resolve(_this.deviceIndexCache[device][channel].data);
       http.get({
         url: _this.host + channel + "/" + device + "/index.json",
         json: true
@@ -138,9 +136,12 @@ class Client {
           reject(err);
           return;
         }
-        _this.deviceIndex = bod;
-        _this.deviceIndexCache = time()+_this.cache_time;
-        resolve(_this.deviceIndex);
+        if (!_this.deviceIndexCache[device])
+          _this.deviceIndexCache[device] = {}
+        _this.deviceIndexCache[device][channel] = {};
+        _this.deviceIndexCache[device][channel].data = bod;
+        _this.deviceIndexCache[device][channel].expire = time()+_this.cache_time;
+        resolve(_this.deviceIndexCache[device][channel].data);
       });
     });
   }
