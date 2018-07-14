@@ -158,6 +158,25 @@ describe('Client module', function() {
       });
     });
 
+    it("should use cache", function() {
+      const requestStub = this.sandbox.stub(request, 'get').callsFake(function(url, cb) {
+        cb(false, {statusCode: 200}, baconIndexJson);
+      });
+
+      const sic = new SystemImageClient({cache_time: 0});
+      return sic.getReleaseDate("bacon", "ubports-touch/15.04/stable").then((result1) => {
+        return sic.getReleaseDate("bacon", "ubports-touch/15.04/stable").then((result2) => {
+          expect(result1).to.eql("Mon Dec 18 08:54:59 UTC 2017");
+          expect(result1).to.eql(result2);
+          expect(requestStub).to.have.been.calledOnce;
+          expect(requestStub).to.have.been.calledWith({
+            url: "https://system-image.ubports.com/ubports-touch/15.04/stable/bacon/index.json",
+            json: true
+          });
+        });
+      });
+    });
+
     it("should return error", function() {
       const requestStub = this.sandbox.stub(request, 'get').callsFake(function(url, cb) {
         cb(true, {statusCode: 500}, baconIndexJson);
