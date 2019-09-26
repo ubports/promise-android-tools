@@ -14,12 +14,12 @@ const systemImage = new systemImageClient();
 
 systemImage.getDeviceChannels("bacon").then((channels) => console.log(channels));
 
-var progress = (progress, speed) => {
+const progress = (progress, speed) => {
   console.log("progress:", progress*100, "%");
   console.log("speed:", speed, "MB/s");
 }
 
-var next = (downloadedFiles, totalFiles) => {
+const next = (downloadedFiles, totalFiles) => {
   console.log("file", downloadedFiles, "/", totalFiles);
 }
 
