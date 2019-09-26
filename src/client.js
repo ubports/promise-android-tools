@@ -83,7 +83,6 @@ class Client {
       _this.getLatestVersion(options.device, options.channel).then((latest) => {
         var urls = _this.getFilesUrlsArray(latest);
         urls.push.apply(urls, _this.getGgpUrlsArray());
-        var files = _this.getFilePushArray(urls);
         var filesDownloaded = 0;
         var overallSize = 0;
         var overallDownloaded = 0;
@@ -112,7 +111,20 @@ class Client {
             next(++filesDownloaded, urls.length);
           })
         )).then(() => {
-          resolve();
+          var files = _this.getFilePushArray(urls);
+          files.push({
+            src: _this.createInstallCommandsFile(
+              _this.createInstallCommands(
+                latest.files,
+                options.installerCheck,
+                options.wipe,
+                options.enable
+              ),
+              options.device
+            ),
+            dest: ubuntuPushDir + ubuntuCommandFile
+          });
+          resolve(files);
           return;
         }).catch((err) => {
           reject(err);
