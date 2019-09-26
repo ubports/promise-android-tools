@@ -97,44 +97,46 @@ class Client {
               progress(1);
             }
           }
-        }, 1000)
-        Promise.all(urls.map((file) => {
-          return new Promise(function(resolve, reject) {
-            download(file.url, file.path).on("response", (res) => {
-              var totalSize = eval(res.headers['content-length']);
-              overallSize += totalSize;
-              var downloaded = 0;
-              res.on('data', data => {
-                overallDownloaded += data.length;
-              });
-            }).then(() => {
-              common.checksumFile(file).then(() => {
-                next(++filesDownloaded, urls.length);
-              }).catch((err) => {
-                reject(err);
-                return;
+        }, 1000);
+        common.checkFiles(urls).then((_urls) => {
+          Promise.all(_urls.map((file) => {
+            return new Promise(function(resolve, reject) {
+              download(file.url, file.path).on("response", (res) => {
+                var totalSize = eval(res.headers['content-length']);
+                overallSize += totalSize;
+                var downloaded = 0;
+                res.on('data', data => {
+                  overallDownloaded += data.length;
+                });
+              }).then(() => {
+                common.checksumFile(file).then(() => {
+                  next(++filesDownloaded, _urls.length);
+                }).catch((err) => {
+                  reject(err);
+                  return;
+                });
               });
             });
-          });
-        })).then(() => {
-          var files = _this.getFilePushArray(urls);
-          files.push({
-            src: _this.createInstallCommandsFile(
-              _this.createInstallCommands(
-                latest.files,
-                options.installerCheck,
-                options.wipe,
-                options.enable
+          })).then(() => {
+            var files = _this.getFilePushArray(urls);
+            files.push({
+              src: _this.createInstallCommandsFile(
+                _this.createInstallCommands(
+                  latest.files,
+                  options.installerCheck,
+                  options.wipe,
+                  options.enable
+                ),
+                options.device
               ),
-              options.device
-            ),
-            dest: ubuntuPushDir + ubuntuCommandFile
+              dest: ubuntuPushDir + ubuntuCommandFile
+            });
+            resolve(files);
+            return;
+          }).catch((err) => {
+            reject(err);
+            return;
           });
-          resolve(files);
-          return;
-        }).catch((err) => {
-          reject(err);
-          return;
         });
       });
     });

@@ -42,9 +42,42 @@ function checksumFile(file) {
     }
   });
 }
+
+function checkFiles(urls) {
+  return new Promise(function(resolve, reject) {
+    var urls_ = [];
+    var next = () => {
+      if (urls.length <= 1) {
+        resolve(urls_)
+      } else {
+        urls.shift();
+        check()
+      }
+    }
+    var check = () => {
+      fs.access(path.join(urls[0].path, path.basename(urls[0].url)), (err) => {
+        if (err) {
+          console.log("Not existing " + path.join(urls[0].path, path.basename(urls[0].url)));
+          urls_.push(urls[0]);
+          next();
+        } else {
+          checksumFile(urls[0]).then(() => {
+            console.log(path.join(urls[0].path, path.basename(urls[0].url)) + " exists with the expected checksum, so the download will be skipped.");
+            next();
+          }).catch(() => {
+            console.log("Checksum mismatch on " + path.join(urls[0].path, path.basename(urls[0].url)) + ". This file will be downloaded again.");
+            urls_.push(urls[0]);
+            next();
+          });
+        }
+      })
+    }
+    check();
+  });
 }
 
 module.exports = {
   getRandomInt: getRandomInt,
+  checkFiles: checkFiles,
   checksumFile: checksumFile
 };
