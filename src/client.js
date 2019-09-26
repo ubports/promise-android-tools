@@ -86,15 +86,17 @@ class Client {
         var filesDownloaded = 0;
         var overallSize = 0;
         var overallDownloaded = 0;
+        var previousOverallDownloaded = 0;
         var downloadProgress = 0;
         var progressInterval = setInterval(() => {
           downloadProgress = overallDownloaded/overallSize;
           if (overallSize != 0) {
             if (downloadProgress < 0.999) {
-              progress(downloadProgress);
+              progress(downloadProgress, (overallDownloaded-previousOverallDownloaded)/1000000);
+              previousOverallDownloaded = overallDownloaded;
             } else {
               clearInterval(progressInterval);
-              progress(1);
+              progress(1, 0);
             }
           }
         }, 1000);
