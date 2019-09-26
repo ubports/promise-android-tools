@@ -15,10 +15,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const fs = require("fs");
+const checksum = require("checksum");
+const path = require("path");
+
 function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min;
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min;
 }
 
-module.exports = { getRandomInt: getRandomInt };
+function checksumFile(file) {
+  return new Promise(function(resolve, reject) {
+    if (!file.checksum) {
+      // No checksum so return true;
+      resolve();
+      return;
+    } else {
+      checksum.file(path.join(file.path, path.basename(file.url)), {
+        algorithm: "sha256"
+      }, function(err, sum) {
+        console.log("checked: " +path.basename(file.url), sum === file.checksum);
+        if (sum === file.checksum) resolve()
+        else reject()
+      });
+    }
+  });
+}
+}
+
+module.exports = {
+  getRandomInt: getRandomInt,
+  checksumFile: checksumFile
+};

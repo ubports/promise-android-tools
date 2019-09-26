@@ -98,19 +98,25 @@ class Client {
             }
           }
         }, 1000)
-        Promise.all(urls.map(file => download(file.url, file.path)
-          .on("response", (res) => {
-            var totalSize = eval(res.headers['content-length']);
-            overallSize += totalSize;
-            var downloaded = 0;
-            res.on('data', data => {
-              overallDownloaded += data.length;
+        Promise.all(urls.map((file) => {
+          return new Promise(function(resolve, reject) {
+            download(file.url, file.path).on("response", (res) => {
+              var totalSize = eval(res.headers['content-length']);
+              overallSize += totalSize;
+              var downloaded = 0;
+              res.on('data', data => {
+                overallDownloaded += data.length;
+              });
+            }).then(() => {
+              common.checksumFile(file).then(() => {
+                next(++filesDownloaded, urls.length);
+              }).catch((err) => {
+                reject(err);
+                return;
+              });
             });
-          })
-          .then(() => {
-            next(++filesDownloaded, urls.length);
-          })
-        )).then(() => {
+          });
+        })).then(() => {
           var files = _this.getFilePushArray(urls);
           files.push({
             src: _this.createInstallCommandsFile(
