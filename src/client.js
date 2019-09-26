@@ -22,6 +22,7 @@ const os = require("os");
 const fs = require("fs");
 const path = require("path");
 const mkdirp = require('mkdirp');
+const download = require("download");
 const common = require("./common.js")
 
 const time = () => Math.floor(new Date() / 1000);
@@ -68,6 +69,79 @@ class Client {
         this.cache_time = options.cache_time;
       }
     }
+  }
+
+  // options argument format
+  // {
+  //   device     Codename of the device
+  //   channel    Release channel to download
+  //   wipe       Wipe memory
+  // }
+  downloadLatestVersion(options, progress, next) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.getLatestVersion(options.device, options.channel).then((latest) => {
+        var urls = _this.getFilesUrlsArray(latest);
+        urls.push.apply(urls, _this.getGgpUrlsArray());
+        var filesDownloaded = 0;
+        var overallSize = 0;
+        var overallDownloaded = 0;
+        var previousOverallDownloaded = 0;
+        var downloadProgress = 0;
+        var progressInterval = setInterval(() => {
+          downloadProgress = overallDownloaded/overallSize;
+          if (overallSize != 0) {
+            if (downloadProgress < 0.999) {
+              progress(downloadProgress, (overallDownloaded-previousOverallDownloaded)/1000000);
+              previousOverallDownloaded = overallDownloaded;
+            } else {
+              clearInterval(progressInterval);
+              progress(1, 0);
+            }
+          }
+        }, 1000);
+        common.checkFiles(urls).then((_urls) => {
+          Promise.all(_urls.map((file) => {
+            return new Promise(function(resolve, reject) {
+              download(file.url, file.path).on("response", (res) => {
+                var totalSize = eval(res.headers['content-length']);
+                overallSize += totalSize;
+                var downloaded = 0;
+                res.on('data', data => {
+                  overallDownloaded += data.length;
+                });
+              }).then(() => {
+                common.checksumFile(file).then(() => {
+                  next(++filesDownloaded, _urls.length);
+                }).catch((err) => {
+                  reject(err);
+                  return;
+                });
+              });
+            });
+          })).then(() => {
+            var files = _this.getFilePushArray(urls);
+            files.push({
+              src: _this.createInstallCommandsFile(
+                _this.createInstallCommands(
+                  latest.files,
+                  options.installerCheck,
+                  options.wipe,
+                  options.enable
+                ),
+                options.device
+              ),
+              dest: ubuntuPushDir + ubuntuCommandFile
+            });
+            resolve(files);
+            return;
+          }).catch((err) => {
+            reject(err);
+            return;
+          });
+        });
+      });
+    });
   }
 
   // Install commands
@@ -149,7 +223,7 @@ class Client {
   getReleaseDate(device, channel) {
     return this.getDeviceIndex(device, channel).then((deviceIndex) => {
       return deviceIndex.global.generated_at;
-    })
+    });
   }
 
   getChannels() {

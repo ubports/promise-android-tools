@@ -15,10 +15,69 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const fs = require("fs");
+const checksum = require("checksum");
+const path = require("path");
+
 function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min;
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min;
 }
 
-module.exports = { getRandomInt: getRandomInt };
+function checksumFile(file) {
+  return new Promise(function(resolve, reject) {
+    if (!file.checksum) {
+      // No checksum so return true;
+      resolve();
+      return;
+    } else {
+      checksum.file(path.join(file.path, path.basename(file.url)), {
+        algorithm: "sha256"
+      }, function(err, sum) {
+        console.log("checked: " +path.basename(file.url), sum === file.checksum);
+        if (sum === file.checksum) resolve()
+        else reject()
+      });
+    }
+  });
+}
+
+function checkFiles(urls) {
+  return new Promise(function(resolve, reject) {
+    var urls_ = [];
+    var next = () => {
+      if (urls.length <= 1) {
+        resolve(urls_)
+      } else {
+        urls.shift();
+        check()
+      }
+    }
+    var check = () => {
+      fs.access(path.join(urls[0].path, path.basename(urls[0].url)), (err) => {
+        if (err) {
+          console.log("Not existing " + path.join(urls[0].path, path.basename(urls[0].url)));
+          urls_.push(urls[0]);
+          next();
+        } else {
+          checksumFile(urls[0]).then(() => {
+            console.log(path.join(urls[0].path, path.basename(urls[0].url)) + " exists with the expected checksum, so the download will be skipped.");
+            next();
+          }).catch(() => {
+            console.log("Checksum mismatch on " + path.join(urls[0].path, path.basename(urls[0].url)) + ". This file will be downloaded again.");
+            urls_.push(urls[0]);
+            next();
+          });
+        }
+      })
+    }
+    check();
+  });
+}
+
+module.exports = {
+  getRandomInt: getRandomInt,
+  checkFiles: checkFiles,
+  checksumFile: checksumFile
+};

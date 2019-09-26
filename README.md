@@ -8,9 +8,22 @@ Access a system-image server http endpoint
 Example:
 
 ```javascript
-const systemImageClient = require("system-image-node-module").Client;
-const sic = new systemImageClient();
-sic.getDeviceChannels("bacon").then((channels) => console.log(channels));
+
+const systemImageClient = require("./src/module.js").Client;
+const systemImage = new systemImageClient();
+
+systemImage.getDeviceChannels("bacon").then((channels) => console.log(channels));
+
+const progress = (progress, speed) => {
+  console.log("progress:", progress*100, "%");
+  console.log("speed:", speed, "MB/s");
+}
+
+const next = (downloadedFiles, totalFiles) => {
+  console.log("file", downloadedFiles, "/", totalFiles);
+}
+
+systemImage.downloadLatestVersion({device: "bacon", channel: "ubports-touch/16.04/stable"}, progress, next).then(() => { console.log("done"); });
 ```
 
 The constructor takes an object with optional properties as an argument. The default properties are listed below.
