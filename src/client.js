@@ -100,9 +100,13 @@ class Client {
             }
           }
         }, 1000);
-        common.checkFiles(urls).then((_urls) => {
-          Promise.all(_urls.map((file) => {
-            return new Promise(function(resolve, reject) {
+        Promise.all(urls.map((file) => {
+          return new Promise(function(resolve, reject) {
+            common.checksumFile(file).then(() => {
+              next(++filesDownloaded, urls.length);
+              resolve();
+              return;
+            }).catch(() => {
               download(file.url, file.path).on("response", (res) => {
                 var totalSize = eval(res.headers['content-length']);
                 overallSize += totalSize;
@@ -112,33 +116,35 @@ class Client {
                 });
               }).then(() => {
                 common.checksumFile(file).then(() => {
-                  next(++filesDownloaded, _urls.length);
+                  next(++filesDownloaded, urls.length);
+                  resolve();
+                  return;
                 }).catch((err) => {
                   reject(err);
                   return;
                 });
               });
             });
-          })).then(() => {
-            var files = _this.getFilePushArray(urls);
-            files.push({
-              src: _this.createInstallCommandsFile(
-                _this.createInstallCommands(
-                  latest.files,
-                  options.installerCheck,
-                  options.wipe,
-                  options.enable
-                ),
-                options.device
-              ),
-              dest: ubuntuPushDir + ubuntuCommandFile
-            });
-            resolve(files);
-            return;
-          }).catch((err) => {
-            reject(err);
-            return;
           });
+        })).then(() => {
+          var files = _this.getFilePushArray(urls);
+          files.push({
+            src: _this.createInstallCommandsFile(
+              _this.createInstallCommands(
+                latest.files,
+                options.installerCheck,
+                options.wipe,
+                options.enable
+              ),
+              options.device
+            ),
+            dest: ubuntuPushDir + ubuntuCommandFile
+          });
+          resolve(files);
+          return;
+        }).catch((err) => {
+          reject(err);
+          return;
         });
       });
     });
