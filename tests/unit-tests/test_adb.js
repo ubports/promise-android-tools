@@ -1,3 +1,5 @@
+"use strict";
+
 /*
  * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
  *
@@ -15,10 +17,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const Adb = require("./adb.js");
-const Fastboot = require("./fastboot.js");
+const fs = require('fs');
+const request = require('request');
 
-module.exports = {
-  Adb: Adb,
-  Fastboot: Fastboot
-};
+const chai = require('chai');
+var sinonChai = require("sinon-chai");
+var expect = chai.expect;
+chai.use(sinonChai);
+
+const Adb = require('../../src/module.js').Adb;
+
+describe('Adb module', function() {
+  describe("constructor()", function() {
+    it("should create default adb", function() {
+      const adb = new Adb();
+      expect(adb.exec).to.exist;
+      expect(adb.log).to.equal(console.log);
+    });
+  });
+});

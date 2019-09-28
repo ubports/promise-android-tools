@@ -1,5 +1,7 @@
+"use strict";
+
 /*
- * Copyright (C) 2017 Marius Gripsgard <marius@ubports.com>
+ * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,3 +16,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+const fs = require("fs");
+const path = require("path");
+const exec = require('child_process').exec;
+const common = require("./common.js");
+
+const DEFAULT_EXEC = (args, callback) => { exec("fastboot", args, callback); };
+const DEFAULT_LOG = console.log;
+
+class Fastboot {
+  constructor(options) {
+    this.exec = DEFAULT_EXEC;
+    this.log = DEFAULT_LOG;
+
+    if (options) {
+      this.exec = options.exec;
+      this.log = options.log;
+    }
+  }
+}
+
+module.exports = Fastboot;

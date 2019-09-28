@@ -1,3 +1,5 @@
+"use strict";
+
 /*
  * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
  *
@@ -15,10 +17,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const Adb = require("./adb.js");
-const Fastboot = require("./fastboot.js");
+const fs = require("fs");
+const path = require("path");
+const exec = require('child_process').exec;
+const common = require("./common.js");
 
-module.exports = {
-  Adb: Adb,
-  Fastboot: Fastboot
-};
+const DEFAULT_EXEC = (args, callback) => { exec("adb", args, callback); };
+const DEFAULT_LOG = console.log;
+
+class Adb {
+  constructor(options) {
+    this.exec = DEFAULT_EXEC;
+    this.log = DEFAULT_LOG;
+
+    if (options) {
+      this.exec = options.exec;
+      this.log = options.log;
+    }
+  }
+}
+
+module.exports = Adb;

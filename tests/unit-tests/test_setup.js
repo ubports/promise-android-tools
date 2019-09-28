@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Marius Gripsgard <marius@ubports.com>
+ * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

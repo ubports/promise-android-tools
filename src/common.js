@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Marius Gripsgard <marius@ubports.com>
+ * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,42 +15,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require("fs");
-const checksum = require("checksum");
-const path = require("path");
-
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min;
-}
-
-function checksumFile(file) {
-  return new Promise(function(resolve, reject) {
-    fs.access(path.join(file.path, path.basename(file.url)), (err) => {
-      if (err) {
-        reject();
-      } else {
-        if (!file.checksum) {
-          // No checksum so return true;
-          resolve();
-          return;
-        } else {
-          checksum.file(path.join(file.path, path.basename(file.url)), {
-            algorithm: "sha256"
-          }, function(err, sum) {
-            console.log("checked: " +path.basename(file.url), sum === file.checksum);
-            if (sum === file.checksum) resolve()
-            else reject()
-          });
-        }
-      }
-    });
-  });
-}
-
-
-module.exports = {
-  getRandomInt: getRandomInt,
-  checksumFile: checksumFile
-};
+module.exports = { };
