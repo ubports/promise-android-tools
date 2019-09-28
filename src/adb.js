@@ -22,19 +22,110 @@ const path = require("path");
 const exec = require('child_process').exec;
 const common = require("./common.js");
 
-const DEFAULT_EXEC = (args, callback) => { exec("adb", args, callback); };
+const DEFAULT_EXEC = (args, callback) => { exec((["adb"].concat(args)).join(" "), undefined, callback); };
 const DEFAULT_LOG = console.log;
+const DEFAULT_PORT = 5037;
 
 class Adb {
   constructor(options) {
     this.exec = DEFAULT_EXEC;
     this.log = DEFAULT_LOG;
+    this.port = DEFAULT_PORT;
 
+    // Accept options
     if (options) {
-      this.exec = options.exec;
-      this.log = options.log;
+      if (options.exec) {
+        this.exec = options.exec;
+      }
+      if (options.log) {
+        this.log = options.log;
+      }
+      if (options.port) {
+        this.port = options.port;
+      }
     }
+  }
+
+  // Exec a command with port argument
+  execPort(args) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
+        if (error) reject(error, stderr);
+        else resolve(stdout);
+      });
+    });
+  }
+
+  // Kill all adb servers and start a new one to rule them all
+  startServer() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.killServer().then(() => {
+        _this.log("starting adb server on port " + _this.port);
+        _this.execPort("start-server").then((stdout) => {
+          resolve();
+        }).catch(reject);
+      }).catch((error, stderr) => {
+        reject(error, stderr);
+      });
+    });
+  }
+
+  // Kill all running servers
+  killServer() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.log("killing all running adb servers");
+      _this.execPort("kill-server").then((stdout) => {
+        resolve();
+      }).catch((error, stderr) => {
+        reject(error, stderr);
+      });
+    });
+  }
+
+  getSerialno() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.log("killing all running adb servers");
+      _this.execPort("get-serialno").then((stdout) => {
+        if (stdout.length == 17) resolve(stdout.replace("\n",""));
+        else reject("invalid device id");
+      }).catch((error, stderr) => {
+        reject(error, stderr);
+      });
+    });
   }
 }
 
 module.exports = Adb;
+
+// Missing functions:
+// backup
+// forward
+// reboot-bootloader
+// bugreport
+// logcat
+// remount
+// status-window
+// connect
+// get-state
+// ppp
+// restore
+// sync
+// devices
+// help
+// pull
+// root
+// uninstall
+// disconnect
+// install
+// push
+// shell
+// version
+// emu
+// jdwp
+// reboot
+// sideload
+// wait-for-device
