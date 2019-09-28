@@ -5,7 +5,7 @@
   "main": "./src/module.js",
   "scripts": {
     "test": "mocha ./tests/unit-tests/*",
-    "test-travis": "./node_modules/nyc/bin/nyc.js ./node_modules/mocha/bin/_mocha -- -R spec ./tests/unit-tests/*"
+    "test-travis": "./node_modules/nyc/bin/nyc.js --reporter=lcov ./node_modules/mocha/bin/_mocha -- -R spec ./tests/unit-tests/*"
   },
   "repository": {
     "type": "git",
