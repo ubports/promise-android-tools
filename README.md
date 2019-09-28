@@ -1,6 +1,6 @@
 # System image node module
 
-[![Build Status](https://travis-ci.org/ubports/system-image-node-module.svg?branch=master)](https://travis-ci.org/ubports/system-image-node-module) [![Coverage Status](https://coveralls.io/repos/github/ubports/system-image-node-module/badge.svg?branch=master)](https://coveralls.io/github/ubports/system-image-node-module?branch=master)
+[![Build Status](https://travis-ci.org/ubports/promise-android-tools.svg?branch=master)](https://travis-ci.org/ubports/promise-android-tools) [![Coverage Status](https://coveralls.io/repos/github/ubports/promise-android-tools/badge.svg?branch=master)](https://coveralls.io/github/ubports/promise-android-tools?branch=master)
 
 ## Client
 Access a system-image server http endpoint

@@ -1,6 +1,6 @@
 {
-  "name": "system-image-node-module",
-  "version": "1.0.9",
+  "name": "promise-android-tools",
+  "version": "1.0.0",
   "description": "UBports System image client/server module",
   "main": "./src/module.js",
   "scripts": {
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ubports/system-image-node-module.git"
+    "url": "git+https://github.com/ubports/promise-android-tools.git"
   },
   "author": "Marius Gripsgard <marius@ubports.com>",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/ubports/system-image-node-module/issues"
+    "url": "https://github.com/ubports/promise-android-tools/issues"
   },
-  "homepage": "https://github.com/ubports/system-image-node-module#readme",
+  "homepage": "https://github.com/ubports/promise-android-tools#readme",
   "dependencies": {
     "chai": "^4.1.2",
     "checksum": "^0.1.1",
