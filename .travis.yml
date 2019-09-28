@@ -1,4 +1,15 @@
 language: node_js
+cache:
+  directories:
+  - node_modules
+  - "$HOME/.electron"
+  - "$HOME/.cache"
+matrix:
+  include:
+  - os: osx
+  - os: linux
+    env: CC=clang CXX=clang++ npm_config_clang=1
+    compiler: clang
 node_js:
   - "6"
   - "8"
