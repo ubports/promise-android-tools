@@ -1,41 +1,16 @@
-# System image node module
+# promise-android-tools
 
-[![Build Status](https://travis-ci.org/ubports/promise-android-tools.svg?branch=master)](https://travis-ci.org/ubports/promise-android-tools) [![Coverage Status](https://coveralls.io/repos/github/ubports/promise-android-tools/badge.svg?branch=master)](https://coveralls.io/github/ubports/promise-android-tools?branch=master)
+[![Build Status](https://travis-ci.org/ubports/promise-android-tools.svg?branch=master)](https://travis-ci.org/ubports/promise-android-tools) [![Coverage Status](https://coveralls.io/repos/github/ubports/promise-android-tools/badge.svg?branch=master)](https://coveralls.io/github/ubports/promise-android-tools?branch=master) [![Build status](https://ci.appveyor.com/api/projects/status/wmjs1hijnnpknp9w?svg=true)](https://ci.appveyor.com/project/NeoTheThird/promise-android-tools)
 
 ## Client
-Access a system-image server http endpoint
+A wrapper for adb and fastboot that returns convenient promises.
+
+**NOTE**: This is still a work in progress. Not all functions have been added.
 
 Example:
 
 ```javascript
-
-const systemImageClient = require("./src/module.js").Client;
-const systemImage = new systemImageClient();
-
-systemImage.getDeviceChannels("bacon").then((channels) => console.log(channels));
-
-const progress = (progress, speed) => {
-  console.log("progress:", progress*100, "%");
-  console.log("speed:", speed, "MB/s");
-}
-
-const next = (downloadedFiles, totalFiles) => {
-  console.log("file", downloadedFiles, "/", totalFiles);
-}
-
-systemImage.downloadLatestVersion({device: "bacon", channel: "ubports-touch/16.04/stable"}, progress, next).then(() => { console.log("done"); });
+const { Adb, Fastboot } = require("./src/module.js");
+const adb = new Adb();
+const fastboot = new Fastboot();
 ```
-
-The constructor takes an object with optional properties as an argument. The default properties are listed below.
-
-```javascript
-{
-  host: "https://system-image.ubports.com/", // URL of the system-image server
-  path: "./test",                            // download path
-  allow_insecure: false                      // allow unencrypted URL
-  cache_time: 180                            // time to keep cached files
-}
-```
-
-## Server
-Maintain a system-image server backend (not implemented yet)
