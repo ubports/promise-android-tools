@@ -190,11 +190,11 @@ describe('Adb module', function() {
     });
   });
   describe("waitForDevice()", function() {
-    it("should resolve after 1.5 seconds", function() {
+    it("should resolve immediately", function() {
       const execFake = sinon.fake((args, callback) => { callback(null, "."); });
       const logSpy = sinon.spy();
       const adb = new Adb({exec: execFake, log: logSpy});
-      return adb.waitForDevice().then((r) => {
+      return adb.waitForDevice(5).then((r) => {
         expect(execFake).to.have.been.called;
         expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "echo", "."]);
       });

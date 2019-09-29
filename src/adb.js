@@ -164,7 +164,7 @@ class Adb {
   }
 
   // Wait for a device
-  waitForDevice() {
+  waitForDevice(timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       let timer = setInterval(() => {
@@ -177,7 +177,7 @@ class Adb {
           clearInterval(timer);
           reject(error, stderr);
         });;
-      }, 1500);
+      }, timeout);
     });
   }
 }
