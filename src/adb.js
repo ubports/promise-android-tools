@@ -176,8 +176,8 @@ class Adb {
           }
         });
         function progressSize(s) {
-          downloadedSize += s;
-          progress(downloadedSize/totalSize);
+          pushedSize += s;
+          progress(pushedSize/totalSize);
         }
         function pushNext(i) {
           _this.push(files[i].src, files[i].dest).then(() => {
@@ -236,7 +236,7 @@ class Adb {
         else reject("unexpected response: " + stdout);
       }).catch((error) => {
         if (error == "no device") resolve(false);
-        else resolve(error);
+        else reject(error);
       });
     });
   }
@@ -270,6 +270,40 @@ class Adb {
   stopWaiting() {
     this.adbEvent.emit("stop");
   }
+
+  // Format partition
+  format(partition) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.shell(["cat", "/etc/recovery.fstab"]).then((fstab_) => {
+        if (!fstab_) {
+          reject("unable to read recovery.fstab");
+        } else {
+          var fstab = fstab_.split("\n");
+          var block;
+          fstab.forEach((fs) => {
+            if (!fs.includes(partition) || block) return;
+            block = fs.split(" ")[0];
+            if (!block.startsWith("/dev")) block = false;
+          });
+          if (!block) {
+            reject("unable to read partition " + partition);
+          } else {
+            _this.shell("umount /"+partition).then(() => {
+              _this.shell("make_ext4fs " + block).then(() => {
+                _this.shell("mount /"+partition).then((error) => {
+                  if (error) reject("failed to format " + partition + " " + error);
+                  else resolve();
+                }).catch(reject);
+              }).catch(reject);
+            }).catch(reject);
+          }
+        }
+      }).catch((error) => {
+        reject("failed to format " + partition + ": " + error);
+      });
+    });
+  }
 }
 
 module.exports = Adb;
@@ -277,7 +311,6 @@ module.exports = Adb;
 // Missing functions:
 // backup
 // forward
-// reboot-bootloader
 // bugreport
 // logcat
 // remount
@@ -297,6 +330,5 @@ module.exports = Adb;
 // version
 // emu
 // jdwp
-// reboot
 // sideload
 // wait-for-device
