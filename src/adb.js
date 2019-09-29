@@ -85,6 +85,7 @@ class Adb {
     });
   }
 
+  // Get the devices serial number
   getSerialno() {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -104,6 +105,34 @@ class Adb {
       _this.execPort(["shell"].concat(args)).then((stdout) => {
         if (stdout) resolve(stdout.replace("\n",""));
         else resolve();
+      }).catch((error, stderr) => {
+        reject(error, stderr);
+      });
+    });
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Convenience functions
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Get device codename
+  getDeviceName() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.shell(["getprop", "ro.product.device"]).then((stdout) => {
+        if (!stdout) {
+          reject("getprop error");
+        } else if (stdout.includes("getprop: not found")) {
+          _this.shell(["cat", "default.prop"]).then((stdout) => {
+            output.split("\n").forEach((prop) => {
+              if (prop.includes("ro.product.device")) {
+                resolve(prop.split("=")[1].replace(/\W/g, ""));
+              }
+            });
+          });
+        } else {
+          resolve(stdout.replace(/\W/g, ""));
+        }
       }).catch((error, stderr) => {
         reject(error, stderr);
       });

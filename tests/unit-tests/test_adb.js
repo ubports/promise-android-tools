@@ -65,6 +65,7 @@ describe('Adb module', function() {
         expect(r).to.equal("-P 1234\n");
       });
     });
+    it("should throw an error of no device is connected");
   });
   describe("startServer()", function() {
     it("should kill all servers and start a new one", function() {
@@ -125,5 +126,18 @@ describe('Adb module', function() {
         expect(execFake).to.have.been.called;
       });
     });
+  });
+  describe("getDeviceName()", function() {
+    it("should get device name from getprop", function() {
+      const execFake = sinon.fake((args, callback) => { callback(null, "thisisadevicecodename"); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return adb.getDeviceName().then((r) => {
+        expect(r).to.equal("thisisadevicecodename");
+        expect(execFake).to.have.been.called;
+      });
+    });
+    it("should get device name from default prop file");
+    it("should throw an error if prop can't be found");
   });
 });
