@@ -62,7 +62,7 @@ describe('Fastboot module', function() {
       });
     });
     describe("execCommand()", function() {
-      it("should call an executable with port argument", function() {
+      it("should call an executable with specified argument", function() {
         const execStub = (args, callback) => {
           exec("node tests/test-data/fake_executable.js " + args.join(" "), callback);
         };
@@ -70,6 +70,16 @@ describe('Fastboot module', function() {
         const adb = new Fastboot({exec: execStub, log: logStub});
         return adb.execCommand(["some", "test", "arguments"]).then((r, r2, r3) => {
           expect(r).to.equal("some test arguments");
+        });
+      });
+      it("called executable should be able to access files", function() {
+        const execStub = (args, callback) => {
+          exec("node tests/test-data/fake_fileaccesser.js " + args[args.length-2], callback);
+        };
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execStub, log: logSpy});
+        return fastboot.execCommand(["tests/test-data/test_file", "/tmp/target"]).then((r) => {
+          expect(r).to.equal(undefined);
         });
       });
     });
