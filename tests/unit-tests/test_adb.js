@@ -140,8 +140,20 @@ describe('Adb module', function() {
     });
     describe("push()", function() {
       it("executable should be able to access files");
-      it("should push file");
-      it("should reject if file is inaccessible");
+      it("should push file", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+        const logSpy = sinon.spy();
+        const adb = new Adb({exec: execFake, log: logSpy});
+        return adb.push("tests/test-data/test_file", "/tmp/target").then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "push", "\"tests/test-data/test_file\"", "/tmp/target"]);
+        });
+      });
+      it("should reject if file is inaccessible", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+        const logSpy = sinon.spy();
+        const adb = new Adb({exec: execFake, log: logSpy});
+        return expect(adb.push("this/file/does/not/exist", "/tmp/target")).to.have.been.rejected;
+      });
     });
   });
   describe("convenience functions", function() {
