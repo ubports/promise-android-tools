@@ -112,6 +112,12 @@ class Adb {
   push(file, dest) {
     var _this = this;
     return new Promise(function(resolve, reject) {
+      // Make sure file exists first
+      try {
+        fs.statSync(file);
+      } catch (e) {
+        reject("Can't access file: " + e);
+      }
       var hundredEmitted;
       var fileSize = fs.statSync(file)["size"];
       var lastSize = 0;
@@ -147,7 +153,7 @@ class Adb {
           try {
             totalSize += fs.statSync(file.src)["size"];
           } catch (e) {
-            reject("Can't read system-image files: " + e);
+            reject("Can't access file: " + e);
           }
         });
         function progressSize(s) {
@@ -268,7 +274,6 @@ module.exports = Adb;
 // uninstall
 // disconnect
 // install
-// push
 // version
 // emu
 // jdwp
