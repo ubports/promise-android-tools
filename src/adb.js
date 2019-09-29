@@ -102,7 +102,8 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.execPort(["shell"].concat(args)).then((stdout) => {
-        resolve(stdout.replace("\n",""));
+        if (stdout) resolve(stdout.replace("\n",""));
+        else resolve();
       }).catch((error, stderr) => {
         reject(error, stderr);
       });

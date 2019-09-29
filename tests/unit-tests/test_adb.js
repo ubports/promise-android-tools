@@ -115,4 +115,15 @@ describe('Adb module', function() {
       return expect(adb.getSerialno()).to.be.rejectedWith("invalid device id");
     });
   });
+  describe("shell()", function() {
+    it("should run command on device", function() {
+      const execFake = sinon.fake((args, callback) => { callback(null, "This string is returned over stdout"); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return adb.shell(["one", "two", "three"]).then((r) => {
+        expect(r).to.equal("This string is returned over stdout");
+        expect(execFake).to.have.been.called;
+      });
+    });
+  });
 });
