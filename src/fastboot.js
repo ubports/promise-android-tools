@@ -38,3 +38,16 @@ class Fastboot {
 }
 
 module.exports = Fastboot;
+
+// Missing functions
+// boot
+// erase
+// getvar
+// reboot-bootloader
+// continue
+// flash
+// oem
+// update
+// devices
+// flashall
+// reboot
