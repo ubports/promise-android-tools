@@ -74,7 +74,6 @@ describe('Adb module', function() {
         expect(r).to.equal("-P 1234");
       });
     });
-    it("should throw an error if no device is connected");
   });
   describe("startServer()", function() {
     it("should kill all servers and start a new one", function() {
@@ -135,6 +134,16 @@ describe('Adb module', function() {
         expect(execFake).to.have.been.called;
       });
     });
+  });
+  describe("push()", function() {
+    it("executable should be able to access files");
+    it("should push file");
+    it("should reject if file is inaccessible");
+  });
+  describe("pushArray()", function() {
+    it("should reject on empty array");
+    it("should push files");
+    it("should quietly stop waiting");
   });
   describe("getDeviceName()", function() {
     it("should get device name from getprop", function() {

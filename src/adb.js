@@ -109,7 +109,7 @@ class Adb {
     });
   }
 
-  push(file, dest) => {
+  push(file, dest) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       var hundredEmitted;
@@ -128,9 +128,47 @@ class Adb {
       }).catch(reject);
     });
   }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
+
+  // Push an array of files and report progress
+  pushArray(files, progress) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      if (files.length <= 0) {
+        progress(1);
+        resolve();
+      } else {
+        var totalSize = 0;
+        var pushedSize = 0;
+        files.forEach((file) => {
+          try {
+            totalSize += fs.statSync(file.src)["size"];
+          } catch (e) {
+            reject("Can't read system-image files: " + e);
+          }
+        });
+        function progressSize(s) {
+          downloadedSize += s;
+          progress(downloadedSize/totalSize);
+        }
+        function pushNext(i) {
+          push(files[i].src, files[i].dest).then(() => {
+            if (i+1 < files.length) {
+              pushNext(i+1);
+            } else {
+              _this.adbEvent.removeEventListener("push:progress:size", progressSize);
+              resolve();
+            }
+          });
+        }
+        _this.adbEvent.on("push:progress:size", progressSize);
+        pushNext(0); // Begin pushing
+      }
+    });
+  }
 
   // Get device codename
   getDeviceName() {
