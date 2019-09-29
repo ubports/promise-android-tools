@@ -52,6 +52,21 @@ class Fastboot {
     });
   }
 
+  flash(partition, file) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["flash", partition, file]).then((stdout) => {
+        resolve(true);
+      }).catch((error) => {
+        reject(error);
+      });
+    });
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Convenience functions
+  //////////////////////////////////////////////////////////////////////////////
+
   // Find out if a device can be seen by fastboot
   hasAccess() {
     var _this = this;

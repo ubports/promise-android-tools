@@ -86,8 +86,21 @@ describe('Fastboot module', function() {
   });
   describe("basic functions", function() {
     describe("flash()", function() {
-      it("should resolve if flashed successfully");
-      it("should reject if flashing failed");
+      it("should resolve if flashed successfully", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.flash("boot", "/path/to/image").then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["flash", "boot", "/path/to/image"]);
+        });
+      });
+      it("should reject if flashing failed", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.flash("boot", "/path/to/image")).to.have.been.rejectedWith("error: true")
+      });
     });
     describe("boot()", function() {
       it("should resolve once booted");
@@ -107,6 +120,11 @@ describe('Fastboot module', function() {
     });
   });
   describe("convenience functions", function() {
+    describe("flashArray()", function() {
+      it("should resolve once everything has been flashed");
+      it("should reject if flashing failed");
+      it("should report progress");
+    });
     describe("waitForDevice()", function() {
       it("should resolve immediately", function() {
         const execFake = sinon.fake((args, callback) => { callback(null, "0123456789ABCDEF	fastboot"); });
