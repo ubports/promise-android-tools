@@ -18,8 +18,7 @@
  */
 
 const fs = require('fs');
-const request = require('request');
-
+const exec = require('child_process').exec;
 const chai = require('chai');
 const sinon = require('sinon');
 const chaiAsPromised = require("chai-as-promised");
@@ -53,6 +52,18 @@ describe('Adb module', function() {
       expect(adb.log).to.equal(logStub);
       expect(adb.log).to.not.equal(execStub);
       expect(adb.port).to.equal(1234);
+    });
+  });
+  describe("execPort()", function() {
+    it("should call an executable with port argument", function() {
+      const execStub = (args, callback) => {
+        exec("tests/test-data/fake_executable.js " + args.join(" "), callback);
+      };
+      const logStub = sinon.stub();
+      const adb = new Adb({exec: execStub, log: logStub, port: 1234});
+      return adb.execPort().then((r, r2, r3) => {
+        expect(r).to.equal("-P 1234\n");
+      });
     });
   });
   describe("startServer()", function() {
