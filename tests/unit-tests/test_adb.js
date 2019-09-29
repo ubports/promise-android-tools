@@ -309,7 +309,8 @@ describe('Adb module', function() {
       it("should resolve if partition was formated successfully");
     });
     describe("wipeCache()", function() {
-      it("should resolve if recovery.fstab can not be read but rm was successfull", function() {
+      it("should resolve if formatting was successfull");
+      it("should resolve if cache can not be formated but rm was successfull", function() {
         const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
         const logSpy = sinon.spy();
         const adb = new Adb({exec: execFake, log: logSpy});
@@ -319,6 +320,7 @@ describe('Adb module', function() {
           expect(execFake).to.not.have.been.calledThrice;
         });
       });
+      it("should reject if rm failed");
     });
   });
 });

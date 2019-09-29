@@ -315,6 +315,8 @@ class Adb {
         }).catch(() => {
           reject("wiping cache failed");
         });
+      }).then(() => {
+        resolve();
       });
     });
   }
