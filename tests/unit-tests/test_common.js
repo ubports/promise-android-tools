@@ -41,22 +41,70 @@ const recognizedErrors = [
     stderr: "error: error: device offline"
   },
   {
+    expectedReturn: "incorrect password",
+    error: { message: "this error includes incorrect password" },
+    stdout: undefined,
+    stderr: undefined
+  },
+  {
+    expectedReturn: "low battery",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "FAILED (remote: low power, need battery charging.)"
+  },
+  {
+    expectedReturn: "failed to boot",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "FAILED (remote failure)"
+  },
+  {
     expectedReturn: "connection lost",
     error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
     stdout: undefined,
     stderr: "this is an I/O error"
+  },
+  {
+    expectedReturn: "connection lost",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "FAILED (command write failed (No such device))"
+  },
+  {
+    expectedReturn: "connection lost",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "FAILED (command write failed (Success))"
+  },
+  {
+    expectedReturn: "connection lost",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "FAILED (status read failed (No such device))"
+  },
+  {
+    expectedReturn: "connection lost",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "FAILED (data transfer failure (Broken pipe))"
+  },
+  {
+    expectedReturn: "connection lost",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "FAILED (data transfer failure (Protocol error))"
   }
 ]
 
 describe('Common module', function() {
   describe("handleError()", function() {
-    it("should hide password in command", function() {
-      expect(common.handleError({cmd: "sudo command"})).to.equal("error: {\"cmd\":\"masked for security\"}\n");
-    });
     recognizedErrors.forEach((re) => {
       it("should return \"" + re.expectedReturn + "\"", function() {
         expect(common.handleError(re.error, re.stdout, re.stderr)).to.equal(re.expectedReturn)
       });
+    });
+    it("should hide password in command", function() {
+      expect(common.handleError({cmd: "sudo command"})).to.equal("error: {\"cmd\":\"masked for security\"}\n");
     });
   });
 });

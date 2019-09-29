@@ -21,11 +21,28 @@ function handleError(error, stdout, stderr) {
   // console.log("error: " + JSON.stringify(error))
   // console.log("stdout: " + stdout)
   // console.log("stderr: " + stderr)
-  if (stderr && stderr.includes("error: no devices/emulators found")) {
+  if (stderr &&
+      stderr.includes("error: no devices/emulators found")) {
     return "no device";
-  } else if (stderr && stderr.includes("error: device offline")) {
+  } else if (stderr && (
+      stderr.includes("error: device offline"))) {
     return "device offline";
-  } else if (stderr && stderr.includes("I/O error")) {
+  } else if (error && error.message && (
+      error.message.includes("incorrect password"))) {
+    return "incorrect password";
+  } else if (stderr && (
+      stderr.includes("FAILED (remote: low power, need battery charging.)"))) {
+    return "low battery";
+  } else if (stderr && (
+      stderr.includes("FAILED (remote failure)"))) {
+    return "failed to boot";
+  } else if (stderr && (
+      stderr.includes("I/O error") ||
+      stderr.includes("FAILED (command write failed (No such device))") ||
+      stderr.includes("FAILED (command write failed (Success))") ||
+      stderr.includes("FAILED (status read failed (No such device))") ||
+      stderr.includes("FAILED (data transfer failure (Broken pipe))") ||
+      stderr.includes("FAILED (data transfer failure (Protocol error))"))) {
     return "connection lost"
   } else {
     return (
