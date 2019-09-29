@@ -143,10 +143,30 @@ describe('Adb module', function() {
       const adb = new Adb({exec: execFake, log: logSpy});
       return adb.getDeviceName().then((r) => {
         expect(r).to.equal("thisisadevicecodename");
-        expect(execFake).to.have.been.called;
+        expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "getprop", "ro.product.device"]);
       });
     });
     it("should get device name from default prop file");
     it("should throw an error if prop can't be found");
+  });
+  describe("getOs()", function() {
+    it("should return \"ubuntutouch\"", function() {
+      const execFake = sinon.fake((args, callback) => { callback(null, "Contents of the system-image file go here"); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return adb.getOs().then((r) => {
+        expect(r).to.equal("ubuntutouch");
+        expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "cat", "/etc/system-image/channel.ini"]);
+      });
+    });
+    it("should return \"android\"", function() {
+      const execFake = sinon.fake((args, callback) => { callback(null, null); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return adb.getOs().then((r) => {
+        expect(r).to.equal("android");
+        expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "cat", "/etc/system-image/channel.ini"]);
+      });
+    });
   });
 });
