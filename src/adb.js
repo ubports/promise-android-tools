@@ -109,6 +109,25 @@ class Adb {
     });
   }
 
+  push(file, dest) => {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      var hundredEmitted;
+      var fileSize = fs.statSync(file)["size"];
+      var lastSize = 0;
+      var progressInterval = setInterval(() => {
+        _this.shell(["stat", "-t", dest + "/" + path.basename(file)]).then((stat) => {
+          _this.adbEvent.emit("push:progress:size", eval(stat.split(" ")[1])-lastSize);
+          lastSize = eval(stat.split(" ")[1]);
+        });
+      }, 1000);
+      var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
+      _this.execPort(["push", guardedfile, dest]).then((stdout) => {
+        clearInterval(progressInterval);
+        resolve();
+      }).catch(reject);
+    });
+  }
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////

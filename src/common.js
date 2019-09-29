@@ -25,6 +25,8 @@ function handleError(error, stdout, stderr) {
     return "no device";
   } else if (stderr && stderr.includes("error: device offline")) {
     return "device offline";
+  } else if (stderr && stderr.includes("I/O error")) {
+    return "connection lost"
   } else {
     return (
       error ? ("error: " + JSON.stringify(error) + "\n") : "" +
