@@ -46,9 +46,9 @@ function handleError(error, stdout, stderr) {
     return "connection lost"
   } else {
     return (
-      error ? ("error: " + JSON.stringify(error) + "\n") : "" +
-      stdout ? ("stdout: " + stdout + "\n") : "" +
-      stderr ? ("stderr: " + stderr) : ""
+      (error ? ("error: " + JSON.stringify(error) + "\n") : "") +
+      (stdout ? ("stdout: " + stdout + "\n") : "") +
+      (stderr ? ("stderr: " + stderr) : "")
     );
   }
 }

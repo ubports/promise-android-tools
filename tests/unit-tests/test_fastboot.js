@@ -103,20 +103,89 @@ describe('Fastboot module', function() {
       });
     });
     describe("boot()", function() {
-      it("should resolve once booted");
-      it("should reject if boot failed");
+      it("should resolve on boot", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.boot("/path/to/image").then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["boot", "/path/to/image"]);
+        });
+      });
+      it("should reject if booting failed", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.boot("/path/to/image")).to.have.been.rejectedWith("error: true")
+      });
     });
     describe("format()", function() {
-      it("should resolve once formated");
-      it("should reject if formatting failed");
+      it("should resolve after formatting", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.format("cache").then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["format", "cache"]);
+        });
+      });
+      it("should reject if formatting failed", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.format("cache")).to.have.been.rejectedWith("error: true")
+      });
+    });
+    describe("erase()", function() {
+      it("should resolve after erasing", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.erase("cache").then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["erase", "cache"]);
+        });
+      });
+      it("should reject if erasing failed", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.erase("cache")).to.have.been.rejectedWith("error: true")
+      });
     });
     describe("oemUnlock()", function() {
-      it("should resolve once unlocked");
-      it("should reject if unlocking failed");
+      it("should resolve after unlocking", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.oemUnlock().then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["oem", "unlock"]);
+        });
+      });
+      it("should reject if unlocking failed", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.oemUnlock()).to.have.been.rejectedWith("error: true")
+      });
     });
     describe("oemLock()", function() {
-      it("should resolve once locked");
-      it("should reject if locking failed");
+      it("should resolve after locking", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.oemLock().then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["oem", "lock"]);
+        });
+      });
+      it("should reject if locking failed", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.oemLock()).to.have.been.rejectedWith("error: true")
+      });
     });
   });
   describe("convenience functions", function() {

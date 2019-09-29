@@ -66,7 +66,7 @@ class Fastboot {
   boot(image) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.execCommand(["boot", partition]).then((stdout) => {
+      _this.execCommand(["boot", image]).then((stdout) => {
         resolve();
       }).catch((error) => {
         reject("booting failed: " + error);
@@ -74,9 +74,54 @@ class Fastboot {
     });
   }
 
+  format(partition) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["format", partition]).then((stdout) => {
+        resolve();
+      }).catch((error) => {
+        reject("formatting failed: " + error);
+      });
+    });
+  }
+
+  erase(partition) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["erase", partition]).then((stdout) => {
+        resolve();
+      }).catch((error) => {
+        reject("erasing failed: " + error);
+      });
+    });
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
+
+  oemUnlock() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["oem", "unlock"]).then((stdout) => {
+        resolve();
+      }).catch((error) => {
+        if (error && error.includes("FAILED (remote: Already Unlocked)")) resolve();
+        else reject("oem unlock failed: " + error);
+      });
+    });
+  }
+
+  oemLock() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["oem", "lock"]).then((stdout) => {
+        resolve();
+      }).catch((error) => {
+        reject("oem lock failed: " + error);
+      });
+    });
+  }
 
   // Flash image to a partition
   // [ {partition, file} ]
