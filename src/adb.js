@@ -20,7 +20,10 @@
 const fs = require("fs");
 const path = require("path");
 const exec = require('child_process').exec;
+const events = require('events');
 const common = require("./common.js");
+
+class Event extends events { };
 
 const DEFAULT_EXEC = (args, callback) => { exec((["adb"].concat(args)).join(" "), undefined, callback); };
 const DEFAULT_LOG = console.log;
@@ -31,6 +34,7 @@ class Adb {
     this.exec = DEFAULT_EXEC;
     this.log = DEFAULT_LOG;
     this.port = DEFAULT_PORT;
+    this.adbEvent = new Event();
 
     // Accept options
     if (options) {
@@ -51,8 +55,9 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
-        if (error) reject(error, stderr);
-        else resolve(stdout);
+        if (error) reject(common.handleError(error, stdout, (stderr ? stderr.trim() : undefined)));
+        else if (stdout) resolve(stdout.trim());
+        else resolve();
       });
     });
   }
@@ -61,14 +66,13 @@ class Adb {
   startServer() {
     var _this = this;
     return new Promise(function(resolve, reject) {
+      _this.adbEvent.emit("stop");
       _this.killServer().then(() => {
         _this.log("starting adb server on port " + _this.port);
         _this.execPort("start-server").then((stdout) => {
           resolve();
         }).catch(reject);
-      }).catch((error, stderr) => {
-        reject(error, stderr);
-      });
+      }).catch(reject);
     });
   }
 
@@ -79,9 +83,7 @@ class Adb {
       _this.log("killing all running adb servers");
       _this.execPort("kill-server").then((stdout) => {
         resolve();
-      }).catch((error, stderr) => {
-        reject(error, stderr);
-      });
+      }).catch(reject);
     });
   }
 
@@ -91,11 +93,9 @@ class Adb {
     return new Promise(function(resolve, reject) {
       _this.log("killing all running adb servers");
       _this.execPort("get-serialno").then((stdout) => {
-        if (stdout.length == 17) resolve(stdout.replace("\n",""));
+        if (stdout.length == 16) resolve(stdout.replace("\n",""));
         else reject("invalid device id");
-      }).catch((error, stderr) => {
-        reject(error, stderr);
-      });
+      }).catch(reject);
     });
   }
 
@@ -105,9 +105,7 @@ class Adb {
       _this.execPort(["shell"].concat(args)).then((stdout) => {
         if (stdout) resolve(stdout.replace("\n",""));
         else resolve();
-      }).catch((error, stderr) => {
-        reject(error, stderr);
-      });
+      }).catch(reject);
     });
   }
 
@@ -133,9 +131,7 @@ class Adb {
         } else {
           resolve(stdout.replace(/\W/g, ""));
         }
-      }).catch((error, stderr) => {
-        reject(error, stderr);
-      });
+      }).catch(reject);
     });
   }
 
@@ -145,20 +141,20 @@ class Adb {
     return new Promise(function(resolve, reject) {
       _this.shell(["cat", "/etc/system-image/channel.ini"]).then((stdout) => {
         resolve(stdout ? "ubuntutouch" : "android");
-      }).catch((error, stderr) => {
-        reject(error, stderr);
-      });
+      }).catch(reject);
     });
   }
 
-  // Find out what operating system the device is running (currently android and ubuntu touch)
+  // Find out if a device can be seen by adb
   hasAccess() {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.shell(["echo", "."]).then((stdout) => {
-        resolve(stdout ? true : false);
-      }).catch((error, stderr) => {
-        reject(error, stderr);
+        if(stdout == ".") resolve(true);
+        else reject("unexpected response: " + stdout);
+      }).catch((error) => {
+        if (error == "no device") resolve(false);
+        else resolve(error);
       });
     });
   }
@@ -173,12 +169,23 @@ class Adb {
             clearInterval(timer);
             resolve();
           }
-        }).catch((error, stderr) => {
-          clearInterval(timer);
-          reject(error, stderr);
+        }).catch((error) => {
+          if (error) {
+            clearInterval(timer);
+            reject(error);
+          }
         });;
       }, timeout);
+      _this.adbEvent.once("stop", () => {
+        clearInterval(timer);
+        reject("stopped waiting");
+      });
     });
+  }
+
+  // Stop waiting for a device
+  stopWaiting() {
+    this.adbEvent.emit("stop");
   }
 }
 

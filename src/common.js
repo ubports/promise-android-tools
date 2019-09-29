@@ -15,4 +15,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = { };
+function handleError(error, stdout, stderr) {
+  // hide commands that include sudo, so passwords don't get logged
+  if (error.cmd && error.cmd.includes("sudo")) error.cmd = "masked for security"
+  // console.log("error: " + JSON.stringify(error))
+  // console.log("stdout: " + stdout)
+  // console.log("stderr: " + stderr)
+  if (stderr && stderr.includes("error: no devices/emulators found")) {
+    return "no device";
+  } else if (stderr && stderr.includes("error: device offline")) {
+    return "device offline";
+  } else {
+    return (
+      error ? ("error: " + JSON.stringify(error) + "\n") : "" +
+      stdout ? ("stdout: " + stdout + "\n") : "" +
+      stderr ? ("stderr: " + stderr) : ""
+    );
+  }
+}
+
+module.exports = {
+  handleError: handleError
+};

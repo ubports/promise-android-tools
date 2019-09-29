@@ -71,10 +71,10 @@ describe('Adb module', function() {
       const logStub = sinon.stub();
       const adb = new Adb({exec: execStub, log: logStub, port: 1234});
       return adb.execPort().then((r, r2, r3) => {
-        expect(r).to.equal("-P 1234\n");
+        expect(r).to.equal("-P 1234");
       });
     });
-    it("should throw an error of no device is connected");
+    it("should throw an error if no device is connected");
   });
   describe("startServer()", function() {
     it("should kill all servers and start a new one", function() {
@@ -180,13 +180,20 @@ describe('Adb module', function() {
       });
     });
     it("should resolve false", function() {
-      const execFake = sinon.fake((args, callback) => { callback(null, null); });
+      const execFake = sinon.fake((args, callback) => { callback(true, null, "error: no devices/emulators found"); });
       const logSpy = sinon.spy();
       const adb = new Adb({exec: execFake, log: logSpy});
       return adb.hasAccess().then((r) => {
         expect(r).to.equal(false);
         expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "echo", "."]);
       });
+    });
+    it("should reject", function() {
+      const execFake = sinon.fake((args, callback) => { callback(null, "This is an unexpected reply"); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return expect(adb.hasAccess()).to.have.been.rejectedWith("unexpected response: This is an unexpected reply");
+      expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "echo", "."]);
     });
   });
   describe("waitForDevice()", function() {
@@ -197,6 +204,21 @@ describe('Adb module', function() {
       return adb.waitForDevice(5).then((r) => {
         expect(execFake).to.have.been.called;
         expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "echo", "."]);
+      });
+    });
+  });
+  describe("stopWaiting()", function() {
+    it("should quietly stop waiting", function() {
+      const execFake = sinon.fake((args, callback) => { callback(true, null, "error: no devices/emulators found"); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return new Promise(function(resolve, reject) {
+        const wait = adb.waitForDevice(5);
+        setTimeout(() => {
+          adb.stopWaiting();
+          expect(wait).to.be.rejectedWith("stopped waiting");
+          resolve();
+        }, 10)
       });
     });
   });
