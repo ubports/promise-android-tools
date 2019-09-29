@@ -150,7 +150,7 @@ describe('Adb module', function() {
     it("should throw an error if prop can't be found");
   });
   describe("getOs()", function() {
-    it("should return \"ubuntutouch\"", function() {
+    it("should resolve \"ubuntutouch\"", function() {
       const execFake = sinon.fake((args, callback) => { callback(null, "Contents of the system-image file go here"); });
       const logSpy = sinon.spy();
       const adb = new Adb({exec: execFake, log: logSpy});
@@ -159,13 +159,33 @@ describe('Adb module', function() {
         expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "cat", "/etc/system-image/channel.ini"]);
       });
     });
-    it("should return \"android\"", function() {
+    it("should resolve \"android\"", function() {
       const execFake = sinon.fake((args, callback) => { callback(null, null); });
       const logSpy = sinon.spy();
       const adb = new Adb({exec: execFake, log: logSpy});
       return adb.getOs().then((r) => {
         expect(r).to.equal("android");
         expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "cat", "/etc/system-image/channel.ini"]);
+      });
+    });
+  });
+  describe("hasAccess()", function() {
+    it("should resolve true", function() {
+      const execFake = sinon.fake((args, callback) => { callback(null, "."); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return adb.hasAccess().then((r) => {
+        expect(r).to.equal(true);
+        expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "echo", "."]);
+      });
+    });
+    it("should resolve false", function() {
+      const execFake = sinon.fake((args, callback) => { callback(null, null); });
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execFake, log: logSpy});
+      return adb.hasAccess().then((r) => {
+        expect(r).to.equal(false);
+        expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "echo", "."]);
       });
     });
   });

@@ -150,6 +150,18 @@ class Adb {
       });
     });
   }
+
+  // Find out what operating system the device is running (currently android and ubuntu touch)
+  hasAccess() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.shell(["echo", "."]).then((stdout) => {
+        resolve(stdout ? true : false);
+      }).catch((error, stderr) => {
+        reject(error, stderr);
+      });
+    });
+  }
 }
 
 module.exports = Adb;
