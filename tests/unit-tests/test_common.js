@@ -33,6 +33,18 @@ const recognizedErrors = [
     error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
     stdout: undefined,
     stderr: "error: no devices/emulators found"
+  },
+  {
+    expectedReturn: "device offline",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "error: error: device offline"
+  },
+  {
+    expectedReturn: "connection lost",
+    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    stdout: undefined,
+    stderr: "this is an I/O error"
   }
 ]
 
