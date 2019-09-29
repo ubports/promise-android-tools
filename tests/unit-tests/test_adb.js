@@ -54,6 +54,15 @@ describe('Adb module', function() {
       expect(adb.port).to.equal(1234);
     });
   });
+  describe("exec()", function() {
+    it("should call the specified function", function() {
+      const execSpy = sinon.spy();
+      const logSpy = sinon.spy();
+      const adb = new Adb({exec: execSpy, log: logSpy});
+      adb.exec("This is an argument");
+      expect(execSpy).to.have.been.calledWith("This is an argument");
+    });
+  })
   describe("execPort()", function() {
     it("should call an executable with port argument", function() {
       const execStub = (args, callback) => {
