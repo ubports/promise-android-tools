@@ -137,6 +137,7 @@ describe('Adb module', function() {
           expect(execFake).to.have.been.called;
         });
       });
+
     });
     describe("push()", function() {
       it("executable should be able to access files", function() {
@@ -167,6 +168,24 @@ describe('Adb module', function() {
         return expect(adb.push("this/file/does/not/exist", "/tmp/target")).to.have.been.rejected;
       });
     });
+    describe("reboot()", function() {
+      ["system","recovery","bootloader"].forEach((state) => {
+        it("should reboot to " + state, function() {
+          const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+          const logSpy = sinon.spy();
+          const adb = new Adb({exec: execFake, log: logSpy});
+          return adb.reboot(state).then(() => {
+            expect(execFake).to.have.been.calledWith(["-P", 5037, "reboot", state]);
+          });
+        });
+      });
+      it("should reject on invalid state", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+        const logSpy = sinon.spy();
+        const adb = new Adb({exec: execFake, log: logSpy});
+        return expect(adb.reboot("someinvalidstate")).to.have.been.rejectedWith("unknown state: someinvalidstate");
+      });
+    });
   });
   describe("convenience functions", function() {
     describe("pushArray()", function() {
@@ -188,7 +207,7 @@ describe('Adb module', function() {
           expect(execFake).to.have.been.calledTwice;
         });
       });
-      it("should quietly stop waiting");
+      it("should report progress");
     });
     describe("getDeviceName()", function() {
       it("should get device name from getprop", function() {

@@ -135,6 +135,24 @@ class Adb {
     });
   }
 
+  // Reboot to a state (system, recovery, bootloader)
+  reboot(state) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      if (["system", "recovery", "bootloader"].indexOf(state) == -1) {
+        reject("unknown state: " + state)
+      } else {
+        _this.execPort(["reboot", state]).then((stdout) => {
+          if (stdout && stdout.includes("failed")) reject("reboot failed");
+          else resolve()
+        }).catch((e) => {
+          console.log(e)
+          reject("reboot failed");
+        });
+      }
+    });
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
@@ -225,6 +243,7 @@ class Adb {
 
   // Wait for a device
   waitForDevice(timeout) {
+    if (!timeout) timeout = 2000;
     var _this = this;
     return new Promise(function(resolve, reject) {
       let timer = setInterval(() => {
