@@ -56,9 +56,9 @@ class Fastboot {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.execCommand(["flash", partition, file]).then((stdout) => {
-        resolve(true);
+        resolve();
       }).catch((error) => {
-        reject(error);
+        reject("flashing failed: " + error);
       });
     });
   }
@@ -66,6 +66,23 @@ class Fastboot {
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
+
+  // Flash image to a partition
+  // [ {partition, file} ]
+  flashArray(images) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      function flashNext(i) {
+        _this.flash(images[i].partition, images[i].file).then(() => {
+          if (i+1 < images.length) flashNext(i+1);
+          else resolve();
+        }).catch((error) => {
+          reject(error);
+        });
+      }
+      flashNext(0);
+    });
+  }
 
   // Find out if a device can be seen by fastboot
   hasAccess() {

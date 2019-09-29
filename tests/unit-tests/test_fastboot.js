@@ -121,8 +121,24 @@ describe('Fastboot module', function() {
   });
   describe("convenience functions", function() {
     describe("flashArray()", function() {
-      it("should resolve once everything has been flashed");
-      it("should reject if flashing failed");
+      it("should resolve if flashed successfully", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.flashArray([{partition:"p",file:"f"},{partition:"p",file:"f"}]).then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["flash", "p", "f"]);
+        });
+      });
+      it("should reject if flashing failed", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.flashArray([
+          {partition:"p",file:"f"},
+          {partition:"p",file:"f"}
+        ])).to.have.been.rejectedWith("flashing failed");
+      });
       it("should report progress");
     });
     describe("waitForDevice()", function() {
