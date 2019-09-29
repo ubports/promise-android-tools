@@ -308,5 +308,17 @@ describe('Adb module', function() {
       it("should be rejected if partition can't be re-mounted");
       it("should resolve if partition was formated successfully");
     });
+    describe("wipeCache()", function() {
+      it("should resolve if recovery.fstab can not be read but rm was successfull", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+        const logSpy = sinon.spy();
+        const adb = new Adb({exec: execFake, log: logSpy});
+        return adb.wipeCache().then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "cat", "/etc/recovery.fstab"]);
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "shell", "rm", "-rf", "/cache/*"]);
+          expect(execFake).to.not.have.been.calledThrice;
+        });
+      });
+    });
   });
 });

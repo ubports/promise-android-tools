@@ -304,6 +304,20 @@ class Adb {
       });
     });
   }
+
+  // If cache can not be formated, rm it
+  wipeCache() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.format("cache").catch(() => {
+        _this.shell(["rm", "-rf", "/cache/*"]).then(() => {
+          resolve();
+        }).catch(() => {
+          reject("wiping cache failed");
+        });
+      });
+    });
+  }
 }
 
 module.exports = Adb;
