@@ -67,8 +67,8 @@ describe('Fastboot module', function() {
           exec("node tests/test-data/fake_executable.js " + args.join(" "), callback);
         };
         const logStub = sinon.stub();
-        const adb = new Fastboot({exec: execStub, log: logStub});
-        return adb.execCommand(["some", "test", "arguments"]).then((r, r2, r3) => {
+        const fastboot = new Fastboot({exec: execStub, log: logStub});
+        return fastboot.execCommand(["some", "test", "arguments"]).then((r, r2, r3) => {
           expect(r).to.equal("some test arguments");
         });
       });
@@ -107,6 +107,34 @@ describe('Fastboot module', function() {
     describe("oemLock()", function() {
       it("should resolve once locked");
       it("should reject if locking failed");
+    });
+  });
+  describe("convenience functions", function() {
+    describe("waitForDevice()", function() {
+      it("should resolve immediately", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, "0123456789ABCDEF	fastboot"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.waitForDevice(5).then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["devices"]);
+        });
+      });
+    });
+    describe("stopWaiting()", function() {
+      it("should quietly stop waiting", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return new Promise(function(resolve, reject) {
+          const wait = fastboot.waitForDevice(5);
+          setTimeout(() => {
+            fastboot.stopWaiting();
+            expect(wait).to.be.rejectedWith("stopped waiting");
+            resolve();
+          }, 10)
+        });
+      });
     });
   });
 });

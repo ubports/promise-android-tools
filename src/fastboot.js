@@ -20,15 +20,19 @@
 const fs = require("fs");
 const path = require("path");
 const exec = require('child_process').exec;
+const events = require('events');
 const common = require("./common.js");
 
-const DEFAULT_EXEC = (args, callback) => { exec("fastboot", args, callback); };
+class Event extends events { };
+
+const DEFAULT_EXEC = (args, callback) => { exec((["fastboot"].concat(args)).join(" "), undefined, callback); };
 const DEFAULT_LOG = console.log;
 
 class Fastboot {
   constructor(options) {
     this.exec = DEFAULT_EXEC;
     this.log = DEFAULT_LOG;
+    this.fastbootEvent = new Event();
 
     if (options) {
       if (options.exec) this.exec = options.exec;
@@ -36,16 +40,59 @@ class Fastboot {
     }
   }
 
-  // Exec a command with port argument
+  // Exec a command
   execCommand(args) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.exec((args), (error, stdout, stderr) => {
+      _this.exec(args, (error, stdout, stderr) => {
         if (error) reject(common.handleError(error, stdout, (stderr ? stderr.trim() : undefined)));
         else if (stdout) resolve(stdout.trim());
         else resolve();
       });
     });
+  }
+
+  // Find out if a device can be seen by fastboot
+  hasAccess() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["devices"]).then((stdout) => {
+        if(stdout && stdout.includes("fastboot")) resolve(true);
+        else resolve(false);
+      }).catch((error) => {
+        reject(error);
+      });
+    });
+  }
+
+  // Wait for a device
+  waitForDevice(timeout) {
+    if (!timeout) timeout = 2000;
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      let timer = setInterval(() => {
+        _this.hasAccess().then((access) => {
+          if (access) {
+            clearInterval(timer);
+            resolve();
+          }
+        }).catch((error) => {
+          if (error) {
+            clearInterval(timer);
+            reject(error);
+          }
+        });;
+      }, timeout);
+      _this.fastbootEvent.once("stop", () => {
+        clearInterval(timer);
+        reject("stopped waiting");
+      });
+    });
+  }
+
+  // Stop waiting for a device
+  stopWaiting() {
+    this.fastbootEvent.emit("stop");
   }
 }
 
