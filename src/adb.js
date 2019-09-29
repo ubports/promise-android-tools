@@ -162,6 +162,24 @@ class Adb {
       });
     });
   }
+
+  // Wait for a device
+  waitForDevice() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      let timer = setInterval(() => {
+        _this.hasAccess().then((access) => {
+          if (access) {
+            clearInterval(timer);
+            resolve();
+          }
+        }).catch((error, stderr) => {
+          clearInterval(timer);
+          reject(error, stderr);
+        });;
+      }, 1500);
+    });
+  }
 }
 
 module.exports = Adb;
