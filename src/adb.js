@@ -97,6 +97,17 @@ class Adb {
       });
     });
   }
+
+  shell(args) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execPort(["shell"].concat(args)).then((stdout) => {
+        resolve(stdout.replace("\n",""));
+      }).catch((error, stderr) => {
+        reject(error, stderr);
+      });
+    });
+  }
 }
 
 module.exports = Adb;
@@ -122,7 +133,6 @@ module.exports = Adb;
 // disconnect
 // install
 // push
-// shell
 // version
 // emu
 // jdwp
