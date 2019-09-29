@@ -18,21 +18,85 @@
  */
 
 const fs = require('fs');
-const request = require('request');
-
+const exec = require('child_process').exec;
 const chai = require('chai');
-var sinonChai = require("sinon-chai");
-var expect = chai.expect;
+const sinon = require('sinon');
+const chaiAsPromised = require("chai-as-promised");
+const sinonChai = require("sinon-chai");
+const expect = chai.expect;
 chai.use(sinonChai);
+chai.use(chaiAsPromised);
 
 const Fastboot = require('../../src/module.js').Fastboot;
 
 describe('Fastboot module', function() {
   describe("constructor()", function() {
-    it("should create default fastboot", function() {
+    it("should create default fastboot when called without arguments", function() {
       const fastboot = new Fastboot();
       expect(fastboot.exec).to.exist;
       expect(fastboot.log).to.equal(console.log);
+    });
+    it("should create default fastboot when called with unrelated object", function() {
+      const fastboot = new Fastboot({ });
+      expect(fastboot.exec).to.exist;
+      expect(fastboot.log).to.equal(console.log);
+    });
+    it("should create custom fastboot when called with valid options", function() {
+      const execStub = sinon.stub();
+      const logStub = sinon.stub();
+      const fastboot = new Fastboot({exec: execStub, log: logStub});
+      expect(fastboot.exec).to.equal(execStub);
+      expect(fastboot.exec).to.not.equal(logStub);
+      expect(fastboot.log).to.equal(logStub);
+      expect(fastboot.log).to.not.equal(execStub);
+    });
+  });
+  describe("private functions", function() {
+    describe("exec()", function() {
+      it("should call the specified function", function() {
+        const execSpy = sinon.spy();
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execSpy, log: logSpy});
+        fastboot.exec("This is an argument");
+        expect(execSpy).to.have.been.calledWith("This is an argument");
+      });
+    });
+    describe("execCommand()", function() {
+      it("should call an executable with port argument", function() {
+        const execStub = (args, callback) => {
+          exec("node tests/test-data/fake_executable.js " + args.join(" "), callback);
+        };
+        const logStub = sinon.stub();
+        const adb = new Fastboot({exec: execStub, log: logStub});
+        return adb.execCommand(["some", "test", "arguments"]).then((r, r2, r3) => {
+          expect(r).to.equal("some test arguments");
+        });
+      });
+    });
+  });
+  describe("basic functions", function() {
+    describe("waitForDevice()", function() {
+      it("should resolve once a device is detected");
+    });
+    describe("flash()", function() {
+      it("should resolve if flashed successfully");
+      it("should reject if flashing failed");
+    });
+    describe("boot()", function() {
+      it("should resolve once booted");
+      it("should reject if boot failed");
+    });
+    describe("format()", function() {
+      it("should resolve once formated");
+      it("should reject if formatting failed");
+    });
+    describe("oemUnlock()", function() {
+      it("should resolve once unlocked");
+      it("should reject if unlocking failed");
+    });
+    describe("oemLock()", function() {
+      it("should resolve once locked");
+      it("should reject if locking failed");
     });
   });
 });

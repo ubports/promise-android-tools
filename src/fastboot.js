@@ -31,9 +31,21 @@ class Fastboot {
     this.log = DEFAULT_LOG;
 
     if (options) {
-      this.exec = options.exec;
-      this.log = options.log;
+      if (options.exec) this.exec = options.exec;
+      if (options.log) this.log = options.log;
     }
+  }
+
+  // Exec a command with port argument
+  execCommand(args) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.exec((args), (error, stdout, stderr) => {
+        if (error) reject(common.handleError(error, stdout, (stderr ? stderr.trim() : undefined)));
+        else if (stdout) resolve(stdout.trim());
+        else resolve();
+      });
+    });
   }
 }
 
