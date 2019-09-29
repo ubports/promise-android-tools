@@ -57,7 +57,7 @@ describe('Adb module', function() {
   describe("execPort()", function() {
     it("should call an executable with port argument", function() {
       const execStub = (args, callback) => {
-        exec("tests/test-data/fake_executable.js " + args.join(" "), callback);
+        exec("node tests/test-data/fake_executable.js " + args.join(" "), callback);
       };
       const logStub = sinon.stub();
       const adb = new Adb({exec: execStub, log: logStub, port: 1234});
