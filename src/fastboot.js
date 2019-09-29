@@ -63,6 +63,17 @@ class Fastboot {
     });
   }
 
+  boot(image) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["boot", partition]).then((stdout) => {
+        resolve();
+      }).catch((error) => {
+        reject("booting failed: " + error);
+      });
+    });
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
