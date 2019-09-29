@@ -140,6 +140,7 @@ class Adb {
   //////////////////////////////////////////////////////////////////////////////
 
   // Push an array of files and report progress
+  // { src, dest }
   pushArray(files, progress) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -161,11 +162,11 @@ class Adb {
           progress(downloadedSize/totalSize);
         }
         function pushNext(i) {
-          push(files[i].src, files[i].dest).then(() => {
+          _this.push(files[i].src, files[i].dest).then(() => {
             if (i+1 < files.length) {
               pushNext(i+1);
             } else {
-              _this.adbEvent.removeEventListener("push:progress:size", progressSize);
+              _this.adbEvent.removeListener("push:progress:size", progressSize);
               resolve();
             }
           });

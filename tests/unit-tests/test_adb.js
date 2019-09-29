@@ -170,8 +170,24 @@ describe('Adb module', function() {
   });
   describe("convenience functions", function() {
     describe("pushArray()", function() {
-      it("should reject on empty array");
-      it("should push files");
+      it("should reject on empty array", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+        const logSpy = sinon.spy();
+        const adb = new Adb({exec: execFake, log: logSpy});
+        return expect(adb.pushArray([])).to.have.been.rejected;
+      });
+      it("should push files", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
+        const logSpy = sinon.spy();
+        const fakeArray = [
+          {src: "tests/test-data/test_file", dest: "/tmp/target"},
+          {src: "tests/test-data/test_file", dest: "/tmp/target"}
+        ]
+        const adb = new Adb({exec: execFake, log: logSpy});
+        return adb.pushArray(fakeArray).then(() => {
+          expect(execFake).to.have.been.calledTwice;
+        });
+      });
       it("should quietly stop waiting");
     });
     describe("getDeviceName()", function() {
