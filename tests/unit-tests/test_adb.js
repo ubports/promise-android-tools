@@ -139,7 +139,16 @@ describe('Adb module', function() {
       });
     });
     describe("push()", function() {
-      it("executable should be able to access files");
+      it("executable should be able to access files", function() {
+        const execStub = (args, callback) => {
+          exec("node tests/test-data/fake_fileaccesser.js " + args[args.length-2], callback);
+        };
+        const logSpy = sinon.spy();
+        const adb = new Adb({exec: execStub, log: logSpy});
+        return adb.push("tests/test-data/test_file", "/tmp/target").then((r) => {
+          expect(r).to.equal(undefined);
+        });
+      });
       it("should push file", function() {
         const execFake = sinon.fake((args, callback) => { callback(null, null, null); });
         const logSpy = sinon.spy();
