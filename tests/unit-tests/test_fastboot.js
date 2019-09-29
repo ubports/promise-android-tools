@@ -85,9 +85,6 @@ describe('Fastboot module', function() {
     });
   });
   describe("basic functions", function() {
-    describe("waitForDevice()", function() {
-      it("should resolve once a device is detected");
-    });
     describe("flash()", function() {
       it("should resolve if flashed successfully");
       it("should reject if flashing failed");
