@@ -155,10 +155,12 @@ describe('Adb module', function() {
         const logSpy = sinon.spy();
         const adb = new Adb({exec: execFake, log: logSpy});
         return adb.push("tests/test-data/test_file", "/tmp/target").then(() => {
-          if (process.platform != "darwin")
-            expect(execFake).to.have.been.calledWith(["-P", 5037, "push", "\"tests/test-data/test_file\"", "/tmp/target"]);
+          if (process.platform == "darwin")
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "push", "tests/test-data/test_file", "/tmp/target", "> /dev/null"]);
+          else if (process.platform == "win32")
+            expect(execFake).to.have.been.calledWith(["-P", 5037, "push", "\"tests/test-data/test_file\"", "/tmp/target", "> nul"]);
           else
-            expect(execFake).to.have.been.calledWith(["-P", 5037, "push", "tests/test-data/test_file", "/tmp/target"]);
+            expect(execFake).to.have.been.calledWith(["-P", 5037, "push", "\"tests/test-data/test_file\"", "/tmp/target", "> /dev/null"]);
         });
       });
       it("should reject if file is inaccessible", function() {

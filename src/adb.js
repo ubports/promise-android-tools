@@ -25,7 +25,7 @@ const common = require("./common.js");
 
 class Event extends events { };
 
-const DEFAULT_EXEC = (args, callback) => { exec((["adb"].concat(args)).join(" "), undefined, callback); };
+const DEFAULT_EXEC = (args, callback) => { exec((["adb"].concat(args)).join(" "), {options: {maxBuffer: 1024*1024*2}}, callback); };
 const DEFAULT_LOG = console.log;
 const DEFAULT_PORT = 5037;
 
@@ -128,10 +128,14 @@ class Adb {
         });
       }, 1000);
       var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
-      _this.execPort(["push", guardedfile, dest]).then((stdout) => {
+      // stdout needs to be muted to not exceed buffer on very large transmissions
+      _this.execPort(["push", guardedfile, dest, (process.platform == "win32" ? "> nul" : "> /dev/null")]).then((stdout) => {
         clearInterval(progressInterval);
         resolve();
-      }).catch(reject);
+      }).catch(e => {
+        reject("Push failed: " + e);
+        clearInterval(progressInterval);
+      });
     });
   }
 
@@ -187,7 +191,7 @@ class Adb {
               _this.adbEvent.removeListener("push:progress:size", progressSize);
               resolve();
             }
-          });
+          }).catch(e => reject("Failed to push file " + i + ": " + e));
         }
         _this.adbEvent.on("push:progress:size", progressSize);
         pushNext(0); // Begin pushing

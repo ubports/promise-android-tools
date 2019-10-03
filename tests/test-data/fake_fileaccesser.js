@@ -2,5 +2,5 @@
 
 const fs = require("fs");
 
-const [,, ...args] = process.argv;
+const [, ...args] = process.argv;
 fs.statSync(args[0])
