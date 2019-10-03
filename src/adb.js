@@ -235,7 +235,7 @@ class Adb {
     return new Promise(function(resolve, reject) {
       _this.shell(["getprop", "ro.product.device"]).then((stdout) => {
         if (!stdout) {
-          reject("getprop error");
+          reject("getprop error: no response");
         } else if (stdout.includes("getprop: not found")) {
           _this.shell(["cat", "default.prop"]).then((stdout) => {
             output.split("\n").forEach((prop) => {
@@ -243,11 +243,11 @@ class Adb {
                 resolve(prop.split("=")[1].replace(/\W/g, ""));
               }
             });
-          });
+          }).catch((e) => { reject("getprop error: failed to cat default.prop: " + e); });
         } else {
           resolve(stdout.replace(/\W/g, ""));
         }
-      }).catch(reject);
+      }).catch((e) => { reject("getprop error: " + e); });
     });
   }
 
