@@ -74,6 +74,28 @@ class Fastboot {
     });
   }
 
+  update(image) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["update", image]).then((stdout) => {
+        resolve();
+      }).catch((error) => {
+        reject("update failed: " + error);
+      });
+    });
+  }
+
+  rebootBootloader() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.execCommand(["reboot-bootloader"]).then((stdout) => {
+        resolve();
+      }).catch((error) => {
+        reject("rebooting to bootloader failed: " + error);
+      });
+    });
+  }
+
   format(partition) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -187,14 +209,9 @@ class Fastboot {
 module.exports = Fastboot;
 
 // Missing functions
-// boot
-// erase
 // getvar
-// reboot-bootloader
 // continue
-// flash
 // oem
-// update
 // devices
 // flashall
 // reboot

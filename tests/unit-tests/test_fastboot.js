@@ -119,6 +119,40 @@ describe('Fastboot module', function() {
         return expect(fastboot.boot("/path/to/image")).to.have.been.rejectedWith("error: true")
       });
     });
+    describe("update()", function() {
+      it("should resolve if updating works", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.update("/path/to/image").then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["update", "/path/to/image"]);
+        });
+      });
+      it("should reject if updating fails", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.update("/path/to/image")).to.have.been.rejectedWith("error: true")
+      });
+    });
+    describe("rebootBootloader()", function() {
+      it("should resolve on reboot", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.rebootBootloader().then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["reboot-bootloader"]);
+        });
+      });
+      it("should reject if rebooting fails", function() {
+        const execFake = sinon.fake((args, callback) => { callback(true, "everything exploded"); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return expect(fastboot.rebootBootloader()).to.have.been.rejectedWith("error: true")
+      });
+    });
     describe("format()", function() {
       it("should resolve after formatting", function() {
         const execFake = sinon.fake((args, callback) => { callback(null, null); });
