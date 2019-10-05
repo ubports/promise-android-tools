@@ -51,7 +51,7 @@ class Adb {
   }
 
   // Exec a command with port argument
-  execPort(args) {
+  execCommand(args) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
@@ -69,7 +69,7 @@ class Adb {
       _this.adbEvent.emit("stop");
       _this.killServer().then(() => {
         _this.log("starting adb server on port " + _this.port);
-        _this.execPort("start-server").then((stdout) => {
+        _this.execCommand("start-server").then((stdout) => {
           resolve();
         }).catch(reject);
       }).catch(reject);
@@ -81,7 +81,7 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.log("killing all running adb servers");
-      _this.execPort("kill-server").then((stdout) => {
+      _this.execCommand("kill-server").then((stdout) => {
         resolve();
       }).catch(reject);
     });
@@ -92,7 +92,7 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.log("killing all running adb servers");
-      _this.execPort("get-serialno").then((stdout) => {
+      _this.execCommand("get-serialno").then((stdout) => {
         if (stdout.length == 16) resolve(stdout.replace("\n",""));
         else reject("invalid device id");
       }).catch(reject);
@@ -102,7 +102,7 @@ class Adb {
   shell(args) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.execPort(["shell"].concat(args)).then((stdout) => {
+      _this.execCommand(["shell"].concat(args)).then((stdout) => {
         if (stdout) resolve(stdout.replace("\n",""));
         else resolve();
       }).catch(reject);
@@ -129,7 +129,7 @@ class Adb {
       }, 1000);
       var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
       // stdout needs to be muted to not exceed buffer on very large transmissions
-      _this.execPort(["push", guardedfile, dest, (process.platform == "win32" ? "> nul" : "> /dev/null")]).then((stdout) => {
+      _this.execCommand(["push", guardedfile, dest, (process.platform == "win32" ? "> nul" : "> /dev/null")]).then((stdout) => {
         clearInterval(progressInterval);
         resolve();
       }).catch(e => {
@@ -146,7 +146,7 @@ class Adb {
       if (["system", "recovery", "bootloader"].indexOf(state) == -1) {
         reject("unknown state: " + state)
       } else {
-        _this.execPort(["reboot", state]).then((stdout) => {
+        _this.execCommand(["reboot", state]).then((stdout) => {
           if (stdout && stdout.includes("failed")) reject("reboot failed");
           else resolve()
         }).catch((e) => {
