@@ -64,14 +64,14 @@ describe('Adb module', function() {
         expect(execSpy).to.have.been.calledWith("This is an argument");
       });
     })
-    describe("execPort()", function() {
+    describe("execCommand()", function() {
       it("should call an executable with port argument", function() {
         const execStub = (args, callback) => {
           exec("node tests/test-data/fake_executable.js " + args.join(" "), callback);
         };
         const logStub = sinon.stub();
         const adb = new Adb({exec: execStub, log: logStub, port: 1234});
-        return adb.execPort().then((r, r2, r3) => {
+        return adb.execCommand().then((r, r2, r3) => {
           expect(r).to.equal("-P 1234");
         });
       });
