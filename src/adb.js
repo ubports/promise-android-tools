@@ -99,10 +99,11 @@ class Adb {
   // Get the devices serial number
   getSerialno() {
     var _this = this;
+    var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
     return new Promise(function(resolve, reject) {
       _this.log("killing all running adb servers");
       _this.execPort("get-serialno").then((stdout) => {
-        if (stdout.length == 16) {
+        if (stdout.match(Exp)) {
             resolve(stdout.replace("\n",""));
         } else if (stdout && stdout.includes("unknown")) {
             _this.hasAccess().then((access) => {
