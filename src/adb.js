@@ -101,7 +101,7 @@ class Adb {
     var _this = this;
     var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
     return new Promise(function(resolve, reject) {
-      _this.log("killing all running adb servers");
+      _this.log("getting serial number");
       _this.execCommand("get-serialno").then((stdout) => {
         if (stdout && stdout.includes("unknown")) {
             _this.hasAccess().then((access) => {
