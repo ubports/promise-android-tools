@@ -91,7 +91,7 @@ class Adb {
   getSerialno() {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.log("killing all running adb servers");
+      _this.log("getting serial number");
       _this.execCommand("get-serialno").then((stdout) => {
         if (stdout.length == 16) resolve(stdout.replace("\n",""));
         else reject("invalid device id");
