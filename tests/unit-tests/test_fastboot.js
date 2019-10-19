@@ -126,7 +126,24 @@ describe('Fastboot module', function() {
         const fastboot = new Fastboot({exec: execFake, log: logSpy});
         return fastboot.update("/path/to/image").then((r) => {
           expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["update", "/path/to/image"]);
+        });
+      });
+      it("should not wipe if not specified", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.update("/path/to/image").then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["", "update", "/path/to/image"]);
+        });
+      });
+      it("should wipe if specified", function() {
+        const execFake = sinon.fake((args, callback) => { callback(null, null); });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({exec: execFake, log: logSpy});
+        return fastboot.update("/path/to/image", true).then((r) => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["-w", "update", "/path/to/image"]);
         });
       });
       it("should reject if updating fails", function() {
