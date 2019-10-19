@@ -55,9 +55,18 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
-        if (error) reject(common.handleError(error, stdout, (stderr ? stderr.trim() : undefined)));
-        else if (stdout) resolve(stdout.trim());
-        else resolve();
+        if (error) {
+            reject(common.handleError(error, stdout, (stderr ? stderr.trim() : undefined)));
+        }
+        else if (stdout) {
+            if (stdout.includes("no permissions")) {
+                reject("no permissions");
+            } else {
+                resolve(stdout.trim());
+            }
+        } else {
+            resolve();
+        }
       });
     });
   }
@@ -90,11 +99,32 @@ class Adb {
   // Get the devices serial number
   getSerialno() {
     var _this = this;
+    var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
     return new Promise(function(resolve, reject) {
       _this.log("getting serial number");
       _this.execCommand("get-serialno").then((stdout) => {
-        if (stdout.length == 16) resolve(stdout.replace("\n",""));
-        else reject("invalid device id");
+        if (stdout && stdout.includes("unknown")) {
+            _this.hasAccess().then((access) => {
+                if (access) {
+                    reject("device accessible. Unkown error");
+                } else {
+                    reject("no accessible device");
+                }
+            }).catch((error) => {
+                if (error.includes("not found")) {
+                    reject("no device found");
+                } else if (error.includes("insufficient permissions")) {
+                    reject("no permissions");
+                } else {
+                    //If we arrive here the error is unknown. It will be usefull to have it on the screen
+                    reject(error);
+                }
+            });
+        } else if (stdout && stdout.match(Exp)) {
+            resolve(stdout.replace("\n",""));
+        } else {
+            reject("invalid device id");
+        }
       }).catch(reject);
     });
   }
