@@ -261,7 +261,7 @@ class Adb {
             clearInterval(timer);
             reject(error);
           }
-        });;
+        });
       }, timeout);
       _this.adbEvent.once("stop", () => {
         clearInterval(timer);

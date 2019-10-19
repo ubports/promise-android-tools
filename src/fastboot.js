@@ -74,10 +74,10 @@ class Fastboot {
     });
   }
 
-  update(image) {
+  update(image, wipe) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.execCommand(["update", image]).then((stdout) => {
+      _this.execCommand([(wipe ? "-w" : ""), "update", image]).then((stdout) => {
         resolve();
       }).catch((error) => {
         reject("update failed: " + error);
