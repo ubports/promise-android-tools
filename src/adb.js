@@ -19,13 +19,19 @@
 
 const fs = require("fs");
 const path = require("path");
-const exec = require('child_process').exec;
-const events = require('events');
+const exec = require("child_process").exec;
+const events = require("events");
 const common = require("./common.js");
 
-class Event extends events { };
+class Event extends events {}
 
-const DEFAULT_EXEC = (args, callback) => { exec((["adb"].concat(args)).join(" "), {options: {maxBuffer: 1024*1024*2}}, callback); };
+const DEFAULT_EXEC = (args, callback) => {
+  exec(
+    ["adb"].concat(args).join(" "),
+    { options: { maxBuffer: 1024 * 1024 * 2 } },
+    callback
+  );
+};
 const DEFAULT_LOG = console.log;
 const DEFAULT_PORT = 5037;
 
@@ -56,16 +62,21 @@ class Adb {
     return new Promise(function(resolve, reject) {
       _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
         if (error) {
-            reject(common.handleError(error, stdout, (stderr ? stderr.trim() : undefined)));
-        }
-        else if (stdout) {
-            if (stdout.includes("no permissions")) {
-                reject("no permissions");
-            } else {
-                resolve(stdout.trim());
-            }
+          reject(
+            common.handleError(
+              error,
+              stdout,
+              stderr ? stderr.trim() : undefined
+            )
+          );
+        } else if (stdout) {
+          if (stdout.includes("no permissions")) {
+            reject("no permissions");
+          } else {
+            resolve(stdout.trim());
+          }
         } else {
-            resolve();
+          resolve();
         }
       });
     });
@@ -76,12 +87,18 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.adbEvent.emit("stop");
-      _this.killServer().then(() => {
-        _this.log("starting adb server on port " + _this.port);
-        _this.execCommand("start-server").then((stdout) => {
-          resolve();
-        }).catch(reject);
-      }).catch(reject);
+      _this
+        .killServer()
+        .then(() => {
+          _this.log("starting adb server on port " + _this.port);
+          _this
+            .execCommand("start-server")
+            .then(stdout => {
+              resolve();
+            })
+            .catch(reject);
+        })
+        .catch(reject);
     });
   }
 
@@ -90,9 +107,12 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.log("killing all running adb servers");
-      _this.execCommand("kill-server").then((stdout) => {
-        resolve();
-      }).catch(reject);
+      _this
+        .execCommand("kill-server")
+        .then(stdout => {
+          resolve();
+        })
+        .catch(reject);
     });
   }
 
@@ -102,40 +122,49 @@ class Adb {
     var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
     return new Promise(function(resolve, reject) {
       _this.log("getting serial number");
-      _this.execCommand("get-serialno").then((stdout) => {
-        if (stdout && stdout.includes("unknown")) {
-            _this.hasAccess().then((access) => {
+      _this
+        .execCommand("get-serialno")
+        .then(stdout => {
+          if (stdout && stdout.includes("unknown")) {
+            _this
+              .hasAccess()
+              .then(access => {
                 if (access) {
-                    reject("device accessible. Unkown error");
+                  reject("device accessible. Unkown error");
                 } else {
-                    reject("no accessible device");
+                  reject("no accessible device");
                 }
-            }).catch((error) => {
+              })
+              .catch(error => {
                 if (error.includes("not found")) {
-                    reject("no device found");
+                  reject("no device found");
                 } else if (error.includes("insufficient permissions")) {
-                    reject("no permissions");
+                  reject("no permissions");
                 } else {
-                    //If we arrive here the error is unknown. It will be usefull to have it on the screen
-                    reject(error);
+                  //If we arrive here the error is unknown. It will be usefull to have it on the screen
+                  reject(error);
                 }
-            });
-        } else if (stdout && stdout.match(Exp)) {
-            resolve(stdout.replace("\n",""));
-        } else {
+              });
+          } else if (stdout && stdout.match(Exp)) {
+            resolve(stdout.replace("\n", ""));
+          } else {
             reject("invalid device id");
-        }
-      }).catch(reject);
+          }
+        })
+        .catch(reject);
     });
   }
 
   shell(args) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.execCommand(["shell"].concat(args)).then((stdout) => {
-        if (stdout) resolve(stdout.replace("\n",""));
-        else resolve();
-      }).catch(reject);
+      _this
+        .execCommand(["shell"].concat(args))
+        .then(stdout => {
+          if (stdout) resolve(stdout.replace("\n", ""));
+          else resolve();
+        })
+        .catch(reject);
     });
   }
 
@@ -152,20 +181,33 @@ class Adb {
       var fileSize = fs.statSync(file)["size"];
       var lastSize = 0;
       var progressInterval = setInterval(() => {
-        _this.shell(["stat", "-t", dest + "/" + path.basename(file)]).then((stat) => {
-          _this.adbEvent.emit("push:progress:size", eval(stat.split(" ")[1])-lastSize);
-          lastSize = eval(stat.split(" ")[1]);
-        });
+        _this
+          .shell(["stat", "-t", dest + "/" + path.basename(file)])
+          .then(stat => {
+            _this.adbEvent.emit(
+              "push:progress:size",
+              eval(stat.split(" ")[1]) - lastSize
+            );
+            lastSize = eval(stat.split(" ")[1]);
+          });
       }, 1000);
       var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
       // stdout needs to be muted to not exceed buffer on very large transmissions
-      _this.execCommand(["push", guardedfile, dest, (process.platform == "win32" ? "> nul" : "> /dev/null")]).then((stdout) => {
-        clearInterval(progressInterval);
-        resolve();
-      }).catch(e => {
-        reject("Push failed: " + e);
-        clearInterval(progressInterval);
-      });
+      _this
+        .execCommand([
+          "push",
+          guardedfile,
+          dest,
+          process.platform == "win32" ? "> nul" : "> /dev/null"
+        ])
+        .then(stdout => {
+          clearInterval(progressInterval);
+          resolve();
+        })
+        .catch(e => {
+          reject("Push failed: " + e);
+          clearInterval(progressInterval);
+        });
     });
   }
 
@@ -174,15 +216,18 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       if (["system", "recovery", "bootloader"].indexOf(state) == -1) {
-        reject("unknown state: " + state)
+        reject("unknown state: " + state);
       } else {
-        _this.execCommand(["reboot", state]).then((stdout) => {
-          if (stdout && stdout.includes("failed")) reject("reboot failed");
-          else resolve()
-        }).catch((e) => {
-          console.log(e)
-          reject("reboot failed");
-        });
+        _this
+          .execCommand(["reboot", state])
+          .then(stdout => {
+            if (stdout && stdout.includes("failed")) reject("reboot failed");
+            else resolve();
+          })
+          .catch(e => {
+            console.log(e);
+            reject("reboot failed");
+          });
       }
     });
   }
@@ -202,7 +247,7 @@ class Adb {
       } else {
         var totalSize = 0;
         var pushedSize = 0;
-        files.forEach((file) => {
+        files.forEach(file => {
           try {
             totalSize += fs.statSync(file.src)["size"];
           } catch (e) {
@@ -211,17 +256,23 @@ class Adb {
         });
         function progressSize(s) {
           pushedSize += s;
-          progress(pushedSize/totalSize);
+          progress(pushedSize / totalSize);
         }
         function pushNext(i) {
-          _this.push(files[i].src, files[i].dest).then(() => {
-            if (i+1 < files.length) {
-              pushNext(i+1);
-            } else {
-              _this.adbEvent.removeListener("push:progress:size", progressSize);
-              resolve();
-            }
-          }).catch(e => reject("Failed to push file " + i + ": " + e));
+          _this
+            .push(files[i].src, files[i].dest)
+            .then(() => {
+              if (i + 1 < files.length) {
+                pushNext(i + 1);
+              } else {
+                _this.adbEvent.removeListener(
+                  "push:progress:size",
+                  progressSize
+                );
+                resolve();
+              }
+            })
+            .catch(e => reject("Failed to push file " + i + ": " + e));
         }
         _this.adbEvent.on("push:progress:size", progressSize);
         pushNext(0); // Begin pushing
@@ -233,21 +284,31 @@ class Adb {
   getDeviceName() {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.shell(["getprop", "ro.product.device"]).then((stdout) => {
-        if (!stdout) {
-          reject("getprop error: no response");
-        } else if (stdout.includes("getprop: not found")) {
-          _this.shell(["cat", "default.prop"]).then((stdout) => {
-            output.split("\n").forEach((prop) => {
-              if (prop.includes("ro.product.device")) {
-                resolve(prop.split("=")[1].replace(/\W/g, ""));
-              }
-            });
-          }).catch((e) => { reject("getprop error: failed to cat default.prop: " + e); });
-        } else {
-          resolve(stdout.replace(/\W/g, ""));
-        }
-      }).catch((e) => { reject("getprop error: " + e); });
+      _this
+        .shell(["getprop", "ro.product.device"])
+        .then(stdout => {
+          if (!stdout) {
+            reject("getprop error: no response");
+          } else if (stdout.includes("getprop: not found")) {
+            _this
+              .shell(["cat", "default.prop"])
+              .then(stdout => {
+                output.split("\n").forEach(prop => {
+                  if (prop.includes("ro.product.device")) {
+                    resolve(prop.split("=")[1].replace(/\W/g, ""));
+                  }
+                });
+              })
+              .catch(e => {
+                reject("getprop error: failed to cat default.prop: " + e);
+              });
+          } else {
+            resolve(stdout.replace(/\W/g, ""));
+          }
+        })
+        .catch(e => {
+          reject("getprop error: " + e);
+        });
     });
   }
 
@@ -255,9 +316,12 @@ class Adb {
   getOs() {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.shell(["cat", "/etc/system-image/channel.ini"]).then((stdout) => {
-        resolve(stdout ? "ubuntutouch" : "android");
-      }).catch(reject);
+      _this
+        .shell(["cat", "/etc/system-image/channel.ini"])
+        .then(stdout => {
+          resolve(stdout ? "ubuntutouch" : "android");
+        })
+        .catch(reject);
     });
   }
 
@@ -265,13 +329,16 @@ class Adb {
   hasAccess() {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.shell(["echo", "."]).then((stdout) => {
-        if(stdout == ".") resolve(true);
-        else reject("unexpected response: " + stdout);
-      }).catch((error) => {
-        if (error == "no device") resolve(false);
-        else reject(error);
-      });
+      _this
+        .shell(["echo", "."])
+        .then(stdout => {
+          if (stdout == ".") resolve(true);
+          else reject("unexpected response: " + stdout);
+        })
+        .catch(error => {
+          if (error == "no device") resolve(false);
+          else reject(error);
+        });
     });
   }
 
@@ -281,17 +348,20 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       let timer = setInterval(() => {
-        _this.hasAccess().then((access) => {
-          if (access) {
-            clearInterval(timer);
-            resolve();
-          }
-        }).catch((error) => {
-          if (error) {
-            clearInterval(timer);
-            reject(error);
-          }
-        });
+        _this
+          .hasAccess()
+          .then(access => {
+            if (access) {
+              clearInterval(timer);
+              resolve();
+            }
+          })
+          .catch(error => {
+            if (error) {
+              clearInterval(timer);
+              reject(error);
+            }
+          });
       }, timeout);
       _this.adbEvent.once("stop", () => {
         clearInterval(timer);
@@ -309,33 +379,48 @@ class Adb {
   format(partition) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.shell(["cat", "/etc/recovery.fstab"]).then((fstab_) => {
-        if (!fstab_) {
-          reject("unable to read recovery.fstab");
-        } else {
-          var fstab = fstab_.split("\n");
-          var block;
-          fstab.forEach((fs) => {
-            if (!fs.includes(partition) || block) return;
-            block = fs.split(" ")[0];
-            if (!block.startsWith("/dev")) block = false;
-          });
-          if (!block) {
-            reject("unable to read partition " + partition);
+      _this
+        .shell(["cat", "/etc/recovery.fstab"])
+        .then(fstab_ => {
+          if (!fstab_) {
+            reject("unable to read recovery.fstab");
           } else {
-            _this.shell("umount /"+partition).then(() => {
-              _this.shell("make_ext4fs " + block).then(() => {
-                _this.shell("mount /"+partition).then((error) => {
-                  if (error) reject("failed to format " + partition + " " + error);
-                  else resolve();
-                }).catch(reject);
-              }).catch(reject);
-            }).catch(reject);
+            var fstab = fstab_.split("\n");
+            var block;
+            fstab.forEach(fs => {
+              if (!fs.includes(partition) || block) return;
+              block = fs.split(" ")[0];
+              if (!block.startsWith("/dev")) block = false;
+            });
+            if (!block) {
+              reject("unable to read partition " + partition);
+            } else {
+              _this
+                .shell("umount /" + partition)
+                .then(() => {
+                  _this
+                    .shell("make_ext4fs " + block)
+                    .then(() => {
+                      _this
+                        .shell("mount /" + partition)
+                        .then(error => {
+                          if (error)
+                            reject(
+                              "failed to format " + partition + " " + error
+                            );
+                          else resolve();
+                        })
+                        .catch(reject);
+                    })
+                    .catch(reject);
+                })
+                .catch(reject);
+            }
           }
-        }
-      }).catch((error) => {
-        reject("failed to format " + partition + ": " + error);
-      });
+        })
+        .catch(error => {
+          reject("failed to format " + partition + ": " + error);
+        });
     });
   }
 
@@ -343,15 +428,21 @@ class Adb {
   wipeCache() {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.format("cache").catch(() => {
-        _this.shell(["rm", "-rf", "/cache/*"]).then(() => {
+      _this
+        .format("cache")
+        .catch(() => {
+          _this
+            .shell(["rm", "-rf", "/cache/*"])
+            .then(() => {
+              resolve();
+            })
+            .catch(() => {
+              reject("wiping cache failed");
+            });
+        })
+        .then(() => {
           resolve();
-        }).catch(() => {
-          reject("wiping cache failed");
         });
-      }).then(() => {
-        resolve();
-      });
     });
   }
 }

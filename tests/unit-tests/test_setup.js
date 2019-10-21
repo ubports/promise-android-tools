@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const sinon = require('sinon');
-const chai = require('chai');
+const sinon = require("sinon");
+const chai = require("chai");
 
-beforeEach(function () {
+beforeEach(function() {
   this.sandbox = sinon.createSandbox();
 });
 
-afterEach(function () {
+afterEach(function() {
   this.sandbox.restore();
 });
