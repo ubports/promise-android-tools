@@ -14,5 +14,5 @@ node_js:
   - "6"
   - "8"
   - "10"
-script: "npm run-script test-travis"
+script: "npm run-script lint && npm run-script test-travis"
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
