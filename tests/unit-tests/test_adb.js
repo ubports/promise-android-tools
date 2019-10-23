@@ -227,6 +227,28 @@ describe("Adb module", function() {
         return expect(adb.push("this/file/does/not/exist", "/tmp/target")).to
           .have.been.rejected;
       });
+      it("should reject if stat failed", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("stat")) callback(true, "stdout", "stderr");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb
+          .push("tests/test-data/test_file", "/tmp/target", 1)
+          .catch(error => {
+            expect(error).to.equal(
+              "failed to stat: error: true\nstdout: stdout\nstderr: stderr"
+            );
+            expect(execFake).to.have.been.calledWith([
+              "-P",
+              5037,
+              "shell",
+              "stat",
+              "-t",
+              "/tmp/target/test_file"
+            ]);
+          });
+      });
     });
     describe("reboot()", function() {
       ["system", "recovery", "bootloader"].forEach(state => {

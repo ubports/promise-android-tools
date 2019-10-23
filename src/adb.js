@@ -166,7 +166,7 @@ class Adb {
     });
   }
 
-  push(file, dest) {
+  push(file, dest, interval) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       // Make sure file exists first
@@ -187,8 +187,12 @@ class Adb {
               eval(stat.split(" ")[1]) - lastSize
             );
             lastSize = eval(stat.split(" ")[1]);
+          })
+          .catch(e => {
+            clearInterval(progressInterval);
+            reject("failed to stat: " + e);
           });
-      }, 1000);
+      }, interval || 1000);
       var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
       // stdout needs to be muted to not exceed buffer on very large transmissions
       _this
@@ -203,8 +207,8 @@ class Adb {
           resolve();
         })
         .catch(e => {
-          reject("Push failed: " + e);
           clearInterval(progressInterval);
+          reject("Push failed: " + e);
         });
     });
   }
