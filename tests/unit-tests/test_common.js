@@ -17,26 +17,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require('fs');
-const request = require('request');
+const fs = require("fs");
+const request = require("request");
 
-const chai = require('chai');
+const chai = require("chai");
 var sinonChai = require("sinon-chai");
 var expect = chai.expect;
 chai.use(sinonChai);
 
-const common = require('../../src/common.js');
+const common = require("../../src/common.js");
 
 const recognizedErrors = [
   {
     expectedReturn: "no device",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "error: no devices/emulators found"
   },
   {
     expectedReturn: "device offline",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "error: error: device offline"
   },
@@ -48,63 +48,67 @@ const recognizedErrors = [
   },
   {
     expectedReturn: "low battery",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: low power, need battery charging.)"
   },
   {
     expectedReturn: "failed to boot",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote failure)"
   },
   {
     expectedReturn: "connection lost",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "this is an I/O error"
   },
   {
     expectedReturn: "connection lost",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (command write failed (No such device))"
   },
   {
     expectedReturn: "connection lost",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (command write failed (Success))"
   },
   {
     expectedReturn: "connection lost",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (status read failed (No such device))"
   },
   {
     expectedReturn: "connection lost",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (data transfer failure (Broken pipe))"
   },
   {
     expectedReturn: "connection lost",
-    error: {"killed": false, "code": 1, "signal": null, "cmd": "command"},
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (data transfer failure (Protocol error))"
   }
-]
+];
 
-describe('Common module', function() {
+describe("Common module", function() {
   describe("handleError()", function() {
-    recognizedErrors.forEach((re) => {
-      it("should return \"" + re.expectedReturn + "\"", function() {
-        expect(common.handleError(re.error, re.stdout, re.stderr)).to.equal(re.expectedReturn)
+    recognizedErrors.forEach(re => {
+      it('should return "' + re.expectedReturn + '"', function() {
+        expect(common.handleError(re.error, re.stdout, re.stderr)).to.equal(
+          re.expectedReturn
+        );
       });
     });
     it("should hide password in command", function() {
-      expect(common.handleError({cmd: "sudo command"})).to.equal("error: {\"cmd\":\"masked for security\"}\n");
+      expect(common.handleError({ cmd: "sudo command" })).to.equal(
+        'error: {"cmd":"masked for security"}\n'
+      );
     });
   });
 });
