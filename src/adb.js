@@ -109,9 +109,7 @@ class Adb {
       _this.log("killing all running adb servers");
       _this
         .execCommand("kill-server")
-        .then(stdout => {
-          resolve();
-        })
+        .then(resolve)
         .catch(reject);
     });
   }
@@ -224,10 +222,7 @@ class Adb {
             if (stdout && stdout.includes("failed")) reject("reboot failed");
             else resolve();
           })
-          .catch(e => {
-            console.log(e);
-            reject("reboot failed");
-          });
+          .catch(e => reject("reboot failed: " + e));
       }
     });
   }
@@ -430,18 +425,12 @@ class Adb {
     return new Promise(function(resolve, reject) {
       _this
         .format("cache")
+        .then(resolve)
         .catch(() => {
           _this
             .shell(["rm", "-rf", "/cache/*"])
-            .then(() => {
-              resolve();
-            })
-            .catch(() => {
-              reject("wiping cache failed");
-            });
-        })
-        .then(() => {
-          resolve();
+            .then(resolve)
+            .catch(e => reject("wiping cache failed: " + e));
         });
     });
   }
