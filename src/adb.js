@@ -286,28 +286,28 @@ class Adb {
       _this
         .shell(["getprop", "ro.product.device"])
         .then(stdout => {
-          if (!stdout) {
-            reject("getprop error: no response");
-          } else if (stdout.includes("getprop: not found")) {
+          if (!stdout || stdout.includes("getprop: not found")) {
             _this
               .shell(["cat", "default.prop"])
               .then(stdout => {
-                output.split("\n").forEach(prop => {
-                  if (prop.includes("ro.product.device")) {
-                    resolve(prop.split("=")[1].replace(/\W/g, ""));
-                  }
-                });
+                if (stdout) {
+                  resolve(
+                    stdout
+                      .split("\n")
+                      .filter(p => p.includes("ro.product.device="))[0]
+                      .replace("ro.product.device=", "")
+                      .trim()
+                  );
+                } else {
+                  reject("failed to cat default.prop: no response");
+                }
               })
-              .catch(e => {
-                reject("getprop error: failed to cat default.prop: " + e);
-              });
+              .catch(e => reject("failed to cat default.prop: " + e));
           } else {
             resolve(stdout.replace(/\W/g, ""));
           }
         })
-        .catch(e => {
-          reject("getprop error: " + e);
-        });
+        .catch(e => reject("getprop error: " + e));
     });
   }
 
