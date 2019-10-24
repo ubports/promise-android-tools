@@ -324,8 +324,50 @@ describe("Adb module", function() {
           ]);
         });
       });
-      it("should get device name from default prop file");
-      it("should throw an error if prop can't be found");
+      ["getprop: not found", null].forEach(response => {
+        it("should cat default.prop on " + (response || "empty"), function() {
+          const execFake = sinon.fake((args, callback) => {
+            if (args.includes("getprop")) {
+              callback(null, response);
+            } else {
+              callback(
+                null,
+                "asdf=wasd\n" +
+                  "1=234\n" +
+                  "ro.product.device=thisisadevicecodename\n" +
+                  "something=somethingelse"
+              );
+            }
+          });
+          const logSpy = sinon.spy();
+          const adb = new Adb({ exec: execFake, log: logSpy });
+          return adb.getDeviceName().then(r => {
+            expect(r).to.equal("thisisadevicecodename");
+            expect(execFake).to.have.been.calledWith([
+              "-P",
+              5037,
+              "shell",
+              "getprop",
+              "ro.product.device"
+            ]);
+            expect(execFake).to.have.been.calledWith([
+              "-P",
+              5037,
+              "shell",
+              "cat",
+              "default.prop"
+            ]);
+          });
+        });
+      });
+      it("should reject if prop not found", function() {
+        const execFake = sinon.fake((args, callback) => callback());
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getDeviceName().catch(e => {
+          expect(e).to.equal("failed to cat default.prop: no response");
+        });
+      });
     });
     describe("getOs()", function() {
       it('should resolve "ubuntutouch"', function() {
