@@ -441,28 +441,3 @@ class Adb {
 }
 
 module.exports = Adb;
-
-// Missing functions:
-// backup
-// forward
-// bugreport
-// logcat
-// remount
-// status-window
-// connect
-// get-state
-// ppp
-// restore
-// sync
-// devices
-// help
-// pull
-// root
-// uninstall
-// disconnect
-// install
-// version
-// emu
-// jdwp
-// sideload
-// wait-for-device

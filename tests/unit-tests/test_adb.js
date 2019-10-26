@@ -250,6 +250,21 @@ describe("Adb module", function() {
           });
       });
     });
+    describe("sync()", function() {
+      it("should sync all if no argument supplied");
+      ["all", "system", "vendor", "oem", "data"].forEach(p => {
+        it("should sync " + p);
+      });
+      it("should reject on unsupported partition");
+      it("should reject on error");
+    });
+    describe("pull()", function() {
+      it("should pull files/dirs from device");
+      it("should pull files/dirs from device and preserve mode and timestamp");
+      it("should reject on incorrect number of arguments");
+      it("should reject if target path inaccessible");
+      it("should reject on error");
+    });
     describe("reboot()", function() {
       ["system", "recovery", "bootloader"].forEach(state => {
         it("should reboot to " + state, function() {
@@ -278,6 +293,122 @@ describe("Adb module", function() {
           "unknown state: someinvalidstate"
         );
       });
+    });
+    describe("backup()", function() {
+      it("should create backup");
+      it("should reject if backup failed");
+    });
+    describe("restore()", function() {
+      it("should restore backup");
+      it("should reject if backup failed");
+    });
+    describe("forward()", function() {
+      it("should create forward connection");
+      it("should not rebind forward connection");
+      it("should reject on error");
+    });
+    describe("forwardList()", function() {
+      it("should resolve all forward connections");
+      it("should reject on error");
+    });
+    describe("forwardRemove()", function() {
+      it("should remove forward connection");
+      it("should reject on error");
+    });
+    describe("forwardRemoveAll()", function() {
+      it("should remove all forward connections");
+      it("should reject on error");
+    });
+    describe("forwardRemoveAll()", function() {
+      it("should remove all forward connections");
+      it("should reject on error");
+    });
+    describe("bugreport()", function() {
+      it("should write bugreport to given path");
+      it("should reject if no path specified");
+      it("should reject if path inaccessible");
+      it("should reject on error");
+    });
+    describe("logcat()", function() {
+      it("should resolve log");
+      it("should reject on error");
+    });
+    describe("remount()", function() {
+      it("should remount /system, /vendor, and /oem partitions read-write");
+      it("should reject on error");
+    });
+    describe("connect()", function() {
+      it("should connect to device via TCP/IP on default port 5555");
+      it("should connect to device via TCP/IP on custom port");
+      it("should reject if no host specified");
+      it("should reject on error");
+    });
+    describe("disconnect()", function() {
+      it("should disconnect from all TCP/IP devices");
+      it("should disconnect from given TCP/IP device on default port 5555");
+      it("should disconnect from given TCP/IP device on custom port");
+      it("should reject if no host specified");
+      it("should reject on error");
+    });
+    describe("getState()", function() {
+      it("should resolve offline");
+      it("should resolve bootloader");
+      it("should resolve device");
+      it("should reject on error");
+    });
+    describe("ppp()", function() {
+      it("should run PPP over USB");
+      it("should reject on error");
+    });
+    describe("devices()", function() {
+      it("should resolve devices list");
+      it("should resolve long devices list");
+      it("should reject on error");
+    });
+    describe("root()", function() {
+      it("should restart adbd with root permissions");
+      it("should reject on error");
+    });
+    describe("unroot()", function() {
+      it("should restart adbd without root permissions");
+      it("should reject on error");
+    });
+    describe("install()", function() {
+      it("should install apk");
+      it("should install multiple apks");
+      [
+        ["-l", "forward lock application"],
+        ["-r", "replace existing application"],
+        ["-t", "allow test packages"],
+        ["-s", "install application on sdcard"],
+        ["-d", "allow version code downgrade (debuggable packages only)"],
+        ["-g", "grant all runtime permissions"]
+      ].forEach(option => {
+        it("should " + option[1]);
+      });
+      it("should reject if no package specified");
+      it("should reject if package inaccessible");
+      it("should reject on error");
+    });
+    describe("uninstall()", function() {
+      it("should remove app package from device");
+      it("should remove app package from device but keep data and cache");
+      it("should resolve if no such package was installed");
+      it("should reject on error");
+    });
+    describe("emu()", function() {
+      it("should reject if no emulator detected");
+      it("should reject on error");
+    });
+    describe("jdwp()", function() {
+      it("should list pids of processes hosting a JDWP transport");
+      it("should reject on error");
+    });
+    describe("sideload()", function() {
+      it("should sideload android ota package");
+      it("should reject if no package specified");
+      it("should reject if package inaccessible");
+      it("should reject on error");
     });
   });
   describe("convenience functions", function() {
