@@ -252,7 +252,7 @@ describe("Adb module", function() {
     });
     describe("sync()", function() {
       it("should sync all if no argument supplied");
-      ["all","system","vendor","oem","data"].forEach(p => {
+      ["all", "system", "vendor", "oem", "data"].forEach(p => {
         it("should sync " + p);
       });
       it("should reject on unsupported partition");
