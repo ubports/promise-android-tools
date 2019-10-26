@@ -227,16 +227,17 @@ describe("Adb module", function() {
         return expect(adb.push("this/file/does/not/exist", "/tmp/target")).to
           .have.been.rejected;
       });
-      it("should reject if stat failed", function() {
+      it("should survive if stat failed", function() {
         const execFake = sinon.fake((args, callback) => {
           if (args.includes("stat")) callback(true, "stdout", "stderr");
+          else setTimeout(callback, 5);
         });
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb
           .push("tests/test-data/test_file", "/tmp/target", 1)
-          .catch(error => {
-            expect(error).to.equal(
+          .then(ret => {
+            expect(logSpy).to.have.been.calledWith(
               "failed to stat: error: true\nstdout: stdout\nstderr: stderr"
             );
             expect(execFake).to.have.been.calledWith([

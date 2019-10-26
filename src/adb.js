@@ -190,7 +190,7 @@ class Adb {
           })
           .catch(e => {
             clearInterval(progressInterval);
-            reject("failed to stat: " + e);
+            _this.log("failed to stat: " + e);
           });
       }, interval || 1000);
       var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
