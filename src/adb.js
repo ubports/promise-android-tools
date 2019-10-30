@@ -86,7 +86,7 @@ class Adb {
   startServer() {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      _this.adbEvent.emit("stop");
+      _this.stopWaiting();
       _this
         .killServer()
         .then(() => {
@@ -106,6 +106,7 @@ class Adb {
   killServer() {
     var _this = this;
     return new Promise(function(resolve, reject) {
+      _this.stopWaiting();
       _this.log("killing all running adb servers");
       _this
         .execCommand("kill-server")

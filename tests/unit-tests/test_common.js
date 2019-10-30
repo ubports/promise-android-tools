@@ -93,6 +93,18 @@ const recognizedErrors = [
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (data transfer failure (Protocol error))"
+  },
+  {
+    expectedReturn: "Killed",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "adb died: Killed"
+  },
+  {
+    expectedReturn: "Killed",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "adb server killed by remote request"
   }
 ];
 

@@ -49,6 +49,12 @@ function handleError(error, stdout, stderr) {
       stderr.includes("FAILED (data transfer failure (Protocol error))"))
   ) {
     return "connection lost";
+  } else if (
+    stderr &&
+    (stderr.includes("Killed") ||
+      stderr.includes("adb server killed by remote request"))
+  ) {
+    return "Killed";
   } else {
     return (
       (error ? "error: " + JSON.stringify(error) + "\n" : "") +
