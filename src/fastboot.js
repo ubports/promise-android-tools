@@ -131,6 +131,20 @@ class Fastboot {
     });
   }
 
+  continue() {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this
+        .execCommand(["continue"])
+        .then(stdout => {
+          resolve();
+        })
+        .catch(error => {
+          reject("continuing boot failed: " + error);
+        });
+    });
+  }
+
   format(partition) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -267,7 +281,6 @@ module.exports = Fastboot;
 
 // Missing functions
 // getvar
-// continue
 // oem
 // devices
 // flashall
