@@ -221,6 +221,52 @@ describe("Fastboot module", function() {
         );
       });
     });
+    describe("reboot()", function() {
+      it("should resolve on reboot", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.reboot().then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["reboot"]);
+        });
+      });
+      it("should reject if rebooting fails", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(fastboot.reboot()).to.have.been.rejectedWith(
+          "error: true"
+        );
+      });
+    });
+    describe("continue()", function() {
+      it("should resolve when boot continues", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.continue().then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["continue"]);
+        });
+      });
+      it("should reject if continuing boot fails", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(fastboot.continue()).to.have.been.rejectedWith(
+          "error: true"
+        );
+      });
+    });
     describe("format()", function() {
       it("should resolve after formatting", function() {
         const execFake = sinon.fake((args, callback) => {
