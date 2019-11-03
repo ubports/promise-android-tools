@@ -201,15 +201,22 @@ class Adb {
           "push",
           guardedfile,
           dest,
-          process.platform == "win32" ? "> nul" : "> /dev/null"
+          process.platform == "win32" ? "> nul" : ' | grep -v "%]"'
         ])
-        .then(stdout => {
+        .then(() => {
           clearInterval(progressInterval);
           resolve();
         })
         .catch(e => {
           clearInterval(progressInterval);
-          reject("Push failed: " + e);
+          _this
+            .hasAccess()
+            .then(access => {
+              reject(access ? "Push failed: " + e : "connection lost");
+            })
+            .catch(() => {
+              reject("Push failed: " + e);
+            });
         });
     });
   }
