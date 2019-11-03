@@ -196,7 +196,7 @@ describe("Adb module", function() {
               "push",
               "tests/test-data/test_file",
               "/tmp/target",
-              "> /dev/null"
+              ' | grep -v "%]"'
             ]);
           else if (process.platform == "win32")
             expect(execFake).to.have.been.calledWith([
@@ -214,7 +214,7 @@ describe("Adb module", function() {
               "push",
               '"tests/test-data/test_file"',
               "/tmp/target",
-              "> /dev/null"
+              ' | grep -v "%]"'
             ]);
         });
       });
@@ -226,6 +226,32 @@ describe("Adb module", function() {
         const adb = new Adb({ exec: execFake, log: logSpy });
         return expect(adb.push("this/file/does/not/exist", "/tmp/target")).to
           .have.been.rejected;
+      });
+      it("should reject on connection lost", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("echo"))
+            callback(true, null, "error: no devices/emulators found");
+          else callback(true, "push-stdout", "push-stderr");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith("connection lost");
+      });
+      it("should reject with original error on connection lost and device detection rejected", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("echo"))
+            callback(false, "hasaccess-stdout", "hasaccess-stderr");
+          else callback(true, "push-stdout", "push-stderr");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith(
+          "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+        );
       });
       it("should survive if stat failed", function() {
         const execFake = sinon.fake((args, callback) => {
