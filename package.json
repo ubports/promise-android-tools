@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A wrapper for adb and fastboot that returns convenient promises.",
   "main": "./src/module.js",
   "scripts": {
@@ -30,15 +30,15 @@
   "dependencies": {
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "coveralls": "^3.0.0",
+    "coveralls": "^3.0.7",
     "mocha": "^6.2.2",
     "nyc": "^14.1.1",
     "sinon": "^7.5.0",
     "sinon-chai": "^3.3.0"
   },
   "devDependencies": {
-    "eslint": "^6.5.1",
-    "eslint-config-prettier": "^6.4.0",
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-prettier": "^3.1.1",
     "prettier": "^1.18.2"
   }
