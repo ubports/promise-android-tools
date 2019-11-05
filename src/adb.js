@@ -350,28 +350,34 @@ class Adb {
   }
 
   // Wait for a device
-  waitForDevice(timeout) {
-    if (!timeout) timeout = 2000;
+  waitForDevice(interval, timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      let timer = setInterval(() => {
+      const accessInterval = setInterval(() => {
         _this
           .hasAccess()
           .then(access => {
             if (access) {
-              clearInterval(timer);
+              clearInterval(accessInterval);
+              clearTimeout(accessTimeout);
               resolve();
             }
           })
           .catch(error => {
             if (error) {
-              clearInterval(timer);
+              clearInterval(accessInterval);
+              clearTimeout(accessTimeout);
               reject(error);
             }
           });
-      }, timeout);
+      }, interval || 2000);
+      const accessTimeout = setTimeout(() => {
+        clearInterval(accessInterval);
+        reject("no device: timeout");
+      }, timeout || 60000);
       _this.adbEvent.once("stop", () => {
-        clearInterval(timer);
+        clearInterval(accessInterval);
+        clearTimeout(accessTimeout);
         reject("stopped waiting");
       });
     });
