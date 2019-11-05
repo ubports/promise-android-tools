@@ -353,7 +353,7 @@ class Adb {
   waitForDevice(interval, timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      let accessInterval = setInterval(() => {
+      const accessInterval = setInterval(() => {
         _this
           .hasAccess()
           .then(access => {
@@ -371,7 +371,7 @@ class Adb {
             }
           });
       }, interval || 2000);
-      let accessTimeout = setTimeout(() => {
+      const accessTimeout = setTimeout(() => {
         clearInterval(accessInterval);
         reject("no device: timeout");
       }, timeout || 60000);
