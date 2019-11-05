@@ -244,28 +244,34 @@ class Fastboot {
   }
 
   // Wait for a device
-  waitForDevice(timeout) {
-    if (!timeout) timeout = 2000;
+  waitForDevice(interval, timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
-      let timer = setInterval(() => {
+      let accessInterval = setInterval(() => {
         _this
           .hasAccess()
           .then(access => {
             if (access) {
-              clearInterval(timer);
+              clearInterval(accessInterval);
+              clearTimeout(accessTimeout);
               resolve();
             }
           })
           .catch(error => {
             if (error) {
-              clearInterval(timer);
+              clearInterval(accessInterval);
+              clearTimeout(accessTimeout);
               reject(error);
             }
           });
-      }, timeout);
+      }, interval || 2000);
+      let accessTimeout = setTimeout(() => {
+        clearInterval(accessInterval);
+        reject("no device: timeout");
+      }, timeout || 60000);
       _this.fastbootEvent.once("stop", () => {
-        clearInterval(timer);
+        clearInterval(accessInterval);
+        clearTimeout(accessTimeout);
         reject("stopped waiting");
       });
     });
