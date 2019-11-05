@@ -617,13 +617,13 @@ describe("Adb module", function() {
       });
     });
     describe("waitForDevice()", function() {
-      it("should resolve immediately", function() {
+      it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, ".");
         });
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
-        return adb.waitForDevice(5).then(r => {
+        return adb.waitForDevice(1).then(r => {
           expect(execFake).to.have.been.called;
           expect(execFake).to.have.been.calledWith([
             "-P",
@@ -634,9 +634,19 @@ describe("Adb module", function() {
           ]);
         });
       });
+      it("should reject on timeout", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, null, "error: no devices/emulators found");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(adb.waitForDevice(5, 10)).to.be.rejectedWith(
+          "no device: timeout"
+        );
+      });
     });
     describe("stopWaiting()", function() {
-      it("should quietly stop waiting", function() {
+      it("should cause waitForDevice() to reject", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(true, null, "error: no devices/emulators found");
         });
@@ -646,8 +656,7 @@ describe("Adb module", function() {
           const wait = adb.waitForDevice(5);
           setTimeout(() => {
             adb.stopWaiting();
-            expect(wait).to.be.rejectedWith("stopped waiting");
-            resolve();
+            resolve(expect(wait).to.be.rejectedWith("stopped waiting"));
           }, 10);
         });
       });

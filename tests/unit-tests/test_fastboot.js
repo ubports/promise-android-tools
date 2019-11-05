@@ -394,20 +394,29 @@ describe("Fastboot module", function() {
       it("should report progress");
     });
     describe("waitForDevice()", function() {
-      it("should resolve immediately", function() {
+      it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, "0123456789ABCDEF	fastboot");
         });
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return fastboot.waitForDevice(5).then(r => {
-          expect(execFake).to.have.been.called;
+        return fastboot.waitForDevice(1).then(r => {
           expect(execFake).to.have.been.calledWith(["devices"]);
         });
       });
+      it("should reject on timeout", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(fastboot.waitForDevice(5, 10)).to.be.rejectedWith(
+          "no device: timeout"
+        );
+      });
     });
     describe("stopWaiting()", function() {
-      it("should quietly stop waiting", function() {
+      it("should cause waitForDevice() to reject", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, null, null);
         });
@@ -417,8 +426,7 @@ describe("Fastboot module", function() {
           const wait = fastboot.waitForDevice(5);
           setTimeout(() => {
             fastboot.stopWaiting();
-            expect(wait).to.be.rejectedWith("stopped waiting");
-            resolve();
+            resolve(expect(wait).to.be.rejectedWith("stopped waiting"));
           }, 10);
         });
       });
