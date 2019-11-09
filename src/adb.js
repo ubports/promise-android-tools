@@ -448,7 +448,19 @@ class Adb {
     });
   }
 
-    });
+  // Find the partition associated with a mountpoint in an fstab
+  findPartitionInFstab(partition, fstab) {
+    try {
+      return fstab
+        .split("\n")
+        .filter(block => block.startsWith("/dev"))
+        .filter(
+          block => block.split(" ").filter(c => c !== "")[1] === "/" + partition
+        )[0]
+        .split(" ")[0];
+    } catch (error) {
+      throw "failed to parse fstab: " + error;
+    }
   }
 }
 

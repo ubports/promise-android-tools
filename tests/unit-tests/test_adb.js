@@ -697,5 +697,22 @@ describe("Adb module", function() {
       });
       it("should reject if rm failed");
     });
+    describe("findPartitionInFstab()", function() {
+      require("../test-data/testrecoveryfstabs.json").forEach(device => {
+        device.partitions.forEach(partition => {
+          it(
+            "should find " + partition.mountpoint + " for " + device.device,
+            function() {
+              const execSpy = sinon.spy();
+              const logSpy = sinon.spy();
+              const adb = new Adb({ exec: execSpy, log: logSpy });
+              return expect(
+                adb.findPartitionInFstab(partition.mountpoint, device.fstab)
+              ).to.eql(partition.partition);
+            }
+          );
+        });
+      });
+    });
   });
 });
