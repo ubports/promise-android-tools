@@ -400,27 +400,23 @@ class Adb {
           } else {
             const block = _this.findPartitionInFstab(partition, fstab);
             _this.log("formatting " + block + " from recovery");
-            if (!block) {
-              reject("unable to read partition " + partition);
-            } else {
-              _this
-                .shell("umount /" + partition)
-                .then(() => {
-                  _this
-                    .shell("make_ext4fs " + block)
-                    .then(() => {
-                      _this
-                        .shell("mount /" + partition)
-                        .then(error => {
-                          if (error) reject("failed to mount: " + error);
-                          else resolve();
-                        })
-                        .catch(reject);
-                    })
-                    .catch(reject);
-                })
-                .catch(reject);
-            }
+            _this
+              .shell("umount /" + partition)
+              .then(() => {
+                _this
+                  .shell("make_ext4fs " + block)
+                  .then(() => {
+                    _this
+                      .shell("mount /" + partition)
+                      .then(error => {
+                        if (error) reject("failed to mount: " + error);
+                        else resolve();
+                      })
+                      .catch(reject);
+                  })
+                  .catch(reject);
+              })
+              .catch(reject);
           }
         })
         .catch(error => {
@@ -451,7 +447,7 @@ class Adb {
         )[0]
         .split(" ")[0];
     } catch (error) {
-      throw "failed to parse fstab: " + error;
+      throw "failed to parse fstab";
     }
   }
 }

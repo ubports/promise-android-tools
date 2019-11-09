@@ -711,10 +711,16 @@ describe("Adb module", function() {
           "unable to read recovery.fstab"
         );
       });
-      it("should be rejected if partition can't be read");
-      it("should be rejected if partition can't be unmounted");
-      it("should be rejected if partition can't be formated");
-      it("should be rejected if partition can't be re-mounted");
+      it("should be rejected if partition can't be read", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "some invalid fstab");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(adb.format("cache")).to.be.rejectedWith(
+          "failed to format cache: failed to parse fstab"
+        );
+      });
     });
     describe("wipeCache()", function() {
       it("should resolve if cache was wiped", function() {
