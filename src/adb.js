@@ -394,17 +394,12 @@ class Adb {
     return new Promise(function(resolve, reject) {
       _this
         .shell(["cat", "/etc/recovery.fstab"])
-        .then(fstab_ => {
-          if (!fstab_) {
+        .then(fstab => {
+          if (!fstab || typeof fstab !== "string") {
             reject("unable to read recovery.fstab");
           } else {
-            var fstab = fstab_.split("\n");
-            var block;
-            fstab.forEach(fs => {
-              if (!fs.includes(partition) || block) return;
-              block = fs.split(" ")[0];
-              if (!block.startsWith("/dev")) block = false;
-            });
+            const block = _this.findPartitionInFstab(partition, fstab);
+            _this.log("formatting " + block + " from recovery");
             if (!block) {
               reject("unable to read partition " + partition);
             } else {
@@ -417,10 +412,7 @@ class Adb {
                       _this
                         .shell("mount /" + partition)
                         .then(error => {
-                          if (error)
-                            reject(
-                              "failed to format " + partition + " " + error
-                            );
+                          if (error) reject("failed to mount: " + error);
                           else resolve();
                         })
                         .catch(reject);

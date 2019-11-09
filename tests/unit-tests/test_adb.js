@@ -662,6 +662,45 @@ describe("Adb module", function() {
       });
     });
     describe("format()", function() {
+      it("should format partition", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("/etc/recovery.fstab"))
+            callback(
+              null,
+              "/dev/block/platform/mtk-msdc.0/by-name/cache /cache"
+            );
+          callback(null, null, null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.format("cache").then(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "cat",
+            "/etc/recovery.fstab"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "umount /cache"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "make_ext4fs /dev/block/platform/mtk-msdc.0/by-name/cache"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "mount /cache"
+          ]);
+        });
+      });
       it("should be rejected if fstab can't be read", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, null, null);
