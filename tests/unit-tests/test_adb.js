@@ -676,11 +676,9 @@ describe("Adb module", function() {
       it("should be rejected if partition can't be unmounted");
       it("should be rejected if partition can't be formated");
       it("should be rejected if partition can't be re-mounted");
-      it("should resolve if partition was formated successfully");
     });
     describe("wipeCache()", function() {
-      it("should resolve if formatting was successfull");
-      it("should resolve if cache can not be formated but rm was successfull", function() {
+      it("should resolve if cache was wiped", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, null, null);
         });
@@ -691,18 +689,10 @@ describe("Adb module", function() {
             "-P",
             5037,
             "shell",
-            "cat",
-            "/etc/recovery.fstab"
-          ]);
-          expect(execFake).to.have.been.calledWith([
-            "-P",
-            5037,
-            "shell",
             "rm",
             "-rf",
             "/cache/*"
           ]);
-          expect(execFake).to.not.have.been.calledThrice;
         });
       });
       it("should reject if rm failed");

@@ -442,14 +442,12 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this
-        .format("cache")
+        .shell(["rm", "-rf", "/cache/*"])
         .then(resolve)
-        .catch(() => {
-          _this
-            .shell(["rm", "-rf", "/cache/*"])
-            .then(resolve)
-            .catch(e => reject("wiping cache failed: " + e));
-        });
+        .catch(e => reject("wiping cache failed: " + e));
+    });
+  }
+
     });
   }
 }
