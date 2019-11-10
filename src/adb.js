@@ -394,41 +394,29 @@ class Adb {
     return new Promise(function(resolve, reject) {
       _this
         .shell(["cat", "/etc/recovery.fstab"])
-        .then(fstab_ => {
-          if (!fstab_) {
+        .then(fstab => {
+          if (!fstab || typeof fstab !== "string") {
             reject("unable to read recovery.fstab");
           } else {
-            var fstab = fstab_.split("\n");
-            var block;
-            fstab.forEach(fs => {
-              if (!fs.includes(partition) || block) return;
-              block = fs.split(" ")[0];
-              if (!block.startsWith("/dev")) block = false;
-            });
-            if (!block) {
-              reject("unable to read partition " + partition);
-            } else {
-              _this
-                .shell("umount /" + partition)
-                .then(() => {
-                  _this
-                    .shell("make_ext4fs " + block)
-                    .then(() => {
-                      _this
-                        .shell("mount /" + partition)
-                        .then(error => {
-                          if (error)
-                            reject(
-                              "failed to format " + partition + " " + error
-                            );
-                          else resolve();
-                        })
-                        .catch(reject);
-                    })
-                    .catch(reject);
-                })
-                .catch(reject);
-            }
+            const block = _this.findPartitionInFstab(partition, fstab);
+            _this.log("formatting " + block + " from recovery");
+            _this
+              .shell("umount /" + partition)
+              .then(() => {
+                _this
+                  .shell("make_ext4fs " + block)
+                  .then(() => {
+                    _this
+                      .shell("mount /" + partition)
+                      .then(error => {
+                        if (error) reject("failed to mount: " + error);
+                        else resolve();
+                      })
+                      .catch(reject);
+                  })
+                  .catch(reject);
+              })
+              .catch(reject);
           }
         })
         .catch(error => {
@@ -441,15 +429,56 @@ class Adb {
   wipeCache() {
     var _this = this;
     return new Promise(function(resolve, reject) {
+      // TODO: move to Promise.prototype.finally() instead as soon as nodejs 8 dies in january 2020
+      function rm() {
+        _this
+          .shell(["rm", "-rf", "/cache/*"])
+          .then(resolve)
+          .catch(e => reject("wiping cache failed: " + e));
+      }
       _this
         .format("cache")
-        .then(resolve)
-        .catch(() => {
-          _this
-            .shell(["rm", "-rf", "/cache/*"])
-            .then(resolve)
-            .catch(e => reject("wiping cache failed: " + e));
-        });
+        .then(rm)
+        .catch(rm);
+    });
+  }
+
+  // Find the partition associated with a mountpoint in an fstab
+  findPartitionInFstab(partition, fstab) {
+    try {
+      return fstab
+        .split("\n")
+        .filter(block => block.startsWith("/dev"))
+        .filter(
+          block => block.split(" ").filter(c => c !== "")[1] === "/" + partition
+        )[0]
+        .split(" ")[0];
+    } catch (error) {
+      throw "failed to parse fstab";
+    }
+  }
+
+  // Find a partition and verify its type
+  verifyPartitionType(partition, type) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this
+        .shell(["mount"])
+        .then(stdout => {
+          if (
+            !(stdout.includes(" on /") && stdout.includes(" type ")) ||
+            typeof stdout !== "string"
+          ) {
+            reject("unable to detect partitions");
+          } else if (!stdout.includes("/" + partition)) {
+            reject("partition not found");
+          } else {
+            resolve(stdout.includes(" on /" + partition + " type " + type));
+          }
+        })
+        .catch(error =>
+          reject("partition not found" + (error ? ": " + error : ""))
+        );
     });
   }
 }

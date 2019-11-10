@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "A wrapper for adb and fastboot that returns convenient promises.",
   "main": "./src/module.js",
   "scripts": {
@@ -40,6 +40,6 @@
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-prettier": "^3.1.1",
-    "prettier": "^1.18.2"
+    "prettier": "^1.19.1"
   }
 }

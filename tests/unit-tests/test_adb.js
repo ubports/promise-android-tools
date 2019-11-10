@@ -662,31 +662,18 @@ describe("Adb module", function() {
       });
     });
     describe("format()", function() {
-      it("should be rejected if fstab can't be read", function() {
+      it("should format partition", function() {
         const execFake = sinon.fake((args, callback) => {
+          if (args.includes("/etc/recovery.fstab"))
+            callback(
+              null,
+              "/dev/block/platform/mtk-msdc.0/by-name/cache /cache"
+            );
           callback(null, null, null);
         });
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
-        return expect(adb.format("cache")).to.be.rejectedWith(
-          "unable to read recovery.fstab"
-        );
-      });
-      it("should be rejected if partition can't be read");
-      it("should be rejected if partition can't be unmounted");
-      it("should be rejected if partition can't be formated");
-      it("should be rejected if partition can't be re-mounted");
-      it("should resolve if partition was formated successfully");
-    });
-    describe("wipeCache()", function() {
-      it("should resolve if formatting was successfull");
-      it("should resolve if cache can not be formated but rm was successfull", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null, null);
-        });
-        const logSpy = sinon.spy();
-        const adb = new Adb({ exec: execFake, log: logSpy });
-        return adb.wipeCache().then(() => {
+        return adb.format("cache").then(() => {
           expect(execFake).to.have.been.calledWith([
             "-P",
             5037,
@@ -698,14 +685,134 @@ describe("Adb module", function() {
             "-P",
             5037,
             "shell",
+            "umount /cache"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "make_ext4fs /dev/block/platform/mtk-msdc.0/by-name/cache"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "mount /cache"
+          ]);
+        });
+      });
+      it("should be rejected if fstab can't be read", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null, null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(adb.format("cache")).to.be.rejectedWith(
+          "unable to read recovery.fstab"
+        );
+      });
+      it("should be rejected if partition can't be read", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "some invalid fstab");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(adb.format("cache")).to.be.rejectedWith(
+          "failed to format cache: failed to parse fstab"
+        );
+      });
+    });
+    describe("wipeCache()", function() {
+      it("should resolve if cache was wiped", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null, null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.wipeCache().then(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
             "rm",
             "-rf",
             "/cache/*"
           ]);
-          expect(execFake).to.not.have.been.calledThrice;
         });
       });
       it("should reject if rm failed");
+    });
+    describe("findPartitionInFstab()", function() {
+      require("../test-data/testrecoveryfstabs.json").forEach(device => {
+        device.partitions.forEach(partition => {
+          it(
+            "should find " + partition.mountpoint + " for " + device.device,
+            function() {
+              const execSpy = sinon.spy();
+              const logSpy = sinon.spy();
+              const adb = new Adb({ exec: execSpy, log: logSpy });
+              return expect(
+                adb.findPartitionInFstab(partition.mountpoint, device.fstab)
+              ).to.eql(partition.partition);
+            }
+          );
+        });
+      });
+    });
+    describe("verifyPartitionType()", function() {
+      it("should verify parition type", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "/dev/userdata on /data type ext4 (rw)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return Promise.all([
+          adb.verifyPartitionType("data", "ext4"),
+          adb.verifyPartitionType("data", "ntfs")
+        ]).then(r => {
+          expect(r[0]).to.eql(true);
+          expect(r[1]).to.eql(false);
+        });
+      });
+      it("should reject if partitions can't be read", function() {
+        const execFake1 = sinon.fake((args, callback) => {
+          callback(null, "some invalid return string", null);
+        });
+        const execFake2 = sinon.fake((args, callback) => {
+          callback(null, 666, null);
+        });
+        const logSpy = sinon.spy();
+        const adb1 = new Adb({ exec: execFake1, log: logSpy });
+        const adb2 = new Adb({ exec: execFake2, log: logSpy });
+        return Promise.all([
+          adb1.verifyPartitionType("data", "ext4"),
+          adb2.verifyPartitionType("data", "ext4")
+        ]).catch(r => {
+          expect(r).to.eql("unable to detect partitions");
+        });
+      });
+      it("should reject if partition not found", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "/dev/something on /something type ext4 (rw)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.verifyPartitionType("data", "ext4").catch(r => {
+          expect(r).to.eql("partition not found");
+        });
+      });
+      it("should reject if adb shell rejected", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, null, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.verifyPartitionType("data", "ext4").catch(r => {
+          expect(r).to.eql(
+            "partition not found: error: true\nstderr: everything exploded"
+          );
+        });
+      });
     });
   });
 });
