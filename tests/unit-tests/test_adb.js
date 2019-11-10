@@ -759,5 +759,60 @@ describe("Adb module", function() {
         });
       });
     });
+    describe("verifyPartitionType()", function() {
+      it("should verify parition type", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "/dev/userdata on /data type ext4 (rw)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return Promise.all([
+          adb.verifyPartitionType("data", "ext4"),
+          adb.verifyPartitionType("data", "ntfs")
+        ]).then(r => {
+          expect(r[0]).to.eql(true);
+          expect(r[1]).to.eql(false);
+        });
+      });
+      it("should reject if partitions can't be read", function() {
+        const execFake1 = sinon.fake((args, callback) => {
+          callback(null, "some invalid return string", null);
+        });
+        const execFake2 = sinon.fake((args, callback) => {
+          callback(null, 666, null);
+        });
+        const logSpy = sinon.spy();
+        const adb1 = new Adb({ exec: execFake1, log: logSpy });
+        const adb2 = new Adb({ exec: execFake2, log: logSpy });
+        return Promise.all([
+          adb1.verifyPartitionType("data", "ext4"),
+          adb2.verifyPartitionType("data", "ext4")
+        ]).catch(r => {
+          expect(r).to.eql("unable to detect partitions");
+        });
+      });
+      it("should reject if partition not found", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "/dev/something on /something type ext4 (rw)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.verifyPartitionType("data", "ext4").catch(r => {
+          expect(r).to.eql("partition not found");
+        });
+      });
+      it("should reject if adb shell rejected", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, null, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.verifyPartitionType("data", "ext4").catch(r => {
+          expect(r).to.eql(
+            "partition not found: error: true\nstderr: everything exploded"
+          );
+        });
+      });
+    });
   });
 });

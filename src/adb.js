@@ -450,6 +450,30 @@ class Adb {
       throw "failed to parse fstab";
     }
   }
+
+  // Find a partition and verify its type
+  verifyPartitionType(partition, type) {
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this
+        .shell(["mount"])
+        .then(stdout => {
+          if (
+            !(stdout.includes(" on /") && stdout.includes(" type ")) ||
+            typeof stdout !== "string"
+          ) {
+            reject("unable to detect partitions");
+          } else if (!stdout.includes("/" + partition)) {
+            reject("partition not found");
+          } else {
+            resolve(stdout.includes(" on /" + partition + " type " + type));
+          }
+        })
+        .catch(error =>
+          reject("partition not found" + (error ? ": " + error : ""))
+        );
+    });
+  }
 }
 
 module.exports = Adb;
