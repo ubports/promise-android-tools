@@ -203,9 +203,13 @@ class Adb {
           dest,
           process.platform == "win32" ? "> nul" : ' | grep -v "%]"'
         ])
-        .then(() => {
+        .then(stdout => {
           clearInterval(progressInterval);
-          resolve();
+          if (stdout && stdout.includes("remote No space left on device")) {
+            reject("Push failed: out of space");
+          } else {
+            resolve();
+          }
         })
         .catch(e => {
           clearInterval(progressInterval);
