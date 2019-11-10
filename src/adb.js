@@ -429,10 +429,17 @@ class Adb {
   wipeCache() {
     var _this = this;
     return new Promise(function(resolve, reject) {
+      // TODO: move to Promise.prototype.finally() instead as soon as nodejs 8 dies in january 2020
+      function rm() {
+        _this
+          .shell(["rm", "-rf", "/cache/*"])
+          .then(resolve)
+          .catch(e => reject("wiping cache failed: " + e));
+      }
       _this
-        .shell(["rm", "-rf", "/cache/*"])
-        .then(resolve)
-        .catch(e => reject("wiping cache failed: " + e));
+        .format("cache")
+        .then(rm)
+        .catch(rm);
     });
   }
 
