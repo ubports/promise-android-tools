@@ -218,14 +218,28 @@ describe("Adb module", function() {
             ]);
         });
       });
-      it("should reject if file is inaccessible", function() {
+      it("should reject if device is out of space", function() {
         const execFake = sinon.fake((args, callback) => {
-          callback(null, null, null);
+          callback(
+            null,
+            "adb: error: failed to copy '/local/path' to '/target/path': remote No space left on device\n" +
+              "/local/path: 0 files pushed. 5.2 MB/s (99995728 bytes in 18.348s)\n",
+            ""
+          );
         });
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
-        return expect(adb.push("this/file/does/not/exist", "/tmp/target")).to
-          .have.been.rejected;
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith("Push failed: out of space");
+      });
+      it("should reject if file is inaccessible", function() {
+        const execFake = sinon.fake();
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("this/file/does/not/exist", "/tmp/target")
+        ).to.have.been.rejectedWith("Can't access file");
       });
       it("should reject on connection lost", function() {
         const execFake = sinon.fake((args, callback) => {
