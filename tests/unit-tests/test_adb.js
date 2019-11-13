@@ -205,7 +205,7 @@ describe("Adb module", function() {
               "push",
               '"tests/test-data/test_file"',
               "/tmp/target",
-              "> nul"
+              ' | findstr /v "%]"'
             ]);
           else
             expect(execFake).to.have.been.calledWith([
