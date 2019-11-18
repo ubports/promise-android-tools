@@ -201,7 +201,7 @@ class Adb {
           "push",
           guardedfile,
           dest,
-          process.platform == "win32" ? "> nul" : ' | grep -v "%]"'
+          process.platform == "win32" ? ' | findstr /v "%]"' : ' | grep -v "%]"'
         ])
         .then(stdout => {
           clearInterval(progressInterval);
