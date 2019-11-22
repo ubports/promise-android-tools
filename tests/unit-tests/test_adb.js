@@ -537,7 +537,7 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.getDeviceName().catch(e => {
-          expect(e).to.equal("failed to cat default.prop: no response");
+          expect(e.message).to.equal("failed to cat default.prop: no response");
         });
       });
     });
@@ -802,7 +802,7 @@ describe("Adb module", function() {
           adb1.verifyPartitionType("data", "ext4"),
           adb2.verifyPartitionType("data", "ext4")
         ]).catch(r => {
-          expect(r).to.eql("unable to detect partitions");
+          expect(r.message).to.eql("unable to detect partitions");
         });
       });
       it("should reject if partition not found", function() {
@@ -812,7 +812,7 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.verifyPartitionType("data", "ext4").catch(r => {
-          expect(r).to.eql("partition not found");
+          expect(r.message).to.eql("partition not found");
         });
       });
       it("should reject if adb shell rejected", function() {
@@ -822,7 +822,7 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.verifyPartitionType("data", "ext4").catch(r => {
-          expect(r).to.eql(
+          expect(r.message).to.eql(
             "partition not found: error: true\nstderr: everything exploded"
           );
         });

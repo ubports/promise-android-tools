@@ -49,10 +49,12 @@ class Fastboot {
       _this.exec(args, (error, stdout, stderr) => {
         if (error)
           reject(
-            common.handleError(
-              error,
-              stdout,
-              stderr ? stderr.trim() : undefined
+            new Error(
+              common.handleError(
+                error,
+                stdout,
+                stderr ? stderr.trim() : undefined
+              )
             )
           );
         else if (stdout) resolve(stdout.trim());
@@ -70,7 +72,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("flashing failed: " + error);
+          reject(new Error("flashing failed: " + error));
         });
     });
   }
@@ -84,7 +86,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("booting failed: " + error);
+          reject(new Error("booting failed: " + error));
         });
     });
   }
@@ -98,7 +100,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("update failed: " + error);
+          reject(new Error("update failed: " + error));
         });
     });
   }
@@ -112,7 +114,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("rebooting to bootloader failed: " + error);
+          reject(new Error("rebooting to bootloader failed: " + error));
         });
     });
   }
@@ -126,7 +128,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("rebooting failed: " + error);
+          reject(new Error("rebooting failed: " + error));
         });
     });
   }
@@ -140,7 +142,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("continuing boot failed: " + error);
+          reject(new Error("continuing boot failed: " + error));
         });
     });
   }
@@ -154,7 +156,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("formatting failed: " + error);
+          reject(new Error("formatting failed: " + error));
         });
     });
   }
@@ -168,7 +170,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("erasing failed: " + error);
+          reject(new Error("erasing failed: " + error));
         });
     });
   }
@@ -186,9 +188,12 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          if (error && error.includes("FAILED (remote: Already Unlocked)"))
+          if (
+            error &&
+            error.message.includes("FAILED (remote: Already Unlocked)")
+          )
             resolve();
-          else reject("oem unlock failed: " + error);
+          else reject(new Error("oem unlock failed: " + error));
         });
     });
   }
@@ -202,7 +207,7 @@ class Fastboot {
           resolve();
         })
         .catch(error => {
-          reject("oem lock failed: " + error);
+          reject(new Error("oem lock failed: " + error));
         });
     });
   }
@@ -267,12 +272,12 @@ class Fastboot {
       }, interval || 2000);
       const accessTimeout = setTimeout(() => {
         clearInterval(accessInterval);
-        reject("no device: timeout");
+        reject(new Error("no device: timeout"));
       }, timeout || 60000);
       _this.fastbootEvent.once("stop", () => {
         clearInterval(accessInterval);
         clearTimeout(accessTimeout);
-        reject("stopped waiting");
+        reject(new Error("stopped waiting"));
       });
     });
   }

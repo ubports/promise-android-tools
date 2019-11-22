@@ -71,7 +71,7 @@ class Adb {
           );
         } else if (stdout) {
           if (stdout.includes("no permissions")) {
-            reject("no permissions");
+            reject(new Error("no permissions"));
           } else {
             resolve(stdout.trim());
           }
@@ -129,16 +129,16 @@ class Adb {
               .hasAccess()
               .then(access => {
                 if (access) {
-                  reject("device accessible. Unkown error");
+                  reject(new Error("device accessible. Unkown error"));
                 } else {
-                  reject("no accessible device");
+                  reject(new Error("no accessible device"));
                 }
               })
               .catch(error => {
-                if (error.includes("not found")) {
-                  reject("no device found");
-                } else if (error.includes("insufficient permissions")) {
-                  reject("no permissions");
+                if (error.message.includes("not found")) {
+                  reject(new Error("no device found"));
+                } else if (error.message.includes("insufficient permissions")) {
+                  reject(new Error("no permissions"));
                 } else {
                   //If we arrive here the error is unknown. It will be usefull to have it on the screen
                   reject(error);
@@ -147,7 +147,7 @@ class Adb {
           } else if (stdout && stdout.match(Exp)) {
             resolve(stdout.replace("\n", ""));
           } else {
-            reject("invalid device id");
+            reject(new Error("invalid device id"));
           }
         })
         .catch(reject);
@@ -174,7 +174,7 @@ class Adb {
       try {
         fs.statSync(file);
       } catch (e) {
-        reject("Can't access file: " + e);
+        reject(new Error("Can't access file: " + e));
       }
       var hundredEmitted;
       var fileSize = fs.statSync(file)["size"];
@@ -206,7 +206,7 @@ class Adb {
         .then(stdout => {
           clearInterval(progressInterval);
           if (stdout && stdout.includes("remote No space left on device")) {
-            reject("Push failed: out of space");
+            reject(new Error("Push failed: out of space"));
           } else {
             resolve();
           }
@@ -219,7 +219,7 @@ class Adb {
               reject(access ? "Push failed: " + e : "connection lost");
             })
             .catch(() => {
-              reject("Push failed: " + e);
+              reject(new Error("Push failed: " + e));
             });
         });
     });
@@ -230,15 +230,16 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       if (["system", "recovery", "bootloader"].indexOf(state) == -1) {
-        reject("unknown state: " + state);
+        reject(new Error("unknown state: " + state));
       } else {
         _this
           .execCommand(["reboot", state])
           .then(stdout => {
-            if (stdout && stdout.includes("failed")) reject("reboot failed");
+            if (stdout && stdout.includes("failed"))
+              reject(new Error("reboot failed"));
             else resolve();
           })
-          .catch(e => reject("reboot failed: " + e));
+          .catch(e => reject(new Error("reboot failed: " + e)));
       }
     });
   }
@@ -262,7 +263,7 @@ class Adb {
           try {
             totalSize += fs.statSync(file.src)["size"];
           } catch (e) {
-            reject("Can't access file: " + e);
+            reject(new Error("Can't access file: " + e));
           }
         });
         function progressSize(s) {
@@ -283,7 +284,9 @@ class Adb {
                 resolve();
               }
             })
-            .catch(e => reject("Failed to push file " + i + ": " + e));
+            .catch(e =>
+              reject(new Error("Failed to push file " + i + ": " + e))
+            );
         }
         _this.adbEvent.on("push:progress:size", progressSize);
         pushNext(0); // Begin pushing
@@ -311,15 +314,17 @@ class Adb {
                       .trim()
                   );
                 } else {
-                  reject("failed to cat default.prop: no response");
+                  reject(new Error("failed to cat default.prop: no response"));
                 }
               })
-              .catch(e => reject("failed to cat default.prop: " + e));
+              .catch(e =>
+                reject(new Error("failed to cat default.prop: " + e))
+              );
           } else {
             resolve(stdout.replace(/\W/g, ""));
           }
         })
-        .catch(e => reject("getprop error: " + e));
+        .catch(e => reject(new Error("getprop error: " + e)));
     });
   }
 
@@ -344,7 +349,7 @@ class Adb {
         .shell(["echo", "."])
         .then(stdout => {
           if (stdout == ".") resolve(true);
-          else reject("unexpected response: " + stdout);
+          else reject(new Error("unexpected response: " + stdout));
         })
         .catch(error => {
           if (error == "no device") resolve(false);
@@ -377,12 +382,12 @@ class Adb {
       }, interval || 2000);
       const accessTimeout = setTimeout(() => {
         clearInterval(accessInterval);
-        reject("no device: timeout");
+        reject(new Error("no device: timeout"));
       }, timeout || 60000);
       _this.adbEvent.once("stop", () => {
         clearInterval(accessInterval);
         clearTimeout(accessTimeout);
-        reject("stopped waiting");
+        reject(new Error("stopped waiting"));
       });
     });
   }
@@ -400,7 +405,7 @@ class Adb {
         .shell(["cat", "/etc/recovery.fstab"])
         .then(fstab => {
           if (!fstab || typeof fstab !== "string") {
-            reject("unable to read recovery.fstab");
+            reject(new Error("unable to read recovery.fstab"));
           } else {
             const block = _this.findPartitionInFstab(partition, fstab);
             _this.log("formatting " + block + " from recovery");
@@ -413,7 +418,8 @@ class Adb {
                     _this
                       .shell("mount /" + partition)
                       .then(error => {
-                        if (error) reject("failed to mount: " + error);
+                        if (error)
+                          reject(new Error("failed to mount: " + error));
                         else resolve();
                       })
                       .catch(reject);
@@ -424,7 +430,9 @@ class Adb {
           }
         })
         .catch(error => {
-          reject("failed to format " + partition + ": " + error);
+          reject(
+            new Error("failed to format " + partition + ": " + error.message)
+          );
         });
     });
   }
@@ -438,7 +446,7 @@ class Adb {
         _this
           .shell(["rm", "-rf", "/cache/*"])
           .then(resolve)
-          .catch(e => reject("wiping cache failed: " + e));
+          .catch(e => reject(new Error("wiping cache failed: " + e)));
       }
       _this
         .format("cache")
@@ -458,7 +466,7 @@ class Adb {
         )[0]
         .split(" ")[0];
     } catch (error) {
-      throw "failed to parse fstab";
+      throw new Error("failed to parse fstab");
     }
   }
 
@@ -473,15 +481,15 @@ class Adb {
             !(stdout.includes(" on /") && stdout.includes(" type ")) ||
             typeof stdout !== "string"
           ) {
-            reject("unable to detect partitions");
+            reject(new Error("unable to detect partitions"));
           } else if (!stdout.includes("/" + partition)) {
-            reject("partition not found");
+            reject(new Error("partition not found"));
           } else {
             resolve(stdout.includes(" on /" + partition + " type " + type));
           }
         })
         .catch(error =>
-          reject("partition not found" + (error ? ": " + error : ""))
+          reject(new Error("partition not found" + (error ? ": " + error : "")))
         );
     });
   }
