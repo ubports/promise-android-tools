@@ -404,6 +404,16 @@ describe("Fastboot module", function() {
           expect(execFake).to.have.been.calledWith(["devices"]);
         });
       });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(fastboot.waitForDevice(5, 10)).to.be.rejectedWith(
+          "everything exploded"
+        );
+      });
       it("should reject on timeout", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, null, null);

@@ -648,6 +648,16 @@ describe("Adb module", function() {
           ]);
         });
       });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, null, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(adb.waitForDevice(5, 10)).to.be.rejectedWith(
+          "everything exploded"
+        );
+      });
       it("should reject on timeout", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(true, null, "error: no devices/emulators found");
