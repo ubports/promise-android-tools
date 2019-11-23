@@ -404,6 +404,40 @@ describe("Fastboot module", function() {
       });
       it("should report progress");
     });
+    describe("hasAccess()", function() {
+      it("should resolve true when a device is detected", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "0123456789ABCDEF	fastboot");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.hasAccess().then(r => {
+          expect(r).to.eql(true);
+          expect(execFake).to.have.been.calledWith(["devices"]);
+        });
+      });
+      it("should resolve false if no device is detected", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback();
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.hasAccess().then(r => {
+          expect(r).to.eql(false);
+          expect(execFake).to.have.been.calledWith(["devices"]);
+        });
+      });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(fastboot.hasAccess()).to.be.rejectedWith(
+          "everything exploded"
+        );
+      });
+    });
     describe("waitForDevice()", function() {
       it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {
