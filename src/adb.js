@@ -120,7 +120,6 @@ class Adb {
     var _this = this;
     var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
     return new Promise(function(resolve, reject) {
-      _this.log("getting serial number");
       _this
         .execCommand("get-serialno")
         .then(stdout => {
@@ -140,7 +139,6 @@ class Adb {
                 } else if (error.message.includes("insufficient permissions")) {
                   reject(new Error("no permissions"));
                 } else {
-                  //If we arrive here the error is unknown. It will be usefull to have it on the screen
                   reject(error);
                 }
               });
@@ -155,15 +153,9 @@ class Adb {
   }
 
   shell(args) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["shell"].concat(args))
-        .then(stdout => {
-          if (stdout) resolve(stdout.replace("\n", ""));
-          else resolve();
-        })
-        .catch(reject);
+    return this.execCommand(["shell"].concat(args)).then(stdout => {
+      if (stdout) return stdout.replace("\n", "");
+      else return;
     });
   }
 
@@ -330,32 +322,22 @@ class Adb {
 
   // Find out what operating system the device is running (currently android and ubuntu touch)
   getOs() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell(["cat", "/etc/system-image/channel.ini"])
-        .then(stdout => {
-          resolve(stdout ? "ubuntutouch" : "android");
-        })
-        .catch(reject);
+    return this.shell(["cat", "/etc/system-image/channel.ini"]).then(stdout => {
+      return stdout ? "ubuntutouch" : "android";
     });
   }
 
   // Find out if a device can be seen by adb
   hasAccess() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell(["echo", "."])
-        .then(stdout => {
-          if (stdout == ".") resolve(true);
-          else reject(new Error("unexpected response: " + stdout));
-        })
-        .catch(error => {
-          if (error == "no device") resolve(false);
-          else reject(error);
-        });
-    });
+    return this.shell(["echo", "."])
+      .then(stdout => {
+        if (stdout == ".") return true;
+        else throw new Error("unexpected response: " + stdout);
+      })
+      .catch(error => {
+        if (error == "no device") return false;
+        else throw error;
+      });
   }
 
   // Wait for a device

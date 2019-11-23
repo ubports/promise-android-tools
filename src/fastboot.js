@@ -64,115 +64,83 @@ class Fastboot {
   }
 
   flash(partition, file) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["flash", partition, file])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("flashing failed: " + error));
-        });
-    });
+    return this.execCommand(["flash", partition, file])
+      .then(stdout => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("flashing failed: " + error);
+      });
   }
 
   boot(image) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["boot", image])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("booting failed: " + error));
-        });
-    });
+    return this.execCommand(["boot", image])
+      .then(stdout => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("booting failed: " + error);
+      });
   }
 
   update(image, wipe) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand([wipe ? "-w" : "", "update", image])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("update failed: " + error));
-        });
-    });
+    return this.execCommand([wipe ? "-w" : "", "update", image])
+      .then(stdout => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("update failed: " + error);
+      });
   }
 
   rebootBootloader() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["reboot-bootloader"])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("rebooting to bootloader failed: " + error));
-        });
-    });
+    return this.execCommand(["reboot-bootloader"])
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("rebooting to bootloader failed: " + error);
+      });
   }
 
   reboot() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["reboot"])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("rebooting failed: " + error));
-        });
-    });
+    return this.execCommand(["reboot"])
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("rebooting failed: " + error);
+      });
   }
 
   continue() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["continue"])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("continuing boot failed: " + error));
-        });
-    });
+    return this.execCommand(["continue"])
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("continuing boot failed: " + error);
+      });
   }
 
   format(partition) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["format", partition])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("formatting failed: " + error));
-        });
-    });
+    return this.execCommand(["format", partition])
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("formatting failed: " + error);
+      });
   }
 
   erase(partition) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["erase", partition])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("erasing failed: " + error));
-        });
-    });
+    return this.execCommand(["erase", partition])
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("erasing failed: " + error);
+      });
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -180,36 +148,28 @@ class Fastboot {
   //////////////////////////////////////////////////////////////////////////////
 
   oemUnlock() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["oem", "unlock"])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          if (
-            error &&
-            error.message.includes("FAILED (remote: Already Unlocked)")
-          )
-            resolve();
-          else reject(new Error("oem unlock failed: " + error));
-        });
-    });
+    return this.execCommand(["oem", "unlock"])
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        if (
+          error &&
+          error.message.includes("FAILED (remote: Already Unlocked)")
+        )
+          return;
+        else throw new Error("oem unlock failed: " + error);
+      });
   }
 
   oemLock() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["oem", "lock"])
-        .then(stdout => {
-          resolve();
-        })
-        .catch(error => {
-          reject(new Error("oem lock failed: " + error));
-        });
-    });
+    return this.execCommand(["oem", "lock"])
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("oem lock failed: " + error);
+      });
   }
 
   // Flash image to a partition
@@ -234,18 +194,13 @@ class Fastboot {
 
   // Find out if a device can be seen by fastboot
   hasAccess() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["devices"])
-        .then(stdout => {
-          if (stdout && stdout.includes("fastboot")) resolve(true);
-          else resolve(false);
-        })
-        .catch(error => {
-          reject(error);
-        });
-    });
+    return this.execCommand(["devices"])
+      .then(stdout => {
+        return Boolean(stdout && stdout.includes("fastboot"));
+      })
+      .catch(error => {
+        throw error;
+      });
   }
 
   // Wait for a device

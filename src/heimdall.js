@@ -63,23 +63,21 @@ class Heimdall {
 
   // Find out if a device in download mode can be seen by heimdall
   hasAccess() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand(["detect"])
-        .then(() => resolve(true))
-        .catch(error => {
-          if (
-            error.message.includes(
-              "ERROR: Failed to detect compatible download-mode device."
-            )
-          ) {
-            resolve(false);
-          } else {
-            reject(error);
-          }
-        });
-    });
+    return this.execCommand(["detect"])
+      .then(() => {
+        return true;
+      })
+      .catch(error => {
+        if (
+          error.message.includes(
+            "ERROR: Failed to detect compatible download-mode device."
+          )
+        ) {
+          return false;
+        } else {
+          throw error;
+        }
+      });
   }
 
   // Wait for a device
