@@ -325,9 +325,7 @@ describe("Adb module", function() {
         });
       });
       it("should reject on invalid state", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null, null);
-        });
+        const execFake = sinon.spy();
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return expect(adb.reboot("someinvalidstate")).to.have.been.rejectedWith(
@@ -455,9 +453,7 @@ describe("Adb module", function() {
   describe("convenience functions", function() {
     describe("pushArray()", function() {
       it("should reject on empty array", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null, null);
-        });
+        const execFake = sinon.spy();
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return expect(adb.pushArray([])).to.have.been.rejected;
@@ -621,13 +617,6 @@ describe("Adb module", function() {
         return expect(adb.hasAccess()).to.have.been.rejectedWith(
           "unexpected response: This is an unexpected reply"
         );
-        expect(execFake).to.have.been.calledWith([
-          "-P",
-          5037,
-          "shell",
-          "echo",
-          "."
-        ]);
       });
     });
     describe("waitForDevice()", function() {
