@@ -83,7 +83,10 @@ describe("Integration tests", function() {
         echoCommand + " " + common.stdoutFilter("not"),
         (error, stdout, stderr) => {
           expect(error).to.equal(null);
-          expect(stdout).to.equal("this\nlooks\nok\n");
+          expect(stdout).to.include("this");
+          expect(stdout).to.include("looks");
+          expect(stdout).to.not.include("not");
+          expect(stdout).to.include("ok");
           expect(stderr).to.equal("");
           done();
         }
