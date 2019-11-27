@@ -173,7 +173,7 @@ class Adb {
       var lastSize = 0;
       var progressInterval = setInterval(() => {
         _this
-          .shell(["stat", "-t", dest + "/" + path.basename(file)])
+          .shell(["stat", "-t", common.quotepath(dest + "/" + path.basename(file))])
           .then(stat => {
             _this.adbEvent.emit(
               "push:progress:size",
@@ -240,7 +240,7 @@ class Adb {
 
   // Push an array of files and report progress
   // { src, dest }
-  pushArray(files, progress) {
+  pushArray(files = [], progress = () => {}, interval) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       if (files.length <= 0) {
@@ -262,7 +262,7 @@ class Adb {
         }
         function pushNext(i) {
           _this
-            .push(files[i].src, files[i].dest)
+            .push(files[i].src, files[i].dest, interval)
             .then(() => {
               if (i + 1 < files.length) {
                 pushNext(i + 1);
