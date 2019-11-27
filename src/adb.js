@@ -173,7 +173,11 @@ class Adb {
       var lastSize = 0;
       var progressInterval = setInterval(() => {
         _this
-          .shell(["stat", "-t", common.quotepath(dest + "/" + path.basename(file))])
+          .shell([
+            "stat",
+            "-t",
+            common.quotepath(dest + "/" + path.basename(file))
+          ])
           .then(stat => {
             _this.adbEvent.emit(
               "push:progress:size",

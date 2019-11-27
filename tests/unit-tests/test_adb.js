@@ -426,7 +426,10 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         const progressSpy = sinon.spy();
-        return Promise.all([adb.pushArray([], progressSpy), adb.pushArray()]).then(r => {
+        return Promise.all([
+          adb.pushArray([], progressSpy),
+          adb.pushArray()
+        ]).then(r => {
           expect(r[0]).to.equal(undefined);
           expect(r[1]).to.equal(undefined);
           expect(execFake).to.not.have.been.called;
@@ -448,36 +451,30 @@ describe("Adb module", function() {
         const progressSpy = sinon.spy();
         return adb.pushArray(fakeArray, progressSpy, 1).then(() => {
           expect(progressSpy).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(
-            [
-              "-P",
-              5037,
-              "push",
-              common.quotepath("tests/test-data/test_file"),
-              "/tmp/target",
-              common.stdoutFilter("%]")
-            ]
-          );
-          expect(execFake).to.have.been.calledWith(
-            [
-              "-P",
-              5037,
-              "push",
-              common.quotepath("tests/test-data/test file"),
-              "/tmp/target",
-              common.stdoutFilter("%]")
-            ]
-          );
-          expect(execFake).to.have.been.calledWith(
-            [
-              "-P",
-              5037,
-              "shell",
-              "stat",
-              "-t",
-              common.quotepath("/tmp/target/test_file")
-            ]
-          );
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "push",
+            common.quotepath("tests/test-data/test_file"),
+            "/tmp/target",
+            common.stdoutFilter("%]")
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "push",
+            common.quotepath("tests/test-data/test file"),
+            "/tmp/target",
+            common.stdoutFilter("%]")
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "stat",
+            "-t",
+            common.quotepath("/tmp/target/test_file")
+          ]);
         });
       });
       it("should reject if files are inaccessible", function() {
