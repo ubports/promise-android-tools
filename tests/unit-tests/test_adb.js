@@ -28,6 +28,7 @@ chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const Adb = require("../../src/module.js").Adb;
+const common = require("../../src/common.js");
 
 describe("Adb module", function() {
   describe("constructor()", function() {
@@ -189,33 +190,14 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.push("tests/test-data/test_file", "/tmp/target").then(() => {
-          if (process.platform == "darwin")
-            expect(execFake).to.have.been.calledWith([
-              "-P",
-              5037,
-              "push",
-              "tests/test-data/test_file",
-              "/tmp/target",
-              ' | grep -v "%]"'
-            ]);
-          else if (process.platform == "win32")
-            expect(execFake).to.have.been.calledWith([
-              "-P",
-              5037,
-              "push",
-              '"tests/test-data/test_file"',
-              "/tmp/target",
-              ' | findstr /v "%]"'
-            ]);
-          else
-            expect(execFake).to.have.been.calledWith([
-              "-P",
-              5037,
-              "push",
-              '"tests/test-data/test_file"',
-              "/tmp/target",
-              ' | grep -v "%]"'
-            ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "push",
+            common.quotepath("tests/test-data/test_file"),
+            "/tmp/target",
+            common.stdoutFilter("%]")
+          ]);
         });
       });
       it("should reject if device is out of space", function() {
