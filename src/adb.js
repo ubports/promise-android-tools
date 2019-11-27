@@ -186,12 +186,11 @@ class Adb {
             _this.log("failed to stat: " + e);
           });
       }, interval || 1000);
-      var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
       // stdout needs to be muted to not exceed buffer on very large transmissions
       _this
         .execCommand([
           "push",
-          guardedfile,
+          common.quotepath(file),
           dest,
           process.platform == "win32" ? ' | findstr /v "%]"' : ' | grep -v "%]"'
         ])

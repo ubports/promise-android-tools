@@ -64,6 +64,12 @@ function handleError(error, stdout, stderr) {
   }
 }
 
+// Add platform-specific quotes to path string (macos can't handle double quotes)
+function quotepath(file) {
+  return process.platform == "darwin" ? file : '"' + file + '"';
+}
+
 module.exports = {
-  handleError: handleError
+  handleError: handleError,
+  quotepath: quotepath
 };
