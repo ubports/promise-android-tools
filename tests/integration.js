@@ -77,9 +77,9 @@ describe("Integration tests", function() {
   });
   describe("Common module", function() {
     it("should be able to filter stdout", function(done) {
-      let stringToEcho = process.platform != "win32" ? "this\nlooks\nnot\nok" : "this`nlooks`nnot`nok";
+      let stringToEcho = process.platform != "win32" ? "\"this\nlooks\nnot\nok\"" : "this`nlooks`nnot`nok";
       exec(
-        "echo \"" + stringToEcho + "\" " + common.stdoutFilter("not"),
+        "echo " + stringToEcho + " " + common.stdoutFilter("not"),
         (error, stdout, stderr) => {
           expect(error).to.equal(null);
           expect(stdout).to.equal("this\nlooks\nok\n");
@@ -90,7 +90,7 @@ describe("Integration tests", function() {
     });
     it("should be able to quote file paths", function(done) {
       exec(
-        (process.platform == "win32" ? "dir " : "ls ") + common.quotepath("tests/test-data/test file"),
+        (process.platform == "win32" ? "dir " : "ls ") + common.quotepath(__dirname + "/test-data/test file"),
         (error, stdout, stderr) => {
           expect(error).to.equal(null);
           expect(stdout).to.exist;
