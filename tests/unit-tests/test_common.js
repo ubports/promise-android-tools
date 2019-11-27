@@ -132,4 +132,13 @@ describe("Common module", function() {
       );
     });
   });
+  describe("stdoutFilter()", function() {
+    it("should use correct filter for the platform", function() {
+      expect(common.stdoutFilter("string")).to.equal(
+        process.platform == "win32"
+          ? ' | findstr /v "string"'
+          : ' | grep -v "string"'
+      );
+    });
+  });
 });

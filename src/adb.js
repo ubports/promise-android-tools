@@ -186,13 +186,12 @@ class Adb {
             _this.log("failed to stat: " + e);
           });
       }, interval || 1000);
-      // stdout needs to be muted to not exceed buffer on very large transmissions
       _this
         .execCommand([
           "push",
           common.quotepath(file),
           dest,
-          process.platform == "win32" ? ' | findstr /v "%]"' : ' | grep -v "%]"'
+          common.stdoutFilter("%]")
         ])
         .then(stdout => {
           clearInterval(progressInterval);

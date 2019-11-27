@@ -69,7 +69,15 @@ function quotepath(file) {
   return process.platform == "darwin" ? file : '"' + file + '"';
 }
 
+// hack to filter a string from stdout to not exceed buffer
+function stdoutFilter(query) {
+  return process.platform == "win32"
+    ? ' | findstr /v "' + query + '"'
+    : ' | grep -v "' + query + '"';
+}
+
 module.exports = {
   handleError: handleError,
-  quotepath: quotepath
+  quotepath: quotepath,
+  stdoutFilter: stdoutFilter
 };
