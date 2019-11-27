@@ -66,7 +66,7 @@ function handleError(error, stdout, stderr) {
 
 // Add platform-specific quotes to path string (macos can't handle double quotes)
 function quotepath(file) {
-  return process.platform == "darwin" ? file : '"' + file + '"';
+  return process.platform == "darwin" ? "'" + file + "'" : '"' + file + '"';
 }
 
 // hack to filter a string from stdout to not exceed buffer

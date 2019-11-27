@@ -88,5 +88,16 @@ describe("Integration tests", function() {
         }
       );
     });
+    it("should be able to quote file paths", function(done) {
+      exec(
+        (process.platform == "win32" ? "dir " : "ls ") + common.quotepath("tests/test-data/test file"),
+        (error, stdout, stderr) => {
+          expect(error).to.equal(null);
+          expect(stdout).to.exist;
+          expect(stderr).to.equal("");
+          done();
+        }
+      );
+    });
   })
 });

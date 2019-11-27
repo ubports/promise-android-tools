@@ -127,7 +127,7 @@ describe("Common module", function() {
     it("should use correct quotes for the platform", function() {
       expect(common.quotepath("some/path with/ spaces")).to.equal(
         process.platform == "darwin"
-          ? "some/path with/ spaces"
+          ? "'some/path with/ spaces'"
           : '"some/path with/ spaces"'
       );
     });
