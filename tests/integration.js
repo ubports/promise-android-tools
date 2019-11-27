@@ -29,6 +29,7 @@ chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const tools = require("../src/module.js");
+const common = require("../src/common.js");
 
 describe("Integration tests", function() {
   ["Adb","Fastboot","Heimdall"].forEach(tool => {
@@ -60,13 +61,17 @@ describe("Integration tests", function() {
         const execStub = (args, callback) => {
           exec(
             "node tests/test-data/fake_fileaccesser.js " +
-              args[args.length - 2],
+              args.join(" ").replace("-P 5037", ""),
             callback
           );
         };
         const logSpy = sinon.spy();
         const _tool = new tools[tool]({ exec: execStub, log: logSpy});
-        return expect(_tool.execCommand(["tests/test-data/test_file"])).to.not.have.been.rejected;
+        return Promise.all([
+          expect(_tool.execCommand(["this/file/does/not/exist"])).to.have.been.rejected,
+          expect(_tool.execCommand(["tests/test-data/test_file"])).to.not.have.been.rejected,
+          expect(_tool.execCommand([common.quotepath("tests/test-data/test file")])).to.not.have.been.rejected
+        ]);
       });
     });
   });
