@@ -18,7 +18,6 @@
  */
 
 const fs = require("fs");
-const exec = require("child_process").exec;
 const chai = require("chai");
 const sinon = require("sinon");
 const chaiAsPromised = require("chai-as-promised");
@@ -66,17 +65,19 @@ describe("Adb module", function() {
       });
     });
     describe("execCommand()", function() {
-      it("should call an executable with port argument", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_executable.js " + args.join(" "),
-            callback
-          );
-        };
+      it("should call an with port argument", function() {
+        const execFake = sinon.fake((args, callback) =>
+          callback(null, args.join(" "))
+        );
         const logStub = sinon.stub();
-        const adb = new Adb({ exec: execStub, log: logStub, port: 1234 });
-        return adb.execCommand().then((r, r2, r3) => {
-          expect(r).to.equal("-P 1234");
+        const adb = new Adb({ exec: execFake, log: logStub, port: 1234 });
+        return adb.execCommand(["additional arg"]).then(r => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            1234,
+            "additional arg"
+          ]);
+          expect(r).to.equal("-P 1234 additional arg");
         });
       });
     });
@@ -169,20 +170,6 @@ describe("Adb module", function() {
       });
     });
     describe("push()", function() {
-      it("executable should be able to access files", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_fileaccesser.js " +
-              args[args.length - 2],
-            callback
-          );
-        };
-        const logSpy = sinon.spy();
-        const adb = new Adb({ exec: execStub, log: logSpy });
-        return adb.push("tests/test-data/test_file", "/tmp/target").then(r => {
-          expect(r).to.equal(undefined);
-        });
-      });
       it("should push file", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, null, null);

@@ -18,7 +18,6 @@
  */
 
 const fs = require("fs");
-const exec = require("child_process").exec;
 const chai = require("chai");
 const sinon = require("sinon");
 const chaiAsPromised = require("chai-as-promised");
@@ -64,35 +63,15 @@ describe("Fastboot module", function() {
     });
     describe("execCommand()", function() {
       it("should call an executable with specified argument", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_executable.js " + args.join(" "),
-            callback
-          );
-        };
+        const execFake = sinon.fake((args, callback) =>
+          callback(null, args.join(" "))
+        );
         const logStub = sinon.stub();
-        const fastboot = new Fastboot({ exec: execStub, log: logStub });
-        return fastboot
-          .execCommand(["some", "test", "arguments"])
-          .then((r, r2, r3) => {
-            expect(r).to.equal("some test arguments");
-          });
-      });
-      it("called executable should be able to access files", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_fileaccesser.js " +
-              args[args.length - 2],
-            callback
-          );
-        };
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execStub, log: logSpy });
-        return fastboot
-          .execCommand(["tests/test-data/test_file", "/tmp/target"])
-          .then(r => {
-            expect(r).to.equal(undefined);
-          });
+        const fastboot = new Fastboot({ exec: execFake, log: logStub });
+        return fastboot.execCommand(["some", "test arguments"]).then(r => {
+          expect(execFake).to.have.been.calledWith(["some", "test arguments"]);
+          expect(r).to.equal("some test arguments");
+        });
       });
     });
   });
