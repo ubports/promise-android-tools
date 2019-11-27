@@ -75,4 +75,18 @@ describe("Integration tests", function() {
       });
     });
   });
+  describe("Common module", function() {
+    it("should be able to filter stdout", function(done) {
+      let stringToEcho = process.platform != "win32" ? "this\nlooks\nnot\nok" : "this`nlooks`nnot`nok";
+      exec(
+        "echo \"" + stringToEcho + "\" " + common.stdoutFilter("not"),
+        (error, stdout, stderr) => {
+          expect(error).to.equal(null);
+          expect(stdout).to.equal("this\nlooks\nok\n");
+          expect(stderr).to.equal("");
+          done();
+        }
+      );
+    });
+  })
 });
