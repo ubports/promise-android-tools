@@ -8,11 +8,11 @@ matrix:
   include:
   - os: osx
   - os: linux
-    env: CC=clang CXX=clang++ npm_config_clang=1
-    compiler: clang
 node_js:
   - "8"
   - "10"
   - "12"
+  - node
+  - lts/*
 script: "npm run-script lint && npm run-script test-travis"
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"

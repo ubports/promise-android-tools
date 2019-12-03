@@ -18,7 +18,6 @@
  */
 
 const fs = require("fs");
-const exec = require("child_process").exec;
 const chai = require("chai");
 const sinon = require("sinon");
 const chaiAsPromised = require("chai-as-promised");
@@ -28,6 +27,7 @@ chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const Fastboot = require("../../src/module.js").Fastboot;
+const common = require("../../src/common.js");
 
 describe("Fastboot module", function() {
   describe("constructor()", function() {
@@ -63,35 +63,15 @@ describe("Fastboot module", function() {
     });
     describe("execCommand()", function() {
       it("should call an executable with specified argument", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_executable.js " + args.join(" "),
-            callback
-          );
-        };
+        const execFake = sinon.fake((args, callback) =>
+          callback(null, args.join(" "))
+        );
         const logStub = sinon.stub();
-        const fastboot = new Fastboot({ exec: execStub, log: logStub });
-        return fastboot
-          .execCommand(["some", "test", "arguments"])
-          .then((r, r2, r3) => {
-            expect(r).to.equal("some test arguments");
-          });
-      });
-      it("called executable should be able to access files", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_fileaccesser.js " +
-              args[args.length - 2],
-            callback
-          );
-        };
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execStub, log: logSpy });
-        return fastboot
-          .execCommand(["tests/test-data/test_file", "/tmp/target"])
-          .then(r => {
-            expect(r).to.equal(undefined);
-          });
+        const fastboot = new Fastboot({ exec: execFake, log: logStub });
+        return fastboot.execCommand(["some", "test arguments"]).then(r => {
+          expect(execFake).to.have.been.calledWith(["some", "test arguments"]);
+          expect(r).to.equal("some test arguments");
+        });
       });
     });
   });
@@ -108,7 +88,7 @@ describe("Fastboot module", function() {
           expect(execFake).to.have.been.calledWith([
             "flash",
             "boot",
-            "/path/to/image"
+            common.quotepath("/path/to/image")
           ]);
         });
       });
@@ -132,7 +112,10 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return fastboot.boot("/path/to/image").then(r => {
           expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["boot", "/path/to/image"]);
+          expect(execFake).to.have.been.calledWith([
+            "boot",
+            common.quotepath("/path/to/image")
+          ]);
         });
       });
       it("should reject if booting failed", function() {
@@ -155,6 +138,11 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return fastboot.update("/path/to/image").then(r => {
           expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith([
+            "",
+            "update",
+            common.quotepath("/path/to/image")
+          ]);
         });
       });
       it("should not wipe if not specified", function() {
@@ -168,7 +156,7 @@ describe("Fastboot module", function() {
           expect(execFake).to.have.been.calledWith([
             "",
             "update",
-            "/path/to/image"
+            common.quotepath("/path/to/image")
           ]);
         });
       });
@@ -183,7 +171,7 @@ describe("Fastboot module", function() {
           expect(execFake).to.have.been.calledWith([
             "-w",
             "update",
-            "/path/to/image"
+            common.quotepath("/path/to/image")
           ]);
         });
       });
@@ -381,12 +369,22 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return fastboot
           .flashArray([
-            { partition: "p", file: "f" },
-            { partition: "p", file: "f" }
+            { partition: "p1", file: "f1" },
+            { partition: "p2", file: "f2" }
           ])
           .then(r => {
-            expect(execFake).to.have.been.called;
-            expect(execFake).to.have.been.calledWith(["flash", "p", "f"]);
+            expect(execFake).to.have.been.calledTwice;
+            expect(execFake).to.not.have.been.calledThrice;
+            expect(execFake).to.have.been.calledWith([
+              "flash",
+              "p1",
+              common.quotepath("f1")
+            ]);
+            expect(execFake).to.have.been.calledWith([
+              "flash",
+              "p2",
+              common.quotepath("f2")
+            ]);
           });
       });
       it("should reject if flashing failed", function() {

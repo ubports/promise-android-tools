@@ -18,7 +18,6 @@
  */
 
 const fs = require("fs");
-const exec = require("child_process").exec;
 const chai = require("chai");
 const sinon = require("sinon");
 const chaiAsPromised = require("chai-as-promised");
@@ -28,6 +27,7 @@ chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const Adb = require("../../src/module.js").Adb;
+const common = require("../../src/common.js");
 
 describe("Adb module", function() {
   describe("constructor()", function() {
@@ -54,6 +54,7 @@ describe("Adb module", function() {
       expect(adb.port).to.equal(1234);
     });
   });
+
   describe("private functions", function() {
     describe("exec()", function() {
       it("should call the specified function", function() {
@@ -64,22 +65,26 @@ describe("Adb module", function() {
         expect(execSpy).to.have.been.calledWith("This is an argument");
       });
     });
+
     describe("execCommand()", function() {
-      it("should call an executable with port argument", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_executable.js " + args.join(" "),
-            callback
-          );
-        };
+      it("should call an with port argument", function() {
+        const execFake = sinon.fake((args, callback) =>
+          callback(null, args.join(" "))
+        );
         const logStub = sinon.stub();
-        const adb = new Adb({ exec: execStub, log: logStub, port: 1234 });
-        return adb.execCommand().then((r, r2, r3) => {
-          expect(r).to.equal("-P 1234");
+        const adb = new Adb({ exec: execFake, log: logStub, port: 1234 });
+        return adb.execCommand(["additional arg"]).then(r => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            1234,
+            "additional arg"
+          ]);
+          expect(r).to.equal("-P 1234 additional arg");
         });
       });
     });
   });
+
   describe("basic functions", function() {
     describe("startServer()", function() {
       it("should kill all servers and start a new one", function() {
@@ -107,6 +112,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("killServer()", function() {
       it("should kill all servers", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -126,6 +132,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("getSerialno()", function() {
       it("should return serialnumber", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -154,6 +161,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("shell()", function() {
       it("should run command on device", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -167,21 +175,8 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("push()", function() {
-      it("executable should be able to access files", function() {
-        const execStub = (args, callback) => {
-          exec(
-            "node tests/test-data/fake_fileaccesser.js " +
-              args[args.length - 2],
-            callback
-          );
-        };
-        const logSpy = sinon.spy();
-        const adb = new Adb({ exec: execStub, log: logSpy });
-        return adb.push("tests/test-data/test_file", "/tmp/target").then(r => {
-          expect(r).to.equal(undefined);
-        });
-      });
       it("should push file", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(null, null, null);
@@ -189,33 +184,14 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.push("tests/test-data/test_file", "/tmp/target").then(() => {
-          if (process.platform == "darwin")
-            expect(execFake).to.have.been.calledWith([
-              "-P",
-              5037,
-              "push",
-              "tests/test-data/test_file",
-              "/tmp/target",
-              ' | grep -v "%]"'
-            ]);
-          else if (process.platform == "win32")
-            expect(execFake).to.have.been.calledWith([
-              "-P",
-              5037,
-              "push",
-              '"tests/test-data/test_file"',
-              "/tmp/target",
-              ' | findstr /v "%]"'
-            ]);
-          else
-            expect(execFake).to.have.been.calledWith([
-              "-P",
-              5037,
-              "push",
-              '"tests/test-data/test_file"',
-              "/tmp/target",
-              ' | grep -v "%]"'
-            ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "push",
+            common.quotepath("tests/test-data/test_file"),
+            "/tmp/target",
+            common.stdoutFilter("%]")
+          ]);
         });
       });
       it("should reject if device is out of space", function() {
@@ -242,16 +218,25 @@ describe("Adb module", function() {
         ).to.have.been.rejectedWith("Can't access file");
       });
       it("should reject on connection lost", function() {
-        const execFake = sinon.fake((args, callback) => {
-          if (args.includes("echo"))
-            callback(true, null, "error: no devices/emulators found");
-          else callback(true, "push-stdout", "push-stderr");
-        });
+        const execFakes = [
+          sinon.fake((args, callback) => {
+            if (args.includes("echo"))
+              callback(true, null, "error: no devices/emulators found");
+            else callback(true, "push-stdout", "push-stderr");
+          }),
+          sinon.fake((args, callback) => {
+            callback(false, "no devices/emulators found");
+          })
+        ];
         const logSpy = sinon.spy();
-        const adb = new Adb({ exec: execFake, log: logSpy });
-        return expect(
-          adb.push("tests/test-data/test_file", "/tmp/target")
-        ).to.have.been.rejectedWith("connection lost");
+        return Promise.all(
+          execFakes.map(execFake => {
+            const adb = new Adb({ exec: execFake, log: logSpy });
+            return expect(
+              adb.push("tests/test-data/test_file", "/tmp/target")
+            ).to.have.been.rejectedWith("connection lost");
+          })
+        );
       });
       it("should reject with original error on connection lost and device detection rejected", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -265,6 +250,33 @@ describe("Adb module", function() {
           adb.push("tests/test-data/test_file", "/tmp/target")
         ).to.have.been.rejectedWith(
           "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+        );
+      });
+      it("should reject with original error on connection lost and device detected", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("echo")) callback(null, ".\r\n", "");
+          else callback(true, "push-stdout", "push-stderr");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith(
+          "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+        );
+      });
+      it("should reject on unknown error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("echo"))
+            callback(false, "hasaccess-stdout", "hasaccess-stderr");
+          else callback(false, "push-stdout: 0 files pushed", "push-stderr");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith(
+          "Push failed: stdout: push-stdout: 0 files pushed"
         );
       });
       it("should survive if stat failed", function() {
@@ -286,11 +298,12 @@ describe("Adb module", function() {
               "shell",
               "stat",
               "-t",
-              "/tmp/target/test_file"
+              common.quotepath("/tmp/target/test_file")
             ]);
           });
       });
     });
+
     describe("sync()", function() {
       it("should sync all if no argument supplied");
       ["all", "system", "vendor", "oem", "data"].forEach(p => {
@@ -299,6 +312,7 @@ describe("Adb module", function() {
       it("should reject on unsupported partition");
       it("should reject on error");
     });
+
     describe("pull()", function() {
       it("should pull files/dirs from device");
       it("should pull files/dirs from device and preserve mode and timestamp");
@@ -306,6 +320,7 @@ describe("Adb module", function() {
       it("should reject if target path inaccessible");
       it("should reject on error");
     });
+
     describe("reboot()", function() {
       ["system", "recovery", "bootloader"].forEach(state => {
         it("should reboot to " + state, function() {
@@ -450,30 +465,111 @@ describe("Adb module", function() {
       it("should reject on error");
     });
   });
+
   describe("convenience functions", function() {
     describe("pushArray()", function() {
-      it("should reject on empty array", function() {
+      it("should resolve on empty array", function() {
         const execFake = sinon.spy();
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
-        return expect(adb.pushArray([])).to.have.been.rejected;
+        const progressSpy = sinon.spy();
+        return Promise.all([
+          adb.pushArray([], progressSpy),
+          adb.pushArray()
+        ]).then(r => {
+          expect(r[0]).to.equal(undefined);
+          expect(r[1]).to.equal(undefined);
+          expect(execFake).to.not.have.been.called;
+          expect(progressSpy).to.have.been.calledWith(1);
+          expect(progressSpy).to.not.have.been.calledTwice;
+        });
       });
       it("should push files", function() {
         const execFake = sinon.fake((args, callback) => {
-          callback(null, null, null);
+          if (args.includes("push")) setTimeout(callback, 5);
+          else callback(null, "1 1", null);
         });
         const logSpy = sinon.spy();
         const fakeArray = [
           { src: "tests/test-data/test_file", dest: "/tmp/target" },
-          { src: "tests/test-data/test_file", dest: "/tmp/target" }
+          { src: "tests/test-data/test file", dest: "/tmp/target" }
         ];
         const adb = new Adb({ exec: execFake, log: logSpy });
-        return adb.pushArray(fakeArray).then(() => {
-          expect(execFake).to.have.been.calledTwice;
+        const progressSpy = sinon.spy();
+        return adb.pushArray(fakeArray, progressSpy, 1).then(() => {
+          expect(progressSpy).to.have.been.called;
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "push",
+            common.quotepath("tests/test-data/test_file"),
+            "/tmp/target",
+            common.stdoutFilter("%]")
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "push",
+            common.quotepath("tests/test-data/test file"),
+            "/tmp/target",
+            common.stdoutFilter("%]")
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "stat",
+            "-t",
+            common.quotepath("/tmp/target/test_file")
+          ]);
         });
       });
-      it("should report progress");
+      it("should reject if files are inaccessible", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("stat")) setTimeout(callback, 5);
+          else callback(null, "1", null);
+        });
+        const logSpy = sinon.spy();
+        const fakeArray = [
+          { src: "tests/test-data/test_file", dest: "/tmp/target" },
+          { src: "this/file/does/not/exist", dest: "/tmp/target" },
+          { src: "tests/test-data/test file", dest: "/tmp/target" }
+        ];
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        const progressSpy = sinon.spy();
+        return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
+          expect(e).to.exist;
+        });
+      });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("push"))
+            setTimeout(
+              () =>
+                callback(
+                  1,
+                  "adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"
+                ),
+              5
+            );
+          else callback(null, "1 1", null);
+        });
+        const logSpy = sinon.spy();
+        const fakeArray = [
+          { src: "tests/test-data/test_file", dest: "/tmp/target" },
+          { src: "tests/test-data/test file", dest: "/tmp/target" }
+        ];
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        const progressSpy = sinon.spy();
+        return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
+          expect(e.message).to.include(
+            "Failed to push file 0: Error: Push failed: error: 1\nstdout: adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed."
+          );
+        });
+      });
+      it("should report progress"); // TODO: Check that the progress report actually makes sense
     });
+
     describe("getDeviceName()", function() {
       it("should get device name from getprop", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -537,6 +633,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("getOs()", function() {
       it('should resolve "ubuntutouch"', function() {
         const execFake = sinon.fake((args, callback) => {
@@ -573,6 +670,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("hasAccess()", function() {
       it("should resolve true", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -619,6 +717,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("waitForDevice()", function() {
       it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -658,6 +757,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("stopWaiting()", function() {
       it("should cause waitForDevice() to reject", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -674,6 +774,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("format()", function() {
       it("should format partition", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -735,6 +836,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("wipeCache()", function() {
       it("should resolve if cache was wiped", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -755,6 +857,7 @@ describe("Adb module", function() {
       });
       it("should reject if rm failed");
     });
+
     describe("findPartitionInFstab()", function() {
       require("../test-data/testrecoveryfstabs.json").forEach(device => {
         device.partitions.forEach(partition => {
@@ -772,6 +875,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("verifyPartitionType()", function() {
       it("should verify parition type", function() {
         const execFake = sinon.fake((args, callback) => {

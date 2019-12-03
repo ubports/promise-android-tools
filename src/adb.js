@@ -168,12 +168,15 @@ class Adb {
       } catch (e) {
         reject(new Error("Can't access file: " + e));
       }
-      var hundredEmitted;
       var fileSize = fs.statSync(file)["size"];
       var lastSize = 0;
       var progressInterval = setInterval(() => {
         _this
-          .shell(["stat", "-t", dest + "/" + path.basename(file)])
+          .shell([
+            "stat",
+            "-t",
+            common.quotepath(dest + "/" + path.basename(file))
+          ])
           .then(stat => {
             _this.adbEvent.emit(
               "push:progress:size",
@@ -186,19 +189,28 @@ class Adb {
             _this.log("failed to stat: " + e);
           });
       }, interval || 1000);
-      var guardedfile = process.platform == "darwin" ? file : '"' + file + '"'; // macos can't handle double quotes
-      // stdout needs to be muted to not exceed buffer on very large transmissions
       _this
         .execCommand([
           "push",
-          guardedfile,
+          common.quotepath(file),
           dest,
-          process.platform == "win32" ? ' | findstr /v "%]"' : ' | grep -v "%]"'
+          common.stdoutFilter("%]")
         ])
         .then(stdout => {
           clearInterval(progressInterval);
-          if (stdout && stdout.includes("remote No space left on device")) {
+          if (
+            stdout &&
+            (stdout.includes("no devices/emulators found") ||
+              stdout.includes("couldn't read from device"))
+          ) {
+            reject(new Error("connection lost"));
+          } else if (
+            stdout &&
+            stdout.includes("remote No space left on device")
+          ) {
             reject(new Error("Push failed: out of space"));
+          } else if (stdout && stdout.includes("0 files pushed")) {
+            reject(new Error("Push failed: stdout: " + stdout));
           } else {
             resolve();
           }
@@ -242,7 +254,7 @@ class Adb {
 
   // Push an array of files and report progress
   // { src, dest }
-  pushArray(files, progress) {
+  pushArray(files = [], progress = () => {}, interval) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       if (files.length <= 0) {
@@ -264,7 +276,7 @@ class Adb {
         }
         function pushNext(i) {
           _this
-            .push(files[i].src, files[i].dest)
+            .push(files[i].src, files[i].dest, interval)
             .then(() => {
               if (i + 1 < files.length) {
                 pushNext(i + 1);

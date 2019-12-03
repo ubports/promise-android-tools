@@ -64,7 +64,7 @@ class Fastboot {
   }
 
   flash(partition, file) {
-    return this.execCommand(["flash", partition, file])
+    return this.execCommand(["flash", partition, common.quotepath(file)])
       .then(stdout => {
         return;
       })
@@ -74,7 +74,7 @@ class Fastboot {
   }
 
   boot(image) {
-    return this.execCommand(["boot", image])
+    return this.execCommand(["boot", common.quotepath(image)])
       .then(stdout => {
         return;
       })
@@ -84,7 +84,11 @@ class Fastboot {
   }
 
   update(image, wipe) {
-    return this.execCommand([wipe ? "-w" : "", "update", image])
+    return this.execCommand([
+      wipe ? "-w" : "",
+      "update",
+      common.quotepath(image)
+    ])
       .then(stdout => {
         return;
       })

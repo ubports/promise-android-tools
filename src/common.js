@@ -64,6 +64,20 @@ function handleError(error, stdout, stderr) {
   }
 }
 
+// Add platform-specific quotes to path string (macos can't handle double quotes)
+function quotepath(file) {
+  return process.platform == "darwin" ? "'" + file + "'" : '"' + file + '"';
+}
+
+// hack to filter a string from stdout to not exceed buffer
+function stdoutFilter(query) {
+  return process.platform == "win32"
+    ? ' | findstr /v "' + query + '"'
+    : ' | grep -v "' + query + '"';
+}
+
 module.exports = {
-  handleError: handleError
+  handleError: handleError,
+  quotepath: quotepath,
+  stdoutFilter: stdoutFilter
 };
