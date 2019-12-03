@@ -168,7 +168,6 @@ class Adb {
       } catch (e) {
         reject(new Error("Can't access file: " + e));
       }
-      var hundredEmitted;
       var fileSize = fs.statSync(file)["size"];
       var lastSize = 0;
       var progressInterval = setInterval(() => {
@@ -199,8 +198,13 @@ class Adb {
         ])
         .then(stdout => {
           clearInterval(progressInterval);
-          if (stdout && stdout.includes("remote No space left on device")) {
+          if (stdout &&
+            (stdout.includes("no devices/emulators found") || stdout.includes("couldn't read from device"))) {
+            reject(new Error("connection lost"));
+          } else if (stdout && stdout.includes("remote No space left on device")) {
             reject(new Error("Push failed: out of space"));
+          } else if (stdout && stdout.includes("0 files pushed")) {
+            reject(new Error("Push failed: stdout: " + stdout));
           } else {
             resolve();
           }

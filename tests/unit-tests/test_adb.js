@@ -30,6 +30,7 @@ const Adb = require("../../src/module.js").Adb;
 const common = require("../../src/common.js");
 
 describe("Adb module", function() {
+
   describe("constructor()", function() {
     it("should create default adb when called without arguments", function() {
       const adb = new Adb();
@@ -54,7 +55,9 @@ describe("Adb module", function() {
       expect(adb.port).to.equal(1234);
     });
   });
+
   describe("private functions", function() {
+
     describe("exec()", function() {
       it("should call the specified function", function() {
         const execSpy = sinon.spy();
@@ -64,6 +67,7 @@ describe("Adb module", function() {
         expect(execSpy).to.have.been.calledWith("This is an argument");
       });
     });
+
     describe("execCommand()", function() {
       it("should call an with port argument", function() {
         const execFake = sinon.fake((args, callback) =>
@@ -82,7 +86,9 @@ describe("Adb module", function() {
       });
     });
   });
+
   describe("basic functions", function() {
+
     describe("startServer()", function() {
       it("should kill all servers and start a new one", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -109,6 +115,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("killServer()", function() {
       it("should kill all servers", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -128,6 +135,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("getSerialno()", function() {
       it("should return serialnumber", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -156,6 +164,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("shell()", function() {
       it("should run command on device", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -169,6 +178,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("push()", function() {
       it("should push file", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -211,16 +221,23 @@ describe("Adb module", function() {
         ).to.have.been.rejectedWith("Can't access file");
       });
       it("should reject on connection lost", function() {
-        const execFake = sinon.fake((args, callback) => {
-          if (args.includes("echo"))
-            callback(true, null, "error: no devices/emulators found");
-          else callback(true, "push-stdout", "push-stderr");
-        });
+        const execFakes = [
+          sinon.fake((args, callback) => {
+            if (args.includes("echo"))
+              callback(true, null, "error: no devices/emulators found");
+            else callback(true, "push-stdout", "push-stderr");
+          }),
+          sinon.fake((args, callback) => {
+            callback(false, "no devices/emulators found");
+          })
+        ];
         const logSpy = sinon.spy();
-        const adb = new Adb({ exec: execFake, log: logSpy });
-        return expect(
-          adb.push("tests/test-data/test_file", "/tmp/target")
-        ).to.have.been.rejectedWith("connection lost");
+        return Promise.all(execFakes.map(execFake => {
+          const adb = new Adb({ exec: execFake, log: logSpy });
+          return expect(
+            adb.push("tests/test-data/test_file", "/tmp/target")
+          ).to.have.been.rejectedWith("connection lost");
+        }));
       });
       it("should reject with original error on connection lost and device detection rejected", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -234,6 +251,34 @@ describe("Adb module", function() {
           adb.push("tests/test-data/test_file", "/tmp/target")
         ).to.have.been.rejectedWith(
           "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+        );
+      });
+      it("should reject with original error on connection lost and device detected", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("echo"))
+            callback(null, ".\r\n", "");
+          else callback(true, "push-stdout", "push-stderr");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith(
+          "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+        );
+      });
+      it("should reject on unknown error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("echo"))
+            callback(false, "hasaccess-stdout", "hasaccess-stderr");
+          else callback(false, "push-stdout: 0 files pushed", "push-stderr");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith(
+          "Push failed: stdout: push-stdout: 0 files pushed"
         );
       });
       it("should survive if stat failed", function() {
@@ -260,6 +305,7 @@ describe("Adb module", function() {
           });
       });
     });
+
     describe("sync()", function() {
       it("should sync all if no argument supplied");
       ["all", "system", "vendor", "oem", "data"].forEach(p => {
@@ -268,6 +314,7 @@ describe("Adb module", function() {
       it("should reject on unsupported partition");
       it("should reject on error");
     });
+
     describe("pull()", function() {
       it("should pull files/dirs from device");
       it("should pull files/dirs from device and preserve mode and timestamp");
@@ -275,6 +322,7 @@ describe("Adb module", function() {
       it("should reject if target path inaccessible");
       it("should reject on error");
     });
+
     describe("reboot()", function() {
       ["system", "recovery", "bootloader"].forEach(state => {
         it("should reboot to " + state, function() {
@@ -419,7 +467,9 @@ describe("Adb module", function() {
       it("should reject on error");
     });
   });
+
   describe("convenience functions", function() {
+
     describe("pushArray()", function() {
       it("should resolve on empty array", function() {
         const execFake = sinon.spy();
@@ -494,8 +544,25 @@ describe("Adb module", function() {
           expect(e).to.exist;
         });
       });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("push")) setTimeout(() => callback(1, "adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"), 5);
+          else callback(null, "1 1", null);
+        });
+        const logSpy = sinon.spy();
+        const fakeArray = [
+          { src: "tests/test-data/test_file", dest: "/tmp/target" },
+          { src: "tests/test-data/test file", dest: "/tmp/target" }
+        ];
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        const progressSpy = sinon.spy();
+        return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
+          expect(e.message).to.include("Failed to push file 0: Error: Push failed: error: 1\nstdout: adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed.")
+        })
+      });
       it("should report progress"); // TODO: Check that the progress report actually makes sense
     });
+
     describe("getDeviceName()", function() {
       it("should get device name from getprop", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -559,6 +626,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("getOs()", function() {
       it('should resolve "ubuntutouch"', function() {
         const execFake = sinon.fake((args, callback) => {
@@ -595,6 +663,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("hasAccess()", function() {
       it("should resolve true", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -641,6 +710,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("waitForDevice()", function() {
       it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -680,6 +750,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("stopWaiting()", function() {
       it("should cause waitForDevice() to reject", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -696,6 +767,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("format()", function() {
       it("should format partition", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -757,6 +829,7 @@ describe("Adb module", function() {
         );
       });
     });
+
     describe("wipeCache()", function() {
       it("should resolve if cache was wiped", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -777,6 +850,7 @@ describe("Adb module", function() {
       });
       it("should reject if rm failed");
     });
+
     describe("findPartitionInFstab()", function() {
       require("../test-data/testrecoveryfstabs.json").forEach(device => {
         device.partitions.forEach(partition => {
@@ -794,6 +868,7 @@ describe("Adb module", function() {
         });
       });
     });
+
     describe("verifyPartitionType()", function() {
       it("should verify parition type", function() {
         const execFake = sinon.fake((args, callback) => {
