@@ -30,7 +30,6 @@ const Adb = require("../../src/module.js").Adb;
 const common = require("../../src/common.js");
 
 describe("Adb module", function() {
-
   describe("constructor()", function() {
     it("should create default adb when called without arguments", function() {
       const adb = new Adb();
@@ -57,7 +56,6 @@ describe("Adb module", function() {
   });
 
   describe("private functions", function() {
-
     describe("exec()", function() {
       it("should call the specified function", function() {
         const execSpy = sinon.spy();
@@ -88,7 +86,6 @@ describe("Adb module", function() {
   });
 
   describe("basic functions", function() {
-
     describe("startServer()", function() {
       it("should kill all servers and start a new one", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -232,12 +229,14 @@ describe("Adb module", function() {
           })
         ];
         const logSpy = sinon.spy();
-        return Promise.all(execFakes.map(execFake => {
-          const adb = new Adb({ exec: execFake, log: logSpy });
-          return expect(
-            adb.push("tests/test-data/test_file", "/tmp/target")
-          ).to.have.been.rejectedWith("connection lost");
-        }));
+        return Promise.all(
+          execFakes.map(execFake => {
+            const adb = new Adb({ exec: execFake, log: logSpy });
+            return expect(
+              adb.push("tests/test-data/test_file", "/tmp/target")
+            ).to.have.been.rejectedWith("connection lost");
+          })
+        );
       });
       it("should reject with original error on connection lost and device detection rejected", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -255,8 +254,7 @@ describe("Adb module", function() {
       });
       it("should reject with original error on connection lost and device detected", function() {
         const execFake = sinon.fake((args, callback) => {
-          if (args.includes("echo"))
-            callback(null, ".\r\n", "");
+          if (args.includes("echo")) callback(null, ".\r\n", "");
           else callback(true, "push-stdout", "push-stderr");
         });
         const logSpy = sinon.spy();
@@ -469,7 +467,6 @@ describe("Adb module", function() {
   });
 
   describe("convenience functions", function() {
-
     describe("pushArray()", function() {
       it("should resolve on empty array", function() {
         const execFake = sinon.spy();
@@ -546,7 +543,15 @@ describe("Adb module", function() {
       });
       it("should reject on error", function() {
         const execFake = sinon.fake((args, callback) => {
-          if (args.includes("push")) setTimeout(() => callback(1, "adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"), 5);
+          if (args.includes("push"))
+            setTimeout(
+              () =>
+                callback(
+                  1,
+                  "adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"
+                ),
+              5
+            );
           else callback(null, "1 1", null);
         });
         const logSpy = sinon.spy();
@@ -557,8 +562,10 @@ describe("Adb module", function() {
         const adb = new Adb({ exec: execFake, log: logSpy });
         const progressSpy = sinon.spy();
         return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
-          expect(e.message).to.include("Failed to push file 0: Error: Push failed: error: 1\nstdout: adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed.")
-        })
+          expect(e.message).to.include(
+            "Failed to push file 0: Error: Push failed: error: 1\nstdout: adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed."
+          );
+        });
       });
       it("should report progress"); // TODO: Check that the progress report actually makes sense
     });
