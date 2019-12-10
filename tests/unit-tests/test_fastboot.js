@@ -73,6 +73,31 @@ describe("Fastboot module", function() {
           expect(r).to.equal("some test arguments");
         });
       });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) =>
+          callback(
+            {
+              cmd: "fastboot " + args.join(" ")
+            },
+            "everything is on fire"
+          )
+        );
+        const logStub = sinon.stub();
+        const fastboot = new Fastboot({ exec: execFake, log: logStub });
+        return fastboot
+          .execCommand(["this", "will", "not", "work"])
+          .catch(e => {
+            expect(execFake).to.have.been.calledWith([
+              "this",
+              "will",
+              "not",
+              "work"
+            ]);
+            expect(e.message).to.equal(
+              '{"error":{"cmd":"fastboot this will not work"},"stdout":"everything is on fire"}'
+            );
+          });
+      });
     });
   });
   describe("basic functions", function() {

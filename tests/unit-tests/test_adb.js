@@ -108,7 +108,7 @@ describe("Adb module", function() {
         );
         const logStub = sinon.stub();
         const adb = new Adb({ exec: execFake, log: logStub, port: 1234 });
-        return adb.execCommand(["this","will","not","work"]).catch(e => {
+        return adb.execCommand(["this", "will", "not", "work"]).catch(e => {
           expect(execFake).to.have.been.calledWith([
             "-P",
             1234,
@@ -117,7 +117,9 @@ describe("Adb module", function() {
             "not",
             "work"
           ]);
-          expect(e.message).to.equal('{"error":{"cmd":"adb -P 1234 this will not work"},"stdout":"everything is on fire"}');
+          expect(e.message).to.equal(
+            '{"error":{"cmd":"adb -P 1234 this will not work"},"stdout":"everything is on fire"}'
+          );
         });
       });
     });
