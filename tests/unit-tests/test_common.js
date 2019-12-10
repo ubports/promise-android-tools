@@ -119,7 +119,7 @@ describe("Common module", function() {
     });
     it("should hide password in command", function() {
       expect(common.handleError({ cmd: "sudo command" })).to.equal(
-        'error: {"cmd":"masked for security"}\n'
+        '{"error":{"cmd":"masked for security"}}'
       );
     });
   });

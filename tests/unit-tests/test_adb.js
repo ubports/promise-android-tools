@@ -82,6 +82,46 @@ describe("Adb module", function() {
           expect(r).to.equal("-P 1234 additional arg");
         });
       });
+      it("should reject on no permissions", function() {
+        const execFake = sinon.fake((args, callback) =>
+          callback(null, "no permissions")
+        );
+        const logStub = sinon.stub();
+        const adb = new Adb({ exec: execFake, log: logStub, port: 1234 });
+        return adb.execCommand(["something illegal"]).catch(e => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            1234,
+            "something illegal"
+          ]);
+          expect(e.message).to.equal("no permissions");
+        });
+      });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) =>
+          callback(
+            {
+              cmd: "adb " + args.join(" ")
+            },
+            "everything is on fire"
+          )
+        );
+        const logStub = sinon.stub();
+        const adb = new Adb({ exec: execFake, log: logStub, port: 1234 });
+        return adb.execCommand(["this", "will", "not", "work"]).catch(e => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            1234,
+            "this",
+            "will",
+            "not",
+            "work"
+          ]);
+          expect(e.message).to.equal(
+            '{"error":{"cmd":"adb -P 1234 this will not work"},"stdout":"everything is on fire"}'
+          );
+        });
+      });
     });
   });
 
@@ -249,7 +289,7 @@ describe("Adb module", function() {
         return expect(
           adb.push("tests/test-data/test_file", "/tmp/target")
         ).to.have.been.rejectedWith(
-          "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+          'Push failed: Error: {"error":true,"stdout":"push-stdout","stderr":"push-stderr"}'
         );
       });
       it("should reject with original error on connection lost and device detected", function() {
@@ -262,7 +302,7 @@ describe("Adb module", function() {
         return expect(
           adb.push("tests/test-data/test_file", "/tmp/target")
         ).to.have.been.rejectedWith(
-          "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+          'Push failed: Error: {"error":true,"stdout":"push-stdout","stderr":"push-stderr"}'
         );
       });
       it("should reject on unknown error", function() {
@@ -290,7 +330,7 @@ describe("Adb module", function() {
           .push("tests/test-data/test_file", "/tmp/target", 1)
           .then(ret => {
             expect(logSpy).to.have.been.calledWith(
-              "failed to stat: error: true\nstdout: stdout\nstderr: stderr"
+              'failed to stat: Error: {"error":true,"stdout":"stdout","stderr":"stderr"}'
             );
             expect(execFake).to.have.been.calledWith([
               "-P",
@@ -563,7 +603,7 @@ describe("Adb module", function() {
         const progressSpy = sinon.spy();
         return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
           expect(e.message).to.include(
-            "Failed to push file 0: Error: Push failed: error: 1\nstdout: adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed."
+            'Failed to push file 0: Error: Push failed: Error: {"error":1,"stdout":"adb: error: failed to copy \'tests/test-data/test_file\' to \'/tmp/target\': couldn\'t read from device\\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"}'
           );
         });
       });
@@ -629,7 +669,34 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.getDeviceName().catch(e => {
-          expect(e.message).to.equal("failed to cat default.prop: no response");
+          expect(e.message).to.equal("unknown getprop error");
+        });
+      });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("getprop")) callback();
+          else callback({ error: "something broke" });
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getDeviceName().catch(e => {
+          expect(e.message).to.equal(
+            'getprop error: Error: {"error":{"error":"something broke"}}'
+          );
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "getprop",
+            "ro.product.device"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "cat",
+            "default.prop"
+          ]);
         });
       });
     });
@@ -832,7 +899,7 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return expect(adb.format("cache")).to.be.rejectedWith(
-          "failed to format cache: failed to parse fstab"
+          "failed to format cache: Error: failed to parse fstab"
         );
       });
     });
@@ -926,7 +993,7 @@ describe("Adb module", function() {
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.verifyPartitionType("data", "ext4").catch(r => {
           expect(r.message).to.eql(
-            "partition not found: error: true\nstderr: everything exploded"
+            'partition not found: Error: {"error":true,"stdout":null,"stderr":"everything exploded"}'
           );
         });
       });
