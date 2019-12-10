@@ -56,11 +56,11 @@ function handleError(error, stdout, stderr) {
   ) {
     return "Killed";
   } else {
-    return (
-      (error ? "error: " + JSON.stringify(error) + "\n" : "") +
-      (stdout ? "stdout: " + stdout + "\n" : "") +
-      (stderr ? "stderr: " + stderr : "")
-    );
+    return JSON.stringify({
+      error: error,
+      stdout: stdout,
+      stderr: stderr
+    });
   }
 }
 

@@ -249,7 +249,7 @@ describe("Adb module", function() {
         return expect(
           adb.push("tests/test-data/test_file", "/tmp/target")
         ).to.have.been.rejectedWith(
-          "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+          'Push failed: Error: {"error":true,"stdout":"push-stdout","stderr":"push-stderr"}'
         );
       });
       it("should reject with original error on connection lost and device detected", function() {
@@ -262,7 +262,7 @@ describe("Adb module", function() {
         return expect(
           adb.push("tests/test-data/test_file", "/tmp/target")
         ).to.have.been.rejectedWith(
-          "Push failed: error: true\nstdout: push-stdout\nstderr: push-stderr"
+          'Push failed: Error: {"error":true,"stdout":"push-stdout","stderr":"push-stderr"}'
         );
       });
       it("should reject on unknown error", function() {
@@ -290,7 +290,7 @@ describe("Adb module", function() {
           .push("tests/test-data/test_file", "/tmp/target", 1)
           .then(ret => {
             expect(logSpy).to.have.been.calledWith(
-              "failed to stat: error: true\nstdout: stdout\nstderr: stderr"
+              'failed to stat: Error: {"error":true,"stdout":"stdout","stderr":"stderr"}'
             );
             expect(execFake).to.have.been.calledWith([
               "-P",
@@ -563,7 +563,7 @@ describe("Adb module", function() {
         const progressSpy = sinon.spy();
         return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
           expect(e.message).to.include(
-            "Failed to push file 0: Error: Push failed: error: 1\nstdout: adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed."
+            'Failed to push file 0: Error: Push failed: Error: {"error":1,"stdout":"adb: error: failed to copy \'tests/test-data/test_file\' to \'/tmp/target\': couldn\'t read from device\\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"}'
           );
         });
       });
@@ -832,7 +832,7 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return expect(adb.format("cache")).to.be.rejectedWith(
-          "failed to format cache: failed to parse fstab"
+          "failed to format cache: Error: failed to parse fstab"
         );
       });
     });
@@ -926,7 +926,7 @@ describe("Adb module", function() {
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.verifyPartitionType("data", "ext4").catch(r => {
           expect(r.message).to.eql(
-            "partition not found: error: true\nstderr: everything exploded"
+            'partition not found: Error: {"error":true,"stdout":null,"stderr":"everything exploded"}'
           );
         });
       });

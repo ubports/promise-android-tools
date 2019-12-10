@@ -100,7 +100,9 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(
           fastboot.flash("boot", "/path/to/image")
-        ).to.have.been.rejectedWith("error: true");
+        ).to.have.been.rejectedWith(
+          'flashing failed: Error: {"error":true,"stdout":"everything exploded"}'
+        );
       });
     });
     describe("boot()", function() {
@@ -126,7 +128,9 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(
           fastboot.boot("/path/to/image")
-        ).to.have.been.rejectedWith("error: true");
+        ).to.have.been.rejectedWith(
+          'booting failed: Error: {"error":true,"stdout":"everything exploded"}'
+        );
       });
     });
     describe("update()", function() {
@@ -183,7 +187,9 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(
           fastboot.update("/path/to/image")
-        ).to.have.been.rejectedWith("error: true");
+        ).to.have.been.rejectedWith(
+          'update failed: Error: {"error":true,"stdout":"everything exploded"}'
+        );
       });
     });
     describe("rebootBootloader()", function() {
@@ -205,7 +211,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.rebootBootloader()).to.have.been.rejectedWith(
-          "error: true"
+          'rebooting to bootloader failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
     });
@@ -228,7 +234,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.reboot()).to.have.been.rejectedWith(
-          "error: true"
+          'rebooting failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
     });
@@ -251,7 +257,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.continue()).to.have.been.rejectedWith(
-          "error: true"
+          'continuing boot failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
     });
@@ -274,7 +280,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.format("cache")).to.have.been.rejectedWith(
-          "error: true"
+          'formatting failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
     });
@@ -297,7 +303,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.erase("cache")).to.have.been.rejectedWith(
-          "error: true"
+          'erasing failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
     });
@@ -331,7 +337,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.oemUnlock()).to.have.been.rejectedWith(
-          "error: true"
+          'oem unlock failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
     });
@@ -354,7 +360,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.oemLock()).to.have.been.rejectedWith(
-          "error: true"
+          'oem lock failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
     });

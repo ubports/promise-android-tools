@@ -63,10 +63,12 @@ class Adb {
       _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
         if (error) {
           reject(
-            common.handleError(
-              error,
-              stdout,
-              stderr ? stderr.trim() : undefined
+            new Error(
+              common.handleError(
+                error,
+                stdout,
+                stderr ? stderr.trim() : undefined
+              )
             )
           );
         } else if (stdout) {
@@ -347,8 +349,11 @@ class Adb {
         else throw new Error("unexpected response: " + stdout);
       })
       .catch(error => {
-        if (error == "no device") return false;
-        else throw error;
+        if (error.message && error.message.includes("no device")) {
+          return false;
+        } else {
+          throw error;
+        }
       });
   }
 
@@ -424,9 +429,7 @@ class Adb {
           }
         })
         .catch(error => {
-          reject(
-            new Error("failed to format " + partition + ": " + error.message)
-          );
+          reject(new Error("failed to format " + partition + ": " + error));
         });
     });
   }
