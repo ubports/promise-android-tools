@@ -82,6 +82,44 @@ describe("Adb module", function() {
           expect(r).to.equal("-P 1234 additional arg");
         });
       });
+      it("should reject on no permissions", function() {
+        const execFake = sinon.fake((args, callback) =>
+          callback(null, "no permissions")
+        );
+        const logStub = sinon.stub();
+        const adb = new Adb({ exec: execFake, log: logStub, port: 1234 });
+        return adb.execCommand(["something illegal"]).catch(e => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            1234,
+            "something illegal"
+          ]);
+          expect(e.message).to.equal("no permissions");
+        });
+      });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) =>
+          callback(
+            {
+              cmd: "adb " + args.join(" ")
+            },
+            "everything is on fire"
+          )
+        );
+        const logStub = sinon.stub();
+        const adb = new Adb({ exec: execFake, log: logStub, port: 1234 });
+        return adb.execCommand(["this","will","not","work"]).catch(e => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            1234,
+            "this",
+            "will",
+            "not",
+            "work"
+          ]);
+          expect(e.message).to.equal('{"error":{"cmd":"adb -P 1234 this will not work"},"stdout":"everything is on fire"}');
+        });
+      });
     });
   });
 
