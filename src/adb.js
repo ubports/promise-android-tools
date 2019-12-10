@@ -303,35 +303,33 @@ class Adb {
   // Get device codename
   getDeviceName() {
     var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell(["getprop", "ro.product.device"])
-        .then(stdout => {
-          if (!stdout || stdout.includes("getprop: not found")) {
-            _this
-              .shell(["cat", "default.prop"])
-              .then(stdout => {
-                if (stdout) {
-                  resolve(
-                    stdout
-                      .split("\n")
-                      .filter(p => p.includes("ro.product.device="))[0]
-                      .replace("ro.product.device=", "")
-                      .trim()
-                  );
-                } else {
-                  reject(new Error("failed to cat default.prop: no response"));
-                }
-              })
-              .catch(e =>
-                reject(new Error("failed to cat default.prop: " + e))
-              );
-          } else {
-            resolve(stdout.replace(/\W/g, ""));
-          }
-        })
-        .catch(e => reject(new Error("getprop error: " + e)));
-    });
+    return _this
+      .shell(["getprop", "ro.product.device"])
+      .then(stdout => {
+        if (!stdout || stdout.includes("getprop: not found")) {
+          throw null;
+        } else {
+          return stdout.replace(/\W/g, "");
+        }
+      })
+      .catch(e => {
+        return _this
+          .shell(["cat", "default.prop"])
+          .catch(e => {
+            throw new Error("getprop error: " + e);
+          })
+          .then(stdout => {
+            if (stdout) {
+              return stdout
+                .split("\n")
+                .filter(p => p.includes("ro.product.device="))[0]
+                .replace("ro.product.device=", "")
+                .trim();
+            } else {
+              throw new Error("unknown getprop error");
+            }
+          });
+      });
   }
 
   // Find out what operating system the device is running (currently android and ubuntu touch)

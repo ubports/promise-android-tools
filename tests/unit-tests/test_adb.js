@@ -669,7 +669,7 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.getDeviceName().catch(e => {
-          expect(e.message).to.equal("failed to cat default.prop: no response");
+          expect(e.message).to.equal("unknown getprop error");
         });
       });
     });
