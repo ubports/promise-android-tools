@@ -672,6 +672,33 @@ describe("Adb module", function() {
           expect(e.message).to.equal("unknown getprop error");
         });
       });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("getprop")) callback();
+          else callback({ error: "something broke" });
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getDeviceName().catch(e => {
+          expect(e.message).to.equal(
+            'getprop error: Error: {"error":{"error":"something broke"}}'
+          );
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "getprop",
+            "ro.product.device"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "cat",
+            "default.prop"
+          ]);
+        });
+      });
     });
 
     describe("getOs()", function() {
