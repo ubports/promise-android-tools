@@ -699,6 +699,34 @@ describe("Adb module", function() {
           ]);
         });
       });
+      it("should reject if default.prop didn't include ro.product.device", function() {
+        const execFake = sinon.fake((args, callback) => {
+          if (args.includes("getprop")) {
+            callback();
+          } else {
+            callback(null, "asdf=wasd\n1=234\nsomething=somethingelse");
+          }
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getDeviceName().catch(e => {
+          expect(e.message).to.equal("unknown getprop error");
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "getprop",
+            "ro.product.device"
+          ]);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "cat",
+            "default.prop"
+          ]);
+        });
+      });
     });
 
     describe("getOs()", function() {

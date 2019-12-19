@@ -319,7 +319,7 @@ class Adb {
             throw new Error("getprop error: " + e);
           })
           .then(stdout => {
-            if (stdout) {
+            if (stdout && stdout.includes("ro.product.device=")) {
               return stdout
                 .split("\n")
                 .filter(p => p.includes("ro.product.device="))[0]
