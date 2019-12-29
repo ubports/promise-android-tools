@@ -338,20 +338,19 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this
-        .shell(["cat", "/etc/system-image/channel.ini","|grep tag="])
+        .shell(["cat", "/etc/system-image/channel.ini", "|grep tag="])
         .then(stdout => {
-                if (stdout) {
-                  resolve(
-                    stdout
-                      .split(",")
-                      .filter(p => p.includes("tag="))[0]
-                      .replace("tag=", "")
-                      .trim()
-                  );
-                } else {
-                  reject(new Error("failed to cat default.prop: no response"));
-                }
-              
+          if (stdout) {
+            resolve(
+              stdout
+                .split(",")
+                .filter(p => p.includes("tag="))[0]
+                .replace("tag=", "")
+                .trim()
+            );
+          } else {
+            reject(new Error("failed to cat default.prop: no response"));
+          }
         })
         .catch(e => reject(new Error("getprop error: " + e)));
     });
@@ -515,138 +514,194 @@ class Adb {
 
   // Return the file size of a complete folder
   getFileSize(file) {
-    return this.getState().then(stdout => {
+    return this.getState()
+      .then(stdout => {
         if (stdout == "recovery") {
           // Recovery
-          return this
-            .shell("du -shk " + file)
+          return this.shell("du -shk " + file)
             .then(stdout => {
               stdout = parseFloat(stdout);
               this.log("FileSize is " + stdout + " Ko");
-              return (stdout);
-            }).catch(e=>{throw new Error(e)});
+              return stdout;
+            })
+            .catch(e => {
+              throw new Error(e);
+            });
         } else if (stdout == "device") {
           // Device
-          return this
-            .shell("du -shk " + file+ " |tail -n1")// + " --output=used|tail -n1")//df -hBK
+          return this.shell("du -shk " + file + " |tail -n1") // + " --output=used|tail -n1")//df -hBK
             .then(stdout => {
               stdout = parseFloat(stdout);
               this.log("FileSize is " + stdout + " Ko");
-              return (stdout);
-            }).catch(e=>{throw new Error(e)});
+              return stdout;
+            })
+            .catch(e => {
+              throw new Error(e);
+            });
         }
-    }).catch(e => {
-      throw new Error("Unable to get filesize");
-    });
+      })
+      .catch(e => {
+        throw new Error("Unable to get filesize");
+      });
   }
 
   // Return the available size of a partition
   getAvailableSize(partition) {
-    return this.getState().then(stdout => {
+    return this.getState()
+      .then(stdout => {
         if (stdout == "recovery") {
           // Recovery
           throw new Error("You must be in device mode");
         } else if (stdout == "device") {
           // Device
-          return this
-            .shell("df -hBK " + partition + " --output=avail|tail -n1")
+          return this.shell("df -hBK " + partition + " --output=avail|tail -n1")
             .then(stdout => {
               stdout = parseFloat(stdout);
               this.log("FileSize available is " + stdout + " Ko");
-              return (stdout);
-            }).catch(e=>{throw new Error(e)});
+              return stdout;
+            })
+            .catch(e => {
+              throw new Error(e);
+            });
         }
-    }).catch(e => {
-      throw new Error("Unable to get filesize");
-    });
+      })
+      .catch(e => {
+        throw new Error("Unable to get filesize");
+      });
   }
 
   // Return the total size of a partition
   getTotalSize(partition) {
-    return this.getState().then(stdout => {
+    return this.getState()
+      .then(stdout => {
         if (stdout == "recovery") {
           // Recovery
           throw new Error("You must be in device mode");
         } else if (stdout == "device") {
           // Device
-          return this
-            .shell("df -hBK " + partition + " --output=size|tail -n1")
+          return this.shell("df -hBK " + partition + " --output=size|tail -n1")
             .then(stdout => {
               stdout = parseFloat(stdout);
               this.log("FileSize total is " + stdout + " Ko");
-              return (stdout);
-            }).catch(e=>{throw new Error(e)});
+              return stdout;
+            })
+            .catch(e => {
+              throw new Error(e);
+            });
         }
-    }).catch(e => {
-      throw new Error("Unable to get filesize");
-    });
+      })
+      .catch(e => {
+        throw new Error("Unable to get filesize");
+      });
   }
 
   // Return the status of the device (bootloader, recovery, device)
- getState() {
-  
-  return this.execCommand(["get-state"]).then( (stdout)=>{
-     this.log("Device state is "+stdout);
-     return stdout;
-    }).catch (e=>{
-          this.log("Unknown error :"+e);     
-          throw e;
-         });
- }
+  getState() {
+    return this.execCommand(["get-state"])
+      .then(stdout => {
+        this.log("Device state is " + stdout);
+        return stdout;
+      })
+      .catch(e => {
+        this.log("Unknown error :" + e);
+        throw e;
+      });
+  }
 
-// Backup file "srcfile" from the phone to "destfile" localy
- createRemoteUbuntuBackup(srcfile,destfile,adbpath, progress) {
+  // Backup file "srcfile" from the phone to "destfile" localy
+  createRemoteUbuntuBackup(srcfile, destfile, adbpath, progress) {
     var _this = this;
-    _this.log("Backup Function Entry, will backup "+srcfile+" to "+destfile+" adbpath:"+adbpath);
+    _this.log(
+      "Backup Function Entry, will backup " +
+        srcfile +
+        " to " +
+        destfile +
+        " adbpath:" +
+        adbpath
+    );
     return new Promise(function(resolve, reject) {
-        _this.fileSize = 9999999999999; // Init to file size to a very high value while waiting for the real size.
-        // Get file size
-        _this.getFileSize(srcfile).then(stdout=>{
-           _this.log("Returned FileSize is "+stdout+ " Ko"); 
-           _this.fileSize = stdout;
-           // Creating pipe
-           _this.shell("mkfifo /backup.pipe").then((stdout) => {
+      _this.fileSize = 9999999999999; // Init to file size to a very high value while waiting for the real size.
+      // Get file size
+      _this
+        .getFileSize(srcfile)
+        .then(stdout => {
+          _this.log("Returned FileSize is " + stdout + " Ko");
+          _this.fileSize = stdout;
+          // Creating pipe
+          _this
+            .shell("mkfifo /backup.pipe")
+            .then(stdout => {
               _this.log("Pipe created !");
               var lastSize = 0;
               var progressInterval = setInterval(() => {
-                 const stats = fs.statSync(destfile);
-                 const fileSizeInBytes = stats.size;
-                 progress ((lastSize / _this.fileSize)*100);
-                     lastSize = fileSizeInBytes/1024;
+                const stats = fs.statSync(destfile);
+                const fileSizeInBytes = stats.size;
+                progress((lastSize / _this.fileSize) * 100);
+                lastSize = fileSizeInBytes / 1024;
               }, 1000);
 
               // Start the backup
               _this.log("Starting Backup...");
-              _this.execCommand(["exec-out 'tar -cvp ",srcfile," 2>/backup.pipe' | dd of="+destfile]);
+              _this.execCommand([
+                "exec-out 'tar -cvp ",
+                srcfile,
+                " 2>/backup.pipe' | dd of=" + destfile
+              ]);
               //_this.execCommand(["exec-out 'tar -cvp ",srcfile," 2>/backup.pipe' | dd of="+destfile,
               //                   " & ",(adbpath+"/adb -P"),_this.port,
-              _this.execCommand([" shell cat /backup.pipe",
-                                 common.stdoutFilter("%]")]).then( (error, stdout, stderr) => {//process.platform == "win32" ? ' | findstr /v "%]"' : ' | grep -v "%]"']
-	         _this.log("Backup Ended");
-                 clearInterval(progressInterval); 
-                 _this.shell("rm /backup.pipe").then( ()=> {
-                     _this.log("Pipe released.");
-                     resolve(); // Everything's Fine !
-                 }).catch(e=>{reject(e+", Unable to delete the pipe ");}); // Pipe Deletion
-              }).catch(e=>{reject(e+", Unable to backuping the device ");}); // Backup start
-           }).catch(e=>{reject(e+", Pipe creation failed ");}); // Pipe Creation
-        }).catch(e=>{reject(e+", Unable to get the partition's filesize ");}); // Get file size
-   });
- }
+              _this
+                .execCommand([
+                  " shell cat /backup.pipe",
+                  common.stdoutFilter("%]")
+                ])
+                .then((error, stdout, stderr) => {
+                  //process.platform == "win32" ? ' | findstr /v "%]"' : ' | grep -v "%]"']
+                  _this.log("Backup Ended");
+                  clearInterval(progressInterval);
+                  _this
+                    .shell("rm /backup.pipe")
+                    .then(() => {
+                      _this.log("Pipe released.");
+                      resolve(); // Everything's Fine !
+                    })
+                    .catch(e => {
+                      reject(e + ", Unable to delete the pipe ");
+                    }); // Pipe Deletion
+                })
+                .catch(e => {
+                  reject(e + ", Unable to backuping the device ");
+                }); // Backup start
+            })
+            .catch(e => {
+              reject(e + ", Pipe creation failed ");
+            }); // Pipe Creation
+        })
+        .catch(e => {
+          reject(e + ", Unable to get the partition's filesize ");
+        }); // Get file size
+    });
+  }
 
-
-// Restore file "srcfile" from the computer to "destfile" on the phone
- applyRemoteUbuntuBackup(destfile,srcfile, adbpath,bckSize, progress) {
+  // Restore file "srcfile" from the computer to "destfile" on the phone
+  applyRemoteUbuntuBackup(destfile, srcfile, adbpath, bckSize, progress) {
     var _this = this;
-    _this.log("Restore Function Entry, will restore "+srcfile+" on "+destfile+" adbpath:"+adbpath);
+    _this.log(
+      "Restore Function Entry, will restore " +
+        srcfile +
+        " on " +
+        destfile +
+        " adbpath:" +
+        adbpath
+    );
     return new Promise(function(resolve, reject) {
-        _this.fileSize = 9999999999999; // Init to file size to a very high value while waiting for the real size.
-        
-        
-           // Creating pipe
-           _this.shell("mkfifo /restore.pipe").then((stdout) => {
-              _this.log("Pipe created !");
-/*
+      _this.fileSize = 9999999999999; // Init to file size to a very high value while waiting for the real size.
+
+      // Creating pipe
+      _this
+        .shell("mkfifo /restore.pipe")
+        .then(stdout => {
+          _this.log("Pipe created !");
+          /*
              var lastSize = 0;
              _this.fileSize = bckSize;
              var progressInterval = setInterval(() => {
@@ -669,22 +724,39 @@ class Adb {
                   }, 1000);
   */
 
-              // Start the restoration
-              _this.log("Starting Restore..."); //adb push user.tar /resto.pipe & adb shell 'cd /; cat /resto.pipe | tar -xv'
-              _this.execCommand(["push",srcfile,"/restore.pipe &",
-                                 (adbpath+"/adb -P"),_this.port,
-                                 " shell 'cd /; cat /restore.pipe | tar -xv'"]).then( (error, stdout, stderr) => {
-	         _this.log("Restore Ended");
-                 //clearInterval(progressInterval); 
-                 _this.shell("rm /restore.pipe").then( ()=> {
-                     _this.log("Pipe released.");
-                     resolve(); // Everything's Fine !
-                 }).catch(e=>{reject(e);}); // Pipe Deletion
-              }).catch(e=>{reject(e);}); // Backup start
-           }).catch(e=>{reject(e);}); // Pipe Creation
-   });
- }
-
+          // Start the restoration
+          _this.log("Starting Restore..."); //adb push user.tar /resto.pipe & adb shell 'cd /; cat /resto.pipe | tar -xv'
+          _this
+            .execCommand([
+              "push",
+              srcfile,
+              "/restore.pipe &",
+              adbpath + "/adb -P",
+              _this.port,
+              " shell 'cd /; cat /restore.pipe | tar -xv'"
+            ])
+            .then((error, stdout, stderr) => {
+              _this.log("Restore Ended");
+              //clearInterval(progressInterval);
+              _this
+                .shell("rm /restore.pipe")
+                .then(() => {
+                  _this.log("Pipe released.");
+                  resolve(); // Everything's Fine !
+                })
+                .catch(e => {
+                  reject(e);
+                }); // Pipe Deletion
+            })
+            .catch(e => {
+              reject(e);
+            }); // Backup start
+        })
+        .catch(e => {
+          reject(e);
+        }); // Pipe Creation
+    });
+  }
 }
 
 module.exports = Adb;
