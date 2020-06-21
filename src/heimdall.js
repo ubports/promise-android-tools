@@ -142,12 +142,10 @@ class Heimdall {
   // Flash firmware files to partitions (names or identifiers)
   // [ {partition, file} ]
   flashArray(images) {
-    return this.execCommand(
-      [
-        "flash",
-        ...images.map(i => [`--${i.partition}`, common.quotepath(i.file)])
-      ].flat()
-    )
+    return this.execCommand([
+      "flash",
+      ...images.map(i => [`--${i.partition}`, common.quotepath(i.file)])
+    ])
       .then(() => null)
       .catch(error => {
         throw error;
