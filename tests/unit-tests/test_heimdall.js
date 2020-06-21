@@ -137,6 +137,22 @@ describe("Heimdall module", function() {
         );
       });
     });
+    describe("printPit()", function() {
+      it("should print pit from device");
+      it("should print pit file");
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            true,
+            null,
+            "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
+          );
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return expect(heimdall.printPit()).to.be.rejectedWith("no device");
+      });
+    });
   });
   describe("convenience functions", function() {
     describe("detect()", function() {
@@ -145,8 +161,8 @@ describe("Heimdall module", function() {
         heimdall.hasAccess = sinon.spy();
         heimdall.detect();
         expect(heimdall.hasAccess).to.have.been.called;
-      })
-    })
+      });
+    });
     describe("waitForDevice()", function() {
       it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {

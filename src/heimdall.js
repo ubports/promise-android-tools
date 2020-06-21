@@ -123,6 +123,16 @@ class Heimdall {
   stopWaiting() {
     this.heimdallEvent.emit("stop");
   }
+
+  // Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device.
+  printPit(file) {
+    return this.execCommand([
+      "print-pit",
+      ...(file ? ["--file", common.quotepath(file)] : [])
+    ]).catch(error => {
+      throw error;
+    });
+  }
 }
 
 module.exports = Heimdall;

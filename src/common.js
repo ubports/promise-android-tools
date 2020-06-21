@@ -22,7 +22,13 @@ function handleError(error, stdout, stderr) {
   // console.log("error: " + JSON.stringify(error))
   // console.log("stdout: " + stdout)
   // console.log("stderr: " + stderr)
-  if (stderr && stderr.includes("error: no devices/emulators found")) {
+  if (
+    stderr &&
+    (stderr.includes("error: no devices/emulators found") ||
+      stderr.includes(
+        "ERROR: Failed to detect compatible download-mode device."
+      ))
+  ) {
     return "no device";
   } else if (stderr && stderr.includes("error: device offline")) {
     return "device offline";
