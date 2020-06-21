@@ -12,6 +12,7 @@ node_js:
   - "8"
   - "10"
   - "12"
+  - "14"
   - node
   - lts/*
 script: "npm run-script lint && npm run-script test-travis"
