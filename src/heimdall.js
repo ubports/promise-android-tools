@@ -133,6 +133,30 @@ class Heimdall {
       throw error;
     });
   }
+
+  // Flashes a firmware file to a partition (name or identifier)
+  flash(partition, file) {
+    return this.execCommand([
+      "flash",
+      `--${partition}`,
+      common.quotepath(file)
+    ]).catch(error => {
+      throw error;
+    });
+  }
+
+  // Flash firmware files to partitions (names or identifiers)
+  // [ {partition, file} ]
+  flashArray(images) {
+    return this.execCommand(
+      [
+        "flash",
+        ...images.map(i => [`--${i.partition}`, common.quotepath(i.file)])
+      ].flat()
+    ).catch(error => {
+      throw error;
+    });
+  }
 }
 
 module.exports = Heimdall;
