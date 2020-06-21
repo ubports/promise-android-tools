@@ -153,8 +153,55 @@ describe("Heimdall module", function() {
         return expect(heimdall.printPit()).to.be.rejectedWith("no device");
       });
     });
+    describe("flashArray()", function() {
+      it("should flash partitions", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(false, "OK");
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return heimdall.flashArray([
+          {
+            partition: "BOOT",
+            file: "some.img"
+          }
+        ]);
+      });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            true,
+            null,
+            "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
+          );
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return expect(
+          heimdall.flashArray([
+            {
+              partition: "BOOT",
+              file: "some.img"
+            }
+          ])
+        ).to.be.rejectedWith("no device");
+      });
+    });
   });
   describe("convenience functions", function() {
+    describe("flash()", function() {
+      it("shold call flashArray()", function() {
+        const heimdall = new Heimdall();
+        heimdall.flashArray = sinon.spy();
+        heimdall.flash("BOOT", "some.img");
+        expect(heimdall.flashArray).to.have.been.calledWith([
+          {
+            partition: "BOOT",
+            file: "some.img"
+          }
+        ]);
+      });
+    });
     describe("detect()", function() {
       it("shold call hasAccess()", function() {
         const heimdall = new Heimdall();
