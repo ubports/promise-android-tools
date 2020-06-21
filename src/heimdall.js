@@ -61,6 +61,11 @@ class Heimdall {
     });
   }
 
+  // Alias for hasAccess()
+  detect() {
+    return this.hasAccess();
+  }
+
   // Find out if a device in download mode can be seen by heimdall
   hasAccess() {
     return this.execCommand(["detect"])

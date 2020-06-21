@@ -139,6 +139,14 @@ describe("Heimdall module", function() {
     });
   });
   describe("convenience functions", function() {
+    describe("detect()", function() {
+      it("shold call hasAccess()", function() {
+        const heimdall = new Heimdall();
+        heimdall.hasAccess = sinon.spy();
+        heimdall.detect();
+        expect(heimdall.hasAccess).to.have.been.called;
+      })
+    })
     describe("waitForDevice()", function() {
       it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {
