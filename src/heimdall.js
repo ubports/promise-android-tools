@@ -136,13 +136,11 @@ class Heimdall {
 
   // Flashes a firmware file to a partition (name or identifier)
   flash(partition, file) {
-    return this.execCommand([
-      "flash",
-      `--${partition}`,
-      common.quotepath(file)
-    ]).catch(error => {
-      throw error;
-    });
+    return this.execCommand(["flash", `--${partition}`, common.quotepath(file)])
+      .then(() => null)
+      .catch(error => {
+        throw error;
+      });
   }
 
   // Flash firmware files to partitions (names or identifiers)
@@ -153,9 +151,11 @@ class Heimdall {
         "flash",
         ...images.map(i => [`--${i.partition}`, common.quotepath(i.file)])
       ].flat()
-    ).catch(error => {
-      throw error;
-    });
+    )
+      .then(() => null)
+      .catch(error => {
+        throw error;
+      });
   }
 }
 
