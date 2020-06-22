@@ -28,6 +28,59 @@ chai.use(chaiAsPromised);
 
 const Heimdall = require("../../src/module.js").Heimdall;
 
+const printPitFromDevice = `Heimdall v1.4.0
+
+a lot of bullshit text goes here...
+
+
+--- Entry #0 ---
+Binary Type: 0 (AP)
+Device Type: 2 (MMC)
+Identifier: 1
+Attributes: 5 (Read/Write)
+Update Attributes: 1 (FOTA)
+Partition Block Size/Offset: 8192
+Partition Block Count: 38912
+File Offset (Obsolete): 0
+File Size (Obsolete): 0
+Partition Name: APNHLOS
+Flash Filename: NON-HLOS.bin
+FOTA Filename:
+
+
+--- Entry #1 ---
+Binary Type: 0 (AP)
+Device Type: 2 (MMC)
+Identifier: 2
+Attributes: 5 (Read/Write)
+Update Attributes: 1 (FOTA)
+Partition Block Size/Offset: 47104
+Partition Block Count: 132928
+File Offset (Obsolete): 0
+File Size (Obsolete): 0
+Partition Name: MODEM
+Flash Filename: modem.bin
+FOTA Filename:
+
+
+--- Entry #2 ---
+Binary Type: 0 (AP)
+Device Type: 2 (MMC)
+Identifier: 3
+Attributes: 5 (Read/Write)
+Update Attributes: 1 (FOTA)
+Partition Block Size/Offset: 180032
+Partition Block Count: 1024
+File Offset (Obsolete): 0
+File Size (Obsolete): 0
+Partition Name: SBL1
+Flash Filename: sbl1.mbn
+FOTA Filename:
+
+Ending session...
+Rebooting device...
+Releasing device interface...`
+
 describe("Heimdall module", function() {
   describe("constructor()", function() {
     it("should create default heimdall when called without arguments", function() {
@@ -138,7 +191,17 @@ describe("Heimdall module", function() {
       });
     });
     describe("printPit()", function() {
-      it("should print pit from device");
+      it("should print pit from device", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, printPitFromDevice);
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return heimdall.printPit().then(r => {
+          expect(r.length).to.eql(3);
+          expect(execFake).to.have.been.calledWith(["print-pit"]);
+        });
+      });
       it("should print pit file");
       it("should reject on error", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -189,6 +252,19 @@ describe("Heimdall module", function() {
     });
   });
   describe("convenience functions", function() {
+    describe("getPartitions()", function() {
+      it("should get partitions from device pit", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, printPitFromDevice);
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return heimdall.getPartitions().then(r => {
+          expect(r.length).to.eql(3);
+          expect(execFake).to.have.been.calledWith(["print-pit"]);
+        });
+      });
+    });
     describe("flash()", function() {
       it("shold call flashArray()", function() {
         const heimdall = new Heimdall();
