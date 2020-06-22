@@ -27,6 +27,7 @@ chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const Heimdall = require("../../src/module.js").Heimdall;
+const common = require("../../src/common.js");
 
 const printPitFromDevice = `Heimdall v1.4.0
 
@@ -79,7 +80,7 @@ FOTA Filename:
 
 Ending session...
 Rebooting device...
-Releasing device interface...`
+Releasing device interface...`;
 
 describe("Heimdall module", function() {
   describe("constructor()", function() {
@@ -223,12 +224,25 @@ describe("Heimdall module", function() {
         });
         const logSpy = sinon.spy();
         const heimdall = new Heimdall({ exec: execFake, log: logSpy });
-        return heimdall.flashArray([
-          {
-            partition: "BOOT",
-            file: "some.img"
-          }
-        ]);
+        return heimdall
+          .flashArray([
+            {
+              partition: "BOOT",
+              file: "some.img"
+            },
+            {
+              partition: "RECOVERY",
+              file: "other.img"
+            }
+          ])
+          .then(r => {
+            expect(r).to.eql(null);
+            expect(execFake).to.have.been.calledWith([
+              "flash",
+              `--BOOT ${common.quotepath("some.img")}`,
+              `--RECOVERY ${common.quotepath("other.img")}`
+            ]);
+          });
       });
       it("should reject on error", function() {
         const execFake = sinon.fake((args, callback) => {

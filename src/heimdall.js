@@ -130,31 +130,30 @@ class Heimdall {
       "print-pit",
       ...(file ? ["--file", common.quotepath(file)] : [])
     ])
-    .then(r =>
-      r
-        .split("\n\nEnding session...")[0]
-        .split(/--- Entry #\d ---/)
-        .slice(1)
-        .map(r => r.trim())
-    )
-    .catch(error => {
-      throw error;
-    });
+      .then(r =>
+        r
+          .split("\n\nEnding session...")[0]
+          .split(/--- Entry #\d ---/)
+          .slice(1)
+          .map(r => r.trim())
+      )
+      .catch(error => {
+        throw error;
+      });
   }
 
   getPartitions() {
-    return this.printPit()
-      .then(r =>
-        r.map(r =>
-          r
-            .split("\n")
-            .map(r => r.split(":").map(r => r.trim()))
-            .reduce((result, item) => {
-              result[item[0]] = item[1];
-              return result;
-            }, {})
-        )
+    return this.printPit().then(r =>
+      r.map(r =>
+        r
+          .split("\n")
+          .map(r => r.split(":").map(r => r.trim()))
+          .reduce((result, item) => {
+            result[item[0]] = item[1];
+            return result;
+          }, {})
       )
+    );
   }
 
   // Flashes a firmware file to a partition (name or identifier)
@@ -167,7 +166,7 @@ class Heimdall {
   flashArray(images) {
     return this.execCommand([
       "flash",
-      ...images.map(i => [`--${i.partition}`, common.quotepath(i.file)])
+      ...images.map(i => `--${i.partition} ${common.quotepath(i.file)}`)
     ])
       .then(() => null)
       .catch(error => {
