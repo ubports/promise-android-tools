@@ -47,6 +47,18 @@ const recognizedErrors = [
     stderr: undefined
   },
   {
+    expectedReturn: "bootloader is locked",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "FAILED (remote: 'Bootloader is locked.')"
+  },
+  {
+    expectedReturn: "bootloader is locked",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "FAILED (remote: not supported in locked device)"
+  },
+  {
     expectedReturn: "low battery",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
