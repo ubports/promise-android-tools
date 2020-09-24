@@ -37,6 +37,12 @@ function handleError(error, stdout, stderr) {
     stderr.includes("FAILED (remote: low power, need battery charging.)")
   ) {
     return "low battery";
+  } else if (
+    stderr &&
+    (stderr.includes("FAILED (remote: not supported in locked device)") ||
+      stderr.includes("FAILED (remote: 'Bootloader is locked.')"))
+  ) {
+    return "bootloader is locked";
   } else if (stderr && stderr.includes("FAILED (remote failure)")) {
     return "failed to boot";
   } else if (
