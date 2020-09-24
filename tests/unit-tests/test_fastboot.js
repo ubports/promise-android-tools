@@ -355,6 +355,21 @@ describe("Fastboot module", function() {
           expect(execFake).to.have.been.calledWith(["oem", "unlock"]);
         });
       });
+      it("should resolve if not necessary", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            true,
+            "",
+            "FAILED (remote: 'Not necessary')\nfastboot: error: Command failed"
+          );
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.oemUnlock().then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["oem", "unlock"]);
+        });
+      });
       it("should reject if unlocking failed", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(true, "everything exploded");
