@@ -119,18 +119,14 @@ describe("Fastboot module", function() {
       });
       it("should reject if bootloader is locked", function() {
         const execFake = sinon.fake((args, callback) => {
-          callback(
-            true,
-            "",
-            "FAILED (remote: 'Bootloader is locked.')"
-          );
+          callback(true, "", "FAILED (remote: 'Bootloader is locked.')");
         });
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(
           fastboot.flash("boot", "/path/to/image")
         ).to.have.been.rejectedWith(
-          'flashing failed: Error: bootloader is locked'
+          "flashing failed: Error: bootloader is locked"
         );
       });
       it("should reject if flashing failed", function() {
