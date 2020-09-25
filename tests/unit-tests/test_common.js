@@ -149,7 +149,7 @@ describe("Common module", function() {
       expect(common.stdoutFilter("string")).to.equal(
         process.platform == "win32"
           ? ' | findstr /v "string"'
-          : ' | grep -v "string"'
+          : ' | ( grep -v "string" || true )'
       );
     });
   });
