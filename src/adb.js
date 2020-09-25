@@ -252,9 +252,7 @@ class Adb {
 
   // sideload an ota package
   sideload(file) {
-    var _this = this;
-    var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
-    return _this.execCommand([
+    return this.execCommand([
       "sideload",
       common.quotepath(file),
       common.stdoutFilter("%)")
