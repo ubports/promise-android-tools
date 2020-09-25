@@ -79,7 +79,7 @@ function quotepath(file) {
 function stdoutFilter(query) {
   return process.platform == "win32"
     ? ' | findstr /v "' + query + '"'
-    : ' | ( grep -v "' + query + '" || true )';
+    : ' | ( grep -v "' + query + '" || true )'; // grep will fail if there are no matches
 }
 
 module.exports = {
