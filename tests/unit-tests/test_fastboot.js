@@ -117,6 +117,18 @@ describe("Fastboot module", function() {
           ]);
         });
       });
+      it("should reject if bootloader is locked", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, "", "FAILED (remote: 'Bootloader is locked.')");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(
+          fastboot.flash("boot", "/path/to/image")
+        ).to.have.been.rejectedWith(
+          "flashing failed: Error: bootloader is locked"
+        );
+      });
       it("should reject if flashing failed", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(true, "everything exploded");
@@ -347,6 +359,21 @@ describe("Fastboot module", function() {
       it("should resolve if already unlocked", function() {
         const execFake = sinon.fake((args, callback) => {
           callback(true, "FAILED (remote: Already Unlocked)");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.oemUnlock().then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["oem", "unlock"]);
+        });
+      });
+      it("should resolve if not necessary", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            true,
+            "",
+            "FAILED (remote: 'Not necessary')\nfastboot: error: Command failed"
+          );
         });
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });

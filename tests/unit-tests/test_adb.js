@@ -499,7 +499,22 @@ describe("Adb module", function() {
       it("should reject on error");
     });
     describe("sideload()", function() {
-      it("should sideload android ota package");
+      it("should sideload android ota package", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null, null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.sideload("tests/test-data/test_file").then(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "sideload",
+            common.quotepath("tests/test-data/test_file"),
+            common.stdoutFilter("%)")
+          ]);
+        });
+      });
       it("should reject if no package specified");
       it("should reject if package inaccessible");
       it("should reject on error");

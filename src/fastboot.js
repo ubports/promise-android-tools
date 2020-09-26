@@ -159,7 +159,8 @@ class Fastboot {
       .catch(error => {
         if (
           error &&
-          error.message.includes("FAILED (remote: Already Unlocked)")
+          (error.message.includes("FAILED (remote: Already Unlocked)") ||
+            error.message.includes("FAILED (remote: 'Not necessary')"))
         )
           return;
         else throw new Error("oem unlock failed: " + error);

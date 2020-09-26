@@ -250,6 +250,15 @@ class Adb {
     });
   }
 
+  // sideload an ota package
+  sideload(file) {
+    return this.execCommand([
+      "sideload",
+      common.quotepath(file),
+      common.stdoutFilter("%)")
+    ]);
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////

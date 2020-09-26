@@ -43,6 +43,12 @@ function handleError(error, stdout, stderr) {
     stderr.includes("FAILED (remote: low power, need battery charging.)")
   ) {
     return "low battery";
+  } else if (
+    stderr &&
+    (stderr.includes("FAILED (remote: not supported in locked device)") ||
+      stderr.includes("FAILED (remote: 'Bootloader is locked.')"))
+  ) {
+    return "bootloader is locked";
   } else if (stderr && stderr.includes("FAILED (remote failure)")) {
     return "failed to boot";
   } else if (
@@ -79,7 +85,7 @@ function quotepath(file) {
 function stdoutFilter(query) {
   return process.platform == "win32"
     ? ' | findstr /v "' + query + '"'
-    : ' | grep -v "' + query + '"';
+    : ' | ( grep -v "' + query + '" || true )'; // grep will fail if there are no matches
 }
 
 module.exports = {
