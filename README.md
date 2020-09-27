@@ -5,12 +5,13 @@
 ## Client
 A wrapper for adb and fastboot that returns convenient promises.
 
-**NOTE**: This is still a work in progress. Not all functions have been added.
+**NOTE**: This is still a work in progress. Not all functions have been added and API stability is not guaranteed.
 
 Example:
 
 ```javascript
-const { Adb, Fastboot } = require("./src/module.js");
+const { Adb, Fastboot, Heimdall } = require("./src/module.js");
 const adb = new Adb();
 const fastboot = new Fastboot();
+const heimdall = new Heimdall();
 ```
