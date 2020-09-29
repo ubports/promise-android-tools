@@ -142,6 +142,39 @@ describe("Fastboot module", function() {
         );
       });
     });
+    describe("flashRaw()", function() {
+      it("should resolve if flashed raw image successfully", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.flashRaw("boot", "/path/to/image").then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith([
+            "flash:raw",
+            "boot",
+            common.quotepath("/path/to/image")
+          ]);
+        });
+      });
+      it("should resolve if force-flashed raw image successfully", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.flashRaw("boot", "/path/to/image", true).then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith([
+            "flash:raw",
+            "boot",
+            "--force",
+            common.quotepath("/path/to/image")
+          ]);
+        });
+      });
+    });
     describe("boot()", function() {
       it("should resolve on boot", function() {
         const execFake = sinon.fake((args, callback) => {
@@ -319,6 +352,40 @@ describe("Fastboot module", function() {
         return expect(fastboot.format("cache")).to.have.been.rejectedWith(
           'formatting failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
+      });
+      it("should reject if size was specified but not type", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(true, "everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(
+          fastboot.format("cache", null, 69)
+        ).to.have.been.rejectedWith(
+          "formatting failed: size specification requires type to be specified as well"
+        );
+      });
+      it("should resolve after formatting with type", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.format("cache", "ext4").then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["format:ext4", "cache"]);
+        });
+      });
+      it("should resolve after formatting with type and size", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.format("cache", "ext4", 69).then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["format:ext4:69", "cache"]);
+        });
       });
     });
     describe("erase()", function() {

@@ -63,14 +63,23 @@ class Fastboot {
     });
   }
 
-  flash(partition, file) {
-    return this.execCommand(["flash", partition, common.quotepath(file)])
+  flash(partition, file, force = false, raw = false) {
+    return this.execCommand([
+      raw ? "flash:raw" : "flash",
+      partition,
+      ...(force ? ["--force"] : []),
+      common.quotepath(file)
+    ])
       .then(stdout => {
         return;
       })
       .catch(error => {
         throw new Error("flashing failed: " + error);
       });
+  }
+
+  flashRaw(partition, file, force = false) {
+    return this.flash(partition, file, force, true);
   }
 
   boot(image) {
@@ -127,8 +136,18 @@ class Fastboot {
       });
   }
 
-  format(partition) {
-    return this.execCommand(["format", partition])
+  format(partition, type, size) {
+    if (!type && size) {
+      return Promise.reject(
+        new Error(
+          "formatting failed: size specification requires type to be specified as well"
+        )
+      );
+    }
+    return this.execCommand([
+      `format${type ? ":" + type : ""}${size ? ":" + size : ""}`,
+      partition
+    ])
       .then(() => {
         return;
       })
