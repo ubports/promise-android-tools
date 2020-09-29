@@ -142,6 +142,39 @@ describe("Fastboot module", function() {
         );
       });
     });
+    describe("flashRaw()", function() {
+      it("should resolve if flashed raw image successfully", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.flashRaw("boot", "/path/to/image").then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith([
+            "flash:raw",
+            "boot",
+            common.quotepath("/path/to/image")
+          ]);
+        });
+      });
+      it("should resolve if force-flashed raw image successfully", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.flashRaw("boot", "/path/to/image", true).then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith([
+            "flash:raw",
+            "boot",
+            "--force",
+            common.quotepath("/path/to/image")
+          ]);
+        });
+      });
+    });
     describe("boot()", function() {
       it("should resolve on boot", function() {
         const execFake = sinon.fake((args, callback) => {

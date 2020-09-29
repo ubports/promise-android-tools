@@ -63,14 +63,23 @@ class Fastboot {
     });
   }
 
-  flash(partition, file) {
-    return this.execCommand(["flash", partition, common.quotepath(file)])
+  flash(partition, file, force = false, raw = false) {
+    return this.execCommand([
+      raw ? "flash:raw" : "flash",
+      partition,
+      ...(force ? ["--force"] : []),
+      common.quotepath(file)
+    ])
       .then(stdout => {
         return;
       })
       .catch(error => {
         throw new Error("flashing failed: " + error);
       });
+  }
+
+  flashRaw(partition, file, force = false) {
+    return this.flash(partition, file, force, true);
   }
 
   boot(image) {
