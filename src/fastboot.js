@@ -197,13 +197,18 @@ class Fastboot {
   }
 
   // Flash image to a partition
-  // [ {partition, file} ]
+  // [ {partition, file, force, raw} ]
   flashArray(images) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       function flashNext(i) {
         _this
-          .flash(images[i].partition, images[i].file)
+          .flash(
+            images[i].partition,
+            images[i].file,
+            images[i].force,
+            images[i].raw
+          )
           .then(() => {
             if (i + 1 < images.length) flashNext(i + 1);
             else resolve();
