@@ -27,6 +27,60 @@ chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const Heimdall = require("../../src/module.js").Heimdall;
+const common = require("../../src/common.js");
+
+const printPitFromDevice = `Heimdall v1.4.0
+
+a lot of bullshit text goes here...
+
+
+--- Entry #0 ---
+Binary Type: 0 (AP)
+Device Type: 2 (MMC)
+Identifier: 1
+Attributes: 5 (Read/Write)
+Update Attributes: 1 (FOTA)
+Partition Block Size/Offset: 8192
+Partition Block Count: 38912
+File Offset (Obsolete): 0
+File Size (Obsolete): 0
+Partition Name: APNHLOS
+Flash Filename: NON-HLOS.bin
+FOTA Filename:
+
+
+--- Entry #1 ---
+Binary Type: 0 (AP)
+Device Type: 2 (MMC)
+Identifier: 2
+Attributes: 5 (Read/Write)
+Update Attributes: 1 (FOTA)
+Partition Block Size/Offset: 47104
+Partition Block Count: 132928
+File Offset (Obsolete): 0
+File Size (Obsolete): 0
+Partition Name: MODEM
+Flash Filename: modem.bin
+FOTA Filename:
+
+
+--- Entry #2 ---
+Binary Type: 0 (AP)
+Device Type: 2 (MMC)
+Identifier: 3
+Attributes: 5 (Read/Write)
+Update Attributes: 1 (FOTA)
+Partition Block Size/Offset: 180032
+Partition Block Count: 1024
+File Offset (Obsolete): 0
+File Size (Obsolete): 0
+Partition Name: SBL1
+Flash Filename: sbl1.mbn
+FOTA Filename:
+
+Ending session...
+Rebooting device...
+Releasing device interface...`;
 
 describe("Heimdall module", function() {
   describe("constructor()", function() {
@@ -137,8 +191,115 @@ describe("Heimdall module", function() {
         );
       });
     });
+    describe("printPit()", function() {
+      it("should print pit from device", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, printPitFromDevice);
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return heimdall.printPit().then(r => {
+          expect(r.length).to.eql(3);
+          expect(execFake).to.have.been.calledWith(["print-pit"]);
+        });
+      });
+      it("should print pit file");
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            true,
+            null,
+            "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
+          );
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return expect(heimdall.printPit()).to.be.rejectedWith("no device");
+      });
+    });
+    describe("flashArray()", function() {
+      it("should flash partitions", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(false, "OK");
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return heimdall
+          .flashArray([
+            {
+              partition: "BOOT",
+              file: "some.img"
+            },
+            {
+              partition: "RECOVERY",
+              file: "other.img"
+            }
+          ])
+          .then(r => {
+            expect(r).to.eql(null);
+            expect(execFake).to.have.been.calledWith([
+              "flash",
+              `--BOOT ${common.quotepath("some.img")}`,
+              `--RECOVERY ${common.quotepath("other.img")}`
+            ]);
+          });
+      });
+      it("should reject on error", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            true,
+            null,
+            "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
+          );
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return expect(
+          heimdall.flashArray([
+            {
+              partition: "BOOT",
+              file: "some.img"
+            }
+          ])
+        ).to.be.rejectedWith("no device");
+      });
+    });
   });
   describe("convenience functions", function() {
+    describe("getPartitions()", function() {
+      it("should get partitions from device pit", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, printPitFromDevice);
+        });
+        const logSpy = sinon.spy();
+        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        return heimdall.getPartitions().then(r => {
+          expect(r.length).to.eql(3);
+          expect(execFake).to.have.been.calledWith(["print-pit"]);
+        });
+      });
+    });
+    describe("flash()", function() {
+      it("shold call flashArray()", function() {
+        const heimdall = new Heimdall();
+        heimdall.flashArray = sinon.spy();
+        heimdall.flash("BOOT", "some.img");
+        expect(heimdall.flashArray).to.have.been.calledWith([
+          {
+            partition: "BOOT",
+            file: "some.img"
+          }
+        ]);
+      });
+    });
+    describe("detect()", function() {
+      it("shold call hasAccess()", function() {
+        const heimdall = new Heimdall();
+        heimdall.hasAccess = sinon.spy();
+        heimdall.detect();
+        expect(heimdall.hasAccess).to.have.been.called;
+      });
+    });
     describe("waitForDevice()", function() {
       it("should resolve when a device is detected", function() {
         const execFake = sinon.fake((args, callback) => {

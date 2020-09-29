@@ -61,6 +61,11 @@ class Heimdall {
     });
   }
 
+  // Alias for hasAccess()
+  detect() {
+    return this.hasAccess();
+  }
+
   // Find out if a device in download mode can be seen by heimdall
   hasAccess() {
     return this.execCommand(["detect"])
@@ -117,6 +122,56 @@ class Heimdall {
   // Stop waiting for a device
   stopWaiting() {
     this.heimdallEvent.emit("stop");
+  }
+
+  // Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device.
+  printPit(file) {
+    return this.execCommand([
+      "print-pit",
+      ...(file ? ["--file", common.quotepath(file)] : [])
+    ])
+      .then(r =>
+        r
+          .split("\n\nEnding session...")[0]
+          .split(/--- Entry #\d ---/)
+          .slice(1)
+          .map(r => r.trim())
+      )
+      .catch(error => {
+        throw error;
+      });
+  }
+
+  getPartitions() {
+    return this.printPit().then(r =>
+      r.map(r =>
+        r
+          .split("\n")
+          .map(r => r.split(":").map(r => r.trim()))
+          .reduce((result, item) => {
+            result[item[0]] = item[1];
+            return result;
+          }, {})
+      )
+    );
+  }
+
+  // Flashes a firmware file to a partition (name or identifier)
+  flash(partition, file) {
+    return this.flashArray([{ partition, file }]);
+  }
+
+  // Flash firmware files to partitions (names or identifiers)
+  // [ {partition, file} ]
+  flashArray(images) {
+    return this.execCommand([
+      "flash",
+      ...images.map(i => `--${i.partition} ${common.quotepath(i.file)}`)
+    ])
+      .then(() => null)
+      .catch(error => {
+        throw error;
+      });
   }
 }
 
