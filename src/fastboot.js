@@ -136,8 +136,18 @@ class Fastboot {
       });
   }
 
-  format(partition) {
-    return this.execCommand(["format", partition])
+  format(partition, type, size) {
+    if (!type && size) {
+      return Promise.reject(
+        new Error(
+          "formatting failed: size specification requires type to be specified as well"
+        )
+      );
+    }
+    return this.execCommand([
+      `format${type ? ":" + type : ""}${size ? ":" + size : ""}`,
+      partition
+    ])
       .then(() => {
         return;
       })
