@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "2.0.9",
+  "version": "2.1.0",
   "description": "A wrapper for adb and fastboot that returns convenient promises.",
   "main": "./src/module.js",
   "scripts": {
