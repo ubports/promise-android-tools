@@ -59,6 +59,18 @@ const recognizedErrors = [
     stderr: "FAILED (remote: not supported in locked device)"
   },
   {
+    expectedReturn: "bootloader is locked",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "FAILED (remote: 'not allowed in locked state')"
+  },
+  {
+    expectedReturn: "bootloader is locked",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "FAILED (remote: 'Device not unlocked cannot flash or erase')"
+  },
+  {
     expectedReturn: "low battery",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
