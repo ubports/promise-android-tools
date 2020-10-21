@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "description": "A wrapper for adb and fastboot that returns convenient promises.",
   "main": "./src/module.js",
   "scripts": {
@@ -22,6 +22,7 @@
   "keywords": [
     "adb",
     "fastboot",
+    "heimdall",
     "android",
     "android-tools",
     "ubports",
@@ -35,7 +36,7 @@
     "command-exists": "^1.2.9",
     "coveralls": "^3.1.0",
     "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.12.0",
+    "eslint-config-prettier": "^6.13.0",
     "eslint-plugin-prettier": "^3.1.4",
     "mocha": "^6.2.3",
     "nyc": "^15.1.0",
