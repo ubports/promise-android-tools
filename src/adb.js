@@ -260,6 +260,11 @@ class Adb {
     ]);
   }
 
+  // Return the status of the device (bootloader, recovery, device)
+  getState() {
+    return this.execCommand(["get-state"]);
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
@@ -516,11 +521,11 @@ class Adb {
   // Return the available size of a partition
   getAvailableSize(partition) {
     return this.getState()
-      .then(stdout => {
-        if (stdout == "recovery") {
+      .then(state => {
+        if (state == "recovery") {
           // Recovery
           throw new Error("You must be in device mode");
-        } else if (stdout == "device") {
+        } else if (state == "device") {
           // Device
           return this.shell("df -hBK " + partition + " --output=avail|tail -n1")
             .then(stdout => {
@@ -541,11 +546,11 @@ class Adb {
   // Return the total size of a partition
   getTotalSize(partition) {
     return this.getState()
-      .then(stdout => {
-        if (stdout == "recovery") {
+      .then(state => {
+        if (state == "recovery") {
           // Recovery
           throw new Error("You must be in device mode");
-        } else if (stdout == "device") {
+        } else if (state == "device") {
           // Device
           return this.shell("df -hBK " + partition + " --output=size|tail -n1")
             .then(stdout => {
@@ -560,19 +565,6 @@ class Adb {
       })
       .catch(e => {
         throw new Error("Unable to get size");
-      });
-  }
-
-  // Return the status of the device (bootloader, recovery, device)
-  getState() {
-    return this.execCommand(["get-state"])
-      .then(stdout => {
-        this.log("Device state is " + stdout);
-        return stdout;
-      })
-      .catch(e => {
-        this.log("Unknown error :" + e);
-        throw e;
       });
   }
 
