@@ -342,29 +342,6 @@ class Adb {
       });
   }
 
-  // Get OS name
-  getOsName() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell(["cat", "/etc/system-image/channel.ini", "|grep tag="])
-        .then(stdout => {
-          if (stdout) {
-            resolve(
-              stdout
-                .split(",")
-                .filter(p => p.includes("tag="))[0]
-                .replace("tag=", "")
-                .trim()
-            );
-          } else {
-            reject(new Error("failed to cat default.prop: no response"));
-          }
-        })
-        .catch(e => reject(new Error("getprop error: " + e)));
-    });
-  }
-
   // Find out what operating system the device is running (currently android and ubuntu touch)
   getOs() {
     return this.shell(["cat", "/etc/system-image/channel.ini"]).then(stdout => {
