@@ -539,7 +539,7 @@ class Adb {
             });
         } else if (stdout == "device") {
           // Device
-          return this.shell("du -shk " + file + " |tail -n1") // + " --output=used|tail -n1")//df -hBK
+          return this.shell("du -shk " + file + " |tail -n1")
             .then(stdout => {
               stdout = parseFloat(stdout);
               this.log("FileSize is " + stdout + " Ko");
@@ -657,15 +657,12 @@ class Adb {
                 srcfile,
                 " 2>/backup.pipe' | dd of=" + destfile
               ]);
-              //_this.execCommand(["exec-out 'tar -cvp ",srcfile," 2>/backup.pipe' | dd of="+destfile,
-              //                   " & ",(adbpath+"/adb -P"),_this.port,
               _this
                 .execCommand([
                   " shell cat /backup.pipe",
                   common.stdoutFilter("%]")
                 ])
                 .then((error, stdout, stderr) => {
-                  //process.platform == "win32" ? ' | findstr /v "%]"' : ' | grep -v "%]"']
                   _this.log("Backup Ended");
                   clearInterval(progressInterval);
                   _this
@@ -711,31 +708,8 @@ class Adb {
         .shell("mkfifo /restore.pipe")
         .then(stdout => {
           _this.log("Pipe created !");
-          /*
-             var lastSize = 0;
-             _this.fileSize = bckSize;
-             var progressInterval = setInterval(() => {
-                 _this
-                      .shell([
-                              "stat",
-                              "-t",
-                              common.quotepath("/restore.pipe")
-                            ])
-                      .then(stat => {
-                              
-                               lastSize = eval(stat.split(" ")[1]);
-                               progress ((lastSize / _this.fileSize)*100);
-                               //lastSize = fileSizeInBytes/1024;
-                            })
-                      .catch(e => {
-                                   clearInterval(progressInterval);
-                                   _this.log("failed to stat: " + e);
-                                  });
-                  }, 1000);
-  */
-
           // Start the restoration
-          _this.log("Starting Restore..."); //adb push user.tar /resto.pipe & adb shell 'cd /; cat /resto.pipe | tar -xv'
+          _this.log("Starting Restore...");
           _this
             .execCommand([
               "push",
@@ -747,7 +721,6 @@ class Adb {
             ])
             .then((error, stdout, stderr) => {
               _this.log("Restore Ended");
-              //clearInterval(progressInterval);
               _this
                 .shell("rm /restore.pipe")
                 .then(() => {
