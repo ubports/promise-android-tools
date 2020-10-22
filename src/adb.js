@@ -529,51 +529,25 @@ class Adb {
 
   // Return the available size of a partition
   getAvailableSize(partition) {
-    return this.getState()
-      .then(state => {
-        if (state == "recovery") {
-          // Recovery
-          throw new Error("You must be in device mode");
-        } else if (state == "device") {
-          // Device
-          return this.shell("df -hBK " + partition + " --output=avail|tail -n1")
-            .then(stdout => {
-              stdout = parseFloat(stdout);
-              this.log("size available is " + stdout + " Ko");
-              return stdout;
-            })
-            .catch(e => {
-              throw new Error(e);
-            });
-        }
-      })
+    return this.ensureState("device")
+      .then(() =>
+        this.shell("df -hBK " + partition + " --output=avail|tail -n1")
+      )
+      .then(stdout => parseFloat(stdout))
       .catch(e => {
-        throw new Error("Unable to get size");
+        throw new Error(`Unable to get size: ${e}`);
       });
   }
 
   // Return the total size of a partition
   getTotalSize(partition) {
-    return this.getState()
-      .then(state => {
-        if (state == "recovery") {
-          // Recovery
-          throw new Error("You must be in device mode");
-        } else if (state == "device") {
-          // Device
-          return this.shell("df -hBK " + partition + " --output=size|tail -n1")
-            .then(stdout => {
-              stdout = parseFloat(stdout);
-              this.log("size total is " + stdout + " Ko");
-              return stdout;
-            })
-            .catch(e => {
-              throw new Error(e);
-            });
-        }
-      })
+    return this.ensureState("device")
+      .then(() =>
+        this.shell("df -hBK " + partition + " --output=size|tail -n1")
+      )
+      .then(stdout => parseFloat(stdout))
       .catch(e => {
-        throw new Error("Unable to get size");
+        throw new Error(`Unable to get size: ${e}`);
       });
   }
 
