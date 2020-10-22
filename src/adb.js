@@ -508,7 +508,7 @@ class Adb {
           return this.shell("du -shk " + file)
             .then(stdout => {
               stdout = parseFloat(stdout);
-              this.log("FileSize is " + stdout + " Ko");
+              this.log("size is " + stdout + " Ko");
               return stdout;
             })
             .catch(e => {
@@ -519,7 +519,7 @@ class Adb {
           return this.shell("du -shk " + file + " |tail -n1")
             .then(stdout => {
               stdout = parseFloat(stdout);
-              this.log("FileSize is " + stdout + " Ko");
+              this.log("size is " + stdout + " Ko");
               return stdout;
             })
             .catch(e => {
@@ -528,7 +528,7 @@ class Adb {
         }
       })
       .catch(e => {
-        throw new Error("Unable to get filesize");
+        throw new Error("Unable to get size");
       });
   }
 
@@ -544,7 +544,7 @@ class Adb {
           return this.shell("df -hBK " + partition + " --output=avail|tail -n1")
             .then(stdout => {
               stdout = parseFloat(stdout);
-              this.log("FileSize available is " + stdout + " Ko");
+              this.log("size available is " + stdout + " Ko");
               return stdout;
             })
             .catch(e => {
@@ -553,7 +553,7 @@ class Adb {
         }
       })
       .catch(e => {
-        throw new Error("Unable to get filesize");
+        throw new Error("Unable to get size");
       });
   }
 
@@ -569,7 +569,7 @@ class Adb {
           return this.shell("df -hBK " + partition + " --output=size|tail -n1")
             .then(stdout => {
               stdout = parseFloat(stdout);
-              this.log("FileSize total is " + stdout + " Ko");
+              this.log("size total is " + stdout + " Ko");
               return stdout;
             })
             .catch(e => {
@@ -578,7 +578,7 @@ class Adb {
         }
       })
       .catch(e => {
-        throw new Error("Unable to get filesize");
+        throw new Error("Unable to get size");
       });
   }
 
@@ -598,32 +598,22 @@ class Adb {
   // Backup file "srcfile" from the phone to "destfile" localy
   createRemoteUbuntuBackup(srcfile, destfile, adbpath, progress) {
     var _this = this;
-    _this.log(
-      "Backup Function Entry, will backup " +
-        srcfile +
-        " to " +
-        destfile +
-        " adbpath:" +
-        adbpath
-    );
     return new Promise(function(resolve, reject) {
-      _this.fileSize = 9999999999999; // Init to file size to a very high value while waiting for the real size.
       // Get file size
       _this
         .getFileSize(srcfile)
-        .then(stdout => {
-          _this.log("Returned FileSize is " + stdout + " Ko");
-          _this.fileSize = stdout;
+        .then(fileSize => {
+          _this.log("Returned size is " + fileSize + " Ko");
           // Creating pipe
           _this
             .shell("mkfifo /backup.pipe")
-            .then(stdout => {
+            .then(() => {
               _this.log("Pipe created !");
               var lastSize = 0;
               var progressInterval = setInterval(() => {
                 const stats = fs.statSync(destfile);
                 const fileSizeInBytes = stats.size;
-                progress((lastSize / _this.fileSize) * 100);
+                progress((lastSize / fileSize) * 100);
                 lastSize = fileSizeInBytes / 1024;
               }, 1000);
 
@@ -661,7 +651,7 @@ class Adb {
             }); // Pipe Creation
         })
         .catch(e => {
-          reject(e + ", Unable to get the partition's filesize ");
+          reject(e + ", Unable to get the partition size ");
         }); // Get file size
     });
   }
@@ -669,17 +659,7 @@ class Adb {
   // Restore file "srcfile" from the computer to "destfile" on the phone
   applyRemoteUbuntuBackup(destfile, srcfile, adbpath, bckSize, progress) {
     var _this = this;
-    _this.log(
-      "Restore Function Entry, will restore " +
-        srcfile +
-        " on " +
-        destfile +
-        " adbpath:" +
-        adbpath
-    );
     return new Promise(function(resolve, reject) {
-      _this.fileSize = 9999999999999; // Init to file size to a very high value while waiting for the real size.
-
       // Creating pipe
       _this
         .shell("mkfifo /restore.pipe")
