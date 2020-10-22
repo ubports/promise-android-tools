@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2017-2020 UBports Foundation <info@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,11 @@ function handleError(error, stdout, stderr) {
   } else if (
     stderr &&
     (stderr.includes("FAILED (remote: not supported in locked device)") ||
-      stderr.includes("FAILED (remote: 'Bootloader is locked.')"))
+      stderr.includes("FAILED (remote: 'Bootloader is locked.')") ||
+      stderr.includes("FAILED (remote: 'not allowed in locked state')") ||
+      stderr.includes(
+        "FAILED (remote: 'Device not unlocked cannot flash or erase')"
+      ))
   ) {
     return "bootloader is locked";
   } else if (stderr && stderr.includes("FAILED (remote failure)")) {
