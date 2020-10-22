@@ -262,12 +262,22 @@ class Adb {
 
   // Return the status of the device (bootloader, recovery, device)
   getState() {
-    return this.execCommand(["get-state"]);
+    return this.execCommand(["get-state"]).then(stdout => stdout.trim());
   }
 
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
+
+  // Reboot to a state (system, recovery, bootloader)
+  ensureState(state) {
+    return this.getState().then(currentState =>
+      currentState === state ||
+      (currentState === "device" && state === "system")
+        ? Promise.resolve()
+        : this.reboot(state)
+    );
+  }
 
   // Push an array of files and report progress
   // { src, dest }
@@ -506,10 +516,9 @@ class Adb {
 
   // Return the file size of a complete folder
   getFileSize(file) {
+    // TODO verify that state detection is needed
     return this.getState()
-      .then((
-        state // TODO verify that state detection is needed
-      ) =>
+      .then(state =>
         this.shell("du -shk " + file + (state == "device" ? " |tail -n1" : ""))
       )
       .then(stdout => parseFloat(stdout))
