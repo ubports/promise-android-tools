@@ -502,33 +502,14 @@ class Adb {
   // Return the file size of a complete folder
   getFileSize(file) {
     return this.getState()
-      .then(stdout => {
-        if (stdout == "recovery") {
-          // Recovery
-          return this.shell("du -shk " + file)
-            .then(stdout => {
-              stdout = parseFloat(stdout);
-              this.log("size is " + stdout + " Ko");
-              return stdout;
-            })
-            .catch(e => {
-              throw new Error(e);
-            });
-        } else if (stdout == "device") {
-          // Device
-          return this.shell("du -shk " + file + " |tail -n1")
-            .then(stdout => {
-              stdout = parseFloat(stdout);
-              this.log("size is " + stdout + " Ko");
-              return stdout;
-            })
-            .catch(e => {
-              throw new Error(e);
-            });
-        }
-      })
+      .then((
+        state // TODO verify that state detection is needed
+      ) =>
+        this.shell("du -shk " + file + (state == "device" ? " |tail -n1" : ""))
+      )
+      .then(stdout => parseFloat(stdout))
       .catch(e => {
-        throw new Error("Unable to get size");
+        throw new Error(`Unable to get size: ${e}`);
       });
   }
 
