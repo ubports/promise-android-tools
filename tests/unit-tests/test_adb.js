@@ -379,6 +379,38 @@ describe("Adb module", function() {
           });
         });
       });
+      it("should reject on failure in stdout", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "failed", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.reboot("bootloader").catch(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "reboot",
+            "bootloader"
+          ]);
+          done();
+        });
+      });
+      it("should reject on error", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(666, "everything exploded", "what!?");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.reboot("bootloader").catch(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "reboot",
+            "bootloader"
+          ]);
+          done();
+        });
+      });
       it("should reject on invalid state", function() {
         const execFake = sinon.spy();
         const logSpy = sinon.spy();
