@@ -557,54 +557,48 @@ class Adb {
     return new Promise(function(resolve, reject) {
       // Get file size
       _this
-        .getFileSize(srcfile)
+        .shell("mkfifo /backup.pipe")
+        .then(() => _this.getFileSize(srcfile))
         .then(fileSize => {
           // Creating pipe
-          _this
-            .shell("mkfifo /backup.pipe")
-            .then(() => {
-              var lastSize = 0;
-              var progressInterval = setInterval(() => {
-                const { size } = fs.statSync(destfile);
-                progress((lastSize / fileSize) * 100);
-                lastSize = size / 1024;
-              }, 1000);
+          var lastSize = 0;
+          var progressInterval = setInterval(() => {
+            const { size } = fs.statSync(destfile);
+            progress((lastSize / fileSize) * 100);
+            lastSize = size / 1024;
+          }, 1000);
 
-              // Start the backup
-              _this.log("Starting Backup...");
-              // FIXME replace shell pipe to dd with node stream
-              Promise.all([
-                _this.execCommand([
-                  "exec-out 'tar -cvp ",
-                  srcfile,
-                  " 2>/backup.pipe' | dd of=" + destfile
-                ]),
-                _this.shell("cat /backup.pipe")
-              ])
+          // Start the backup
+          _this.log("Starting Backup...");
+          // FIXME replace shell pipe to dd with node stream
+          Promise.all([
+            _this.execCommand([
+              "exec-out 'tar -cvp ",
+              srcfile,
+              " 2>/backup.pipe' | dd of=" + destfile
+            ]),
+            _this.shell("cat /backup.pipe")
+          ])
+            .then(() => {
+              _this.log("Backup Ended");
+              clearInterval(progressInterval);
+              _this
+                .shell("rm /backup.pipe")
                 .then(() => {
-                  _this.log("Backup Ended");
-                  clearInterval(progressInterval);
-                  _this
-                    .shell("rm /backup.pipe")
-                    .then(() => {
-                      _this.log("Pipe released.");
-                      resolve();
-                    })
-                    .catch(e => {
-                      reject(e + ", Unable to delete the pipe ");
-                    });
+                  _this.log("Pipe released.");
+                  resolve();
                 })
                 .catch(e => {
-                  clearInterval(progressInterval);
-                  reject(e + ", Unable to backuping the device ");
+                  reject(e + ", Unable to delete the pipe ");
                 });
             })
             .catch(e => {
-              reject(e + ", Pipe creation failed ");
+              clearInterval(progressInterval);
+              reject(e + ", Unable to backuping the device ");
             });
         })
         .catch(e => {
-          reject(e + ", Unable to get the partition size ");
+          reject(e + ", Pipe creation failed ");
         });
     });
   }
