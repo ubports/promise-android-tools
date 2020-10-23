@@ -519,6 +519,22 @@ describe("Adb module", function() {
       it("should reject if package inaccessible");
       it("should reject on error");
     });
+    describe("getState()", function() {
+      it("should resolve state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "recovery", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getState().then(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "get-state"
+          ]);
+        });
+      });
+    });
   });
 
   describe("convenience functions", function() {
