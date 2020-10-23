@@ -553,54 +553,38 @@ class Adb {
 
   // Backup file "srcfile" from the device to "destfile" localy
   createRemoteUbuntuBackup(srcfile, destfile, progress) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      // Get file size
-      _this
-        .shell("mkfifo /backup.pipe")
-        .then(() => _this.getFileSize(srcfile))
-        .then(fileSize => {
-          // Creating pipe
-          var lastSize = 0;
-          var progressInterval = setInterval(() => {
-            const { size } = fs.statSync(destfile);
-            progress((lastSize / fileSize) * 100);
-            lastSize = size / 1024;
-          }, 1000);
+    return this.shell("mkfifo /backup.pipe")
+      .then(() => this.getFileSize(srcfile))
+      .then(fileSize => {
+        var lastSize = 0;
+        var progressInterval = setInterval(() => {
+          const { size } = fs.statSync(destfile);
+          progress((lastSize / fileSize) * 100);
+          lastSize = size / 1024;
+        }, 1000);
 
-          // Start the backup
-          _this.log("Starting Backup...");
-          // FIXME replace shell pipe to dd with node stream
-          Promise.all([
-            _this.execCommand([
-              "exec-out 'tar -cvp ",
-              srcfile,
-              " 2>/backup.pipe' | dd of=" + destfile
-            ]),
-            _this.shell("cat /backup.pipe")
-          ])
-            .then(() => {
-              _this.log("Backup Ended");
-              clearInterval(progressInterval);
-              _this
-                .shell("rm /backup.pipe")
-                .then(() => {
-                  _this.log("Pipe released.");
-                  resolve();
-                })
-                .catch(e => {
-                  reject(e + ", Unable to delete the pipe ");
-                });
-            })
-            .catch(e => {
-              clearInterval(progressInterval);
-              reject(e + ", Unable to backuping the device ");
-            });
-        })
-        .catch(e => {
-          reject(e + ", Pipe creation failed ");
-        });
-    });
+        // FIXME replace shell pipe to dd with node stream
+        return Promise.all([
+          this.execCommand([
+            "exec-out 'tar -cvp ",
+            srcfile,
+            " 2>/backup.pipe' | dd of=" + destfile
+          ]),
+          this.shell("cat /backup.pipe")
+        ])
+          .then(() => {
+            clearInterval(progressInterval);
+            progress(100);
+          })
+          .catch(e => {
+            clearInterval(progressInterval);
+            throw new Error(e);
+          });
+      })
+      .then(() => this.shell("rm /backup.pipe"))
+      .catch(e => {
+        throw new Error(`Backup failed: ${e}`);
+      });
   }
 
   // Restore file "srcfile" from the computer to "destfile" on the phone
