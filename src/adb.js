@@ -551,30 +551,28 @@ class Adb {
       });
   }
 
-  // Backup file "srcfile" from the phone to "destfile" localy
-  createRemoteUbuntuBackup(srcfile, destfile, adbpath, progress) {
+  // Backup file "srcfile" from the device to "destfile" localy
+  createRemoteUbuntuBackup(srcfile, destfile, progress) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       // Get file size
       _this
         .getFileSize(srcfile)
         .then(fileSize => {
-          _this.log("Returned size is " + fileSize + " Ko");
           // Creating pipe
           _this
             .shell("mkfifo /backup.pipe")
             .then(() => {
-              _this.log("Pipe created !");
               var lastSize = 0;
               var progressInterval = setInterval(() => {
-                const stats = fs.statSync(destfile);
-                const fileSizeInBytes = stats.size;
+                const { size } = fs.statSync(destfile);
                 progress((lastSize / fileSize) * 100);
-                lastSize = fileSizeInBytes / 1024;
+                lastSize = size / 1024;
               }, 1000);
 
               // Start the backup
               _this.log("Starting Backup...");
+              // FIXME replace shell pipe to dd with node stream
               _this.execCommand([
                 "exec-out 'tar -cvp ",
                 srcfile,
@@ -585,30 +583,31 @@ class Adb {
                   " shell cat /backup.pipe",
                   common.stdoutFilter("%]")
                 ])
-                .then((error, stdout, stderr) => {
+                .then(() => {
                   _this.log("Backup Ended");
                   clearInterval(progressInterval);
                   _this
                     .shell("rm /backup.pipe")
                     .then(() => {
                       _this.log("Pipe released.");
-                      resolve(); // Everything's Fine !
+                      resolve();
                     })
                     .catch(e => {
+                      clearInterval(progressInterval);
                       reject(e + ", Unable to delete the pipe ");
-                    }); // Pipe Deletion
+                    });
                 })
                 .catch(e => {
                   reject(e + ", Unable to backuping the device ");
-                }); // Backup start
+                });
             })
             .catch(e => {
               reject(e + ", Pipe creation failed ");
-            }); // Pipe Creation
+            });
         })
         .catch(e => {
           reject(e + ", Unable to get the partition size ");
-        }); // Get file size
+        });
     });
   }
 
