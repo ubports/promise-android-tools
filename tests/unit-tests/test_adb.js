@@ -527,17 +527,47 @@ describe("Adb module", function() {
         const logSpy = sinon.spy();
         const adb = new Adb({ exec: execFake, log: logSpy });
         return adb.getState().then(() => {
-          expect(execFake).to.have.been.calledWith([
-            "-P",
-            5037,
-            "get-state"
-          ]);
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
         });
       });
     });
   });
 
   describe("convenience functions", function() {
+    describe("ensureState()", function() {
+      it("should resolve if already in requested state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "recovery", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.ensureState("recovery").then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
+        });
+      });
+      it("should properly handle device state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "device", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.ensureState("system").then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
+        });
+      });
+      it("should reboot to correct state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "recovery", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        sinon.stub(adb, "reboot").resolves();
+        sinon.stub(adb, "waitForDevice").resolves();
+        return adb.ensureState("system").then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
+        });
+      });
+    });
     describe("pushArray()", function() {
       it("should resolve on empty array", function() {
         const execFake = sinon.spy();
