@@ -1134,5 +1134,85 @@ describe("Adb module", function() {
         });
       });
     });
+    describe("getAvailablePartitionSize()", function() {
+      it("should resolve available partition size", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "a\n/wtf 1337 a b", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getAvailablePartitionSize("/wtf").then(size => {
+          expect(size).to.eql(1337);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "df -k -P /wtf"
+          ]);
+        });
+      });
+      it("should reject on invalid response", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getAvailablePartitionSize("/wtf").catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+      it("should reject on error", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(69, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getAvailablePartitionSize().catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+    });
+    describe("getTotalPartitionSize()", function() {
+      it("should resolve available partition size", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "a\n/wtf 1337 a b c d", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getTotalPartitionSize("/wtf").then(size => {
+          expect(size).to.eql(1337);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "df -k -P /wtf"
+          ]);
+        });
+      });
+      it("should reject on invalid response", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getTotalPartitionSize("/wtf").catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+      it("should reject on error", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(69, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getTotalPartitionSize().catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+    });
   });
 });

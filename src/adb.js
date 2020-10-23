@@ -533,6 +533,10 @@ class Adb {
     return this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
       .then(arr => parseInt(arr[arr.length - 3]))
+      .then(size => {
+        if (isNaN(size)) throw new Error(`Cannot parse size from ${size}`);
+        else return size;
+      })
       .catch(e => {
         throw new Error(`Unable to get size: ${e}`);
       });
@@ -543,6 +547,10 @@ class Adb {
     return this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
       .then(arr => parseInt(arr[arr.length - 5]))
+      .then(size => {
+        if (isNaN(size)) throw new Error(`Cannot parse size from ${size}`);
+        else return size;
+      })
       .catch(e => {
         throw new Error(`Unable to get size: ${e}`);
       });
