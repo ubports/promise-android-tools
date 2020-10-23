@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 const exec = require("child_process").exec;
 const events = require("events");
@@ -515,49 +515,44 @@ class Adb {
     });
   }
 
-  // Return the file size of a complete folder
+  // size of a file or directory
   getFileSize(file) {
-    // TODO verify that state detection is needed
-    return this.getState()
-      .then(state =>
-        this.shell("du -shk " + file + (state == "device" ? " |tail -n1" : ""))
-      )
+    return this.shell("du -shk " + file)
       .then(stdout => parseFloat(stdout))
       .catch(e => {
         throw new Error(`Unable to get size: ${e}`);
       });
   }
 
-  // Return the available size of a partition
-  getAvailableSize(partition) {
-    return this.ensureState("device")
-      .then(() =>
-        this.shell("df -hBK " + partition + " --output=avail|tail -n1")
-      )
-      .then(stdout => parseFloat(stdout))
+  // available size of a partition
+  getAvailablePartitionSize(partition) {
+    return this.shell("df -k -P " + partition)
+      .then(stdout => stdout.split(/[ ,]+/))
+      .then(arr => parseInt(arr[arr.length - 3]))
       .catch(e => {
         throw new Error(`Unable to get size: ${e}`);
       });
   }
 
-  // Return the total size of a partition
-  getTotalSize(partition) {
-    return this.ensureState("device")
-      .then(() =>
-        this.shell("df -hBK " + partition + " --output=size|tail -n1")
-      )
-      .then(stdout => parseFloat(stdout))
+  // total size of a partition
+  getTotalPartitionSize(partition) {
+    return this.shell("df -k -P " + partition)
+      .then(stdout => stdout.split(/[ ,]+/))
+      .then(arr => parseInt(arr[arr.length - 5]))
       .catch(e => {
         throw new Error(`Unable to get size: ${e}`);
       });
   }
 
-  // Backup "srcfile" from the device to local "destfile"
+  // Backup "srcfile" from the device to local tar "destfile"
   createBackupTar(srcfile, destfile, progress) {
-    return this.ensureState("recovery")
-      .then(() => this.shell("mkfifo /backup.pipe"))
-      .then(() => this.getFileSize(srcfile))
-      .then(fileSize => {
+    return Promise.all([
+      this.ensureState("recovery")
+        .then(() => this.shell("mkfifo /backup.pipe"))
+        .then(() => this.getFileSize(srcfile)),
+      fs.ensureFile(destfile)
+    ])
+      .then(([fileSize]) => {
         progress(0);
         const progressInterval = setInterval(() => {
           const { size } = fs.statSync(destfile);
@@ -588,8 +583,8 @@ class Adb {
       });
   }
 
-  // Restore file "srcfile"
-  restoreBackupTar(srcfile, progress) {
+  // Restore tar "srcfile"
+  restoreBackupTar(srcfile) {
     return this.ensureState("recovery")
       .then(() => this.shell("mkfifo /restore.pipe"))
       .then(() =>
@@ -601,6 +596,65 @@ class Adb {
       .then(() => this.shell(["rm", "/restore.pipe"]))
       .catch(e => {
         throw new Error(`Restore failed: ${e}`);
+      });
+  }
+
+  listUbuntuBackups(backupBaseDir = "/tmp/utbackups") {
+    return fs.readdir(backupBaseDir).then(backups =>
+      Promise.all(
+        backups.map(backup =>
+          fs
+            .readFile(path.join(backupBaseDir, backup, "metadata.json"))
+            .then(metadataBuffer => ({
+              ...JSON.parse(metadataBuffer.toString()),
+              dir: path.join(backupBaseDir, backup)
+            }))
+            .catch(() => null)
+        )
+      ).then(r => r.filter(r => r))
+    );
+  }
+
+  async createUbuntuBackup(
+    backupBaseDir = "/tmp/utbackups",
+    dataPartition = "/data",
+    progress = () => {}
+  ) {
+    const codename = await this.getDeviceName();
+    const serialno = await this.getSerialno();
+    const size =
+      (await this.getFileSize("/data/user-data")) +
+      (await this.getFileSize("/data/system-data"));
+    const time = new Date();
+    const dir = await fs.ensureDir(
+      path.join(backupBaseDir, time.toISOString())
+    );
+    return this.ensureState("recovery")
+      .then(() =>
+        Promise.all([
+          this.shell(["stat", "/data/user-data"]),
+          this.shell(["stat", "/data/syste-mdata"])
+        ]).catch(() => this.shell(["mount", dataPartition, "/data"]))
+      )
+      .then(() =>
+        this.createBackupTar(
+          "/data/system-data",
+          path.join(dir, "system.tar"),
+          p => progress(p * 0.5)
+        )
+      )
+      .then(() =>
+        this.createBackupTar("/data/user-data", path.join(dir, "user.tar"), p =>
+          progress(50 + p * 0.5)
+        )
+      )
+      .then(() => {
+        fs.writeJSON(path.join(dir, "metadata.json"), {
+          codename,
+          serialno,
+          size,
+          time
+        });
       });
   }
 }
