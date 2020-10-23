@@ -420,14 +420,6 @@ describe("Adb module", function() {
         );
       });
     });
-    describe("backup()", function() {
-      it("should create backup");
-      it("should reject if backup failed");
-    });
-    describe("restore()", function() {
-      it("should restore backup");
-      it("should reject if backup failed");
-    });
     describe("forward()", function() {
       it("should create forward connection");
       it("should not rebind forward connection");
