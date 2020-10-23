@@ -173,6 +173,7 @@ class Adb {
       }
       var fileSize = fs.statSync(file)["size"];
       var lastSize = 0;
+      // FIXME use stream and parse stdout instead of polling with stat
       var progressInterval = setInterval(() => {
         _this
           .shell([
@@ -551,16 +552,16 @@ class Adb {
       });
   }
 
-  // Backup file "srcfile" from the device to "destfile" localy
-  createRemoteUbuntuBackup(srcfile, destfile, progress) {
-    return this.shell("mkfifo /backup.pipe")
+  // Backup "srcfile" from the device to local "destfile"
+  createBackupTar(srcfile, destfile, progress) {
+    return this.ensureState("recovery")
+      .then(() => this.shell("mkfifo /backup.pipe"))
       .then(() => this.getFileSize(srcfile))
       .then(fileSize => {
-        var lastSize = 0;
-        var progressInterval = setInterval(() => {
+        progress(0);
+        const progressInterval = setInterval(() => {
           const { size } = fs.statSync(destfile);
-          progress((lastSize / fileSize) * 100);
-          lastSize = size / 1024;
+          progress((size / 1024 / fileSize) * 100);
         }, 1000);
 
         // FIXME replace shell pipe to dd with node stream
@@ -587,46 +588,20 @@ class Adb {
       });
   }
 
-  // Restore file "srcfile" from the computer to "destfile" on the phone
-  applyRemoteUbuntuBackup(destfile, srcfile, adbpath, bckSize, progress) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      // Creating pipe
-      _this
-        .shell("mkfifo /restore.pipe")
-        .then(stdout => {
-          _this.log("Pipe created !");
-          // Start the restoration
-          _this.log("Starting Restore...");
-          _this
-            .execCommand([
-              "push",
-              srcfile,
-              "/restore.pipe &",
-              adbpath + "/adb -P",
-              _this.port,
-              " shell 'cd /; cat /restore.pipe | tar -xv'"
-            ])
-            .then((error, stdout, stderr) => {
-              _this.log("Restore Ended");
-              _this
-                .shell("rm /restore.pipe")
-                .then(() => {
-                  _this.log("Pipe released.");
-                  resolve(); // Everything's Fine !
-                })
-                .catch(e => {
-                  reject(e);
-                }); // Pipe Deletion
-            })
-            .catch(e => {
-              reject(e);
-            }); // Backup start
-        })
-        .catch(e => {
-          reject(e);
-        }); // Pipe Creation
-    });
+  // Restore file "srcfile"
+  restoreBackupTar(srcfile, progress) {
+    return this.ensureState("recovery")
+      .then(() => this.shell("mkfifo /restore.pipe"))
+      .then(() =>
+        Promise.all([
+          this.push(srcfile, "/restore.pipe"),
+          this.shell(["'cd /; cat /restore.pipe | tar -xv'"])
+        ])
+      )
+      .then(() => this.shell(["rm", "/restore.pipe"]))
+      .catch(e => {
+        throw new Error(`Restore failed: ${e}`);
+      });
   }
 }
 
