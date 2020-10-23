@@ -573,16 +573,14 @@ class Adb {
               // Start the backup
               _this.log("Starting Backup...");
               // FIXME replace shell pipe to dd with node stream
-              _this.execCommand([
-                "exec-out 'tar -cvp ",
-                srcfile,
-                " 2>/backup.pipe' | dd of=" + destfile
-              ]);
-              _this
-                .execCommand([
-                  " shell cat /backup.pipe",
-                  common.stdoutFilter("%]")
-                ])
+              Promise.all([
+                _this.execCommand([
+                  "exec-out 'tar -cvp ",
+                  srcfile,
+                  " 2>/backup.pipe' | dd of=" + destfile
+                ]),
+                _this.shell("cat /backup.pipe")
+              ])
                 .then(() => {
                   _this.log("Backup Ended");
                   clearInterval(progressInterval);
@@ -593,11 +591,11 @@ class Adb {
                       resolve();
                     })
                     .catch(e => {
-                      clearInterval(progressInterval);
                       reject(e + ", Unable to delete the pipe ");
                     });
                 })
                 .catch(e => {
+                  clearInterval(progressInterval);
                   reject(e + ", Unable to backuping the device ");
                 });
             })
