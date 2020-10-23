@@ -468,12 +468,6 @@ describe("Adb module", function() {
       it("should reject if no host specified");
       it("should reject on error");
     });
-    describe("getState()", function() {
-      it("should resolve offline");
-      it("should resolve bootloader");
-      it("should resolve device");
-      it("should reject on error");
-    });
     describe("ppp()", function() {
       it("should run PPP over USB");
       it("should reject on error");
@@ -1108,6 +1102,35 @@ describe("Adb module", function() {
           expect(r.message).to.eql(
             'partition not found: Error: {"error":true,"stdout":null,"stderr":"everything exploded"}'
           );
+        });
+      });
+    });
+    describe("getFileSize()", function() {
+      it("should resolve file size", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "1337", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getFileSize("/wtf").then(size => {
+          expect(size).to.eql(1337);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "du -shk /wtf"
+          ]);
+        });
+      });
+      it("should reject on invalid response file size", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getFileSize().catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
         });
       });
     });
