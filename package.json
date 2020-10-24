@@ -10,6 +10,11 @@
     "lint": "./node_modules/.bin/eslint tests/unit-tests/*.js src/*.js",
     "lint-fix": "npm run lint -- --fix"
   },
+  "files": [
+    "src/*.js",
+    "LICENSE",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ubports/promise-android-tools.git"
