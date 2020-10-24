@@ -1,3 +1,5 @@
+"use strict";
+
 /*
  * Copyright (C) 2017-2020 UBports Foundation <info@ubports.com>
  *
