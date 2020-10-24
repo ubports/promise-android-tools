@@ -17,8 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require("fs");
-const path = require("path");
 const exec = require("child_process").exec;
 const events = require("events");
 const common = require("./common.js");
@@ -30,6 +28,9 @@ const DEFAULT_EXEC = (args, callback) => {
 };
 const DEFAULT_LOG = console.log;
 
+/**
+ * fastboot android flashing and booting utility
+ */
 class Fastboot {
   constructor(options) {
     this.exec = DEFAULT_EXEC;
@@ -42,7 +43,11 @@ class Fastboot {
     }
   }
 
-  // Exec a command
+  /**
+   * Exec a command
+   * @param {Aarray} args - list of arguments
+   * @returns {Promise<String>} stdout
+   */
   execCommand(args) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -63,6 +68,14 @@ class Fastboot {
     });
   }
 
+  /**
+   * Write a file to a flash partition
+   * @param {String} partition partition to flash
+   * @param {String} file path to an image file
+   * @param {Boolean} [raw=false] use flash:raw
+   * @param  {...any} [flags] additional cli-flags like --force and --disable-verification
+   * @returns {Promise}
+   */
   flash(partition, file, raw = false, ...flags) {
     return this.execCommand([
       raw ? "flash:raw" : "flash",
@@ -78,10 +91,22 @@ class Fastboot {
       });
   }
 
+  /**
+   * Write a raw file to a flash partition
+   * @param {String} partition partition to flash
+   * @param {String} file path to an image file
+   * @param  {...any} [flags] additional cli-flags like --force and --disable-verification
+   * @returns {Promise}
+   */
   flashRaw(partition, file, ...flags) {
     return this.flash(partition, file, true, ...flags);
   }
 
+  /**
+   * Download and boot kernel
+   * @param {String} image image file to boot
+   * @returns {Promise}
+   */
   boot(image) {
     return this.execCommand(["boot", common.quotepath(image)])
       .then(stdout => {
@@ -92,6 +117,12 @@ class Fastboot {
       });
   }
 
+  /**
+   * Reflash device from update.zip and set the flashed slot as active
+   * @param {String} image image to flash
+   * @param {String} wipe wipe option
+   * @returns {Promise}
+   */
   update(image, wipe) {
     return this.execCommand([
       wipe ? "-w" : "",
@@ -106,6 +137,10 @@ class Fastboot {
       });
   }
 
+  /**
+   * Reboot device into bootloader
+   * @returns {Promise}
+   */
   rebootBootloader() {
     return this.execCommand(["reboot-bootloader"])
       .then(() => {
@@ -116,6 +151,10 @@ class Fastboot {
       });
   }
 
+  /**
+   * Reboot device
+   * @returns {Promise}
+   */
   reboot() {
     return this.execCommand(["reboot"])
       .then(() => {
@@ -126,6 +165,10 @@ class Fastboot {
       });
   }
 
+  /**
+   * Continue with autoboot
+   * @returns {Promise}
+   */
   continue() {
     return this.execCommand(["continue"])
       .then(() => {
@@ -136,6 +179,13 @@ class Fastboot {
       });
   }
 
+  /**
+   * Format a flash partition. Can override the fs type and/or size the bootloader reports.
+   * @param {String} partition to format
+   * @param {String} type partition type
+   * @param {String} size partition size
+   * @returns {Promise}
+   */
   format(partition, type, size) {
     if (!type && size) {
       return Promise.reject(
@@ -156,6 +206,11 @@ class Fastboot {
       });
   }
 
+  /**
+   * Erase a flash partition
+   * @param {String} partition partition to erase
+   * @returns {Promise}
+   */
   erase(partition) {
     return this.execCommand(["erase", partition])
       .then(() => {
@@ -170,6 +225,10 @@ class Fastboot {
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
 
+  /**
+   * Lift OEM lock
+   * @returns {Promise}
+   */
   oemUnlock() {
     return this.execCommand(["oem", "unlock"])
       .then(() => {
@@ -186,6 +245,10 @@ class Fastboot {
       });
   }
 
+  /**
+   * Enforce OEM lock
+   * @returns {Promise}
+   */
   oemLock() {
     return this.execCommand(["oem", "lock"])
       .then(() => {
@@ -196,8 +259,11 @@ class Fastboot {
       });
   }
 
-  // Flash image to a partition
-  // [ {partition, file, raw, flags}, ... ]
+  /**
+   * Write files to flash partitions
+   * @param {Array<Object>} images [ {partition, file, raw, flags}, ... ]
+   * @returns {Promise}
+   */
   flashArray(images) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -221,7 +287,10 @@ class Fastboot {
     });
   }
 
-  // Find out if a device can be seen by fastboot
+  /**
+   * Find out if a device can be seen by fastboot
+   * @returns {Promise}
+   */
   hasAccess() {
     return this.execCommand(["devices"])
       .then(stdout => {
@@ -232,7 +301,12 @@ class Fastboot {
       });
   }
 
-  // Wait for a device
+  /**
+   * Wait for a device
+   * @param {Integer} interval how often to poll
+   * @param {Integer} timeout how long to try
+   * @returns {Promise}
+   */
   waitForDevice(interval, timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -266,7 +340,9 @@ class Fastboot {
     });
   }
 
-  // Stop waiting for a device
+  /**
+   * Stop waiting for a device
+   */
   stopWaiting() {
     this.fastbootEvent.emit("stop");
   }

@@ -17,6 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * convert child_process callback data to escalabable string
+ * @param {Object} error child_process error
+ * @param {String} stdout stdout buffer string
+ * @param {String} stderr stderr buffer string
+ * @returns {String} error description
+ */
 function handleError(error, stdout, stderr) {
   // hide commands that include sudo, so passwords don't get logged
   if (error.cmd && error.cmd.includes("sudo"))
@@ -82,12 +89,20 @@ function handleError(error, stdout, stderr) {
   }
 }
 
-// Add platform-specific quotes to path string (macos can't handle double quotes)
+/**
+ * Add platform-specific quotes to path string (macos can't handle double quotes)
+ * @param {String} file path to guard in quotes
+ * @returns {String} guarded path
+ */
 function quotepath(file) {
   return process.platform == "darwin" ? "'" + file + "'" : '"' + file + '"';
 }
 
-// hack to filter a string from stdout to not exceed buffer
+/**
+ * hack to filter a string from stdout to not exceed buffer
+ * @param {String} query string to filter out
+ * @returns {String} pipe to findstr on windows or grep on posix
+ */
 function stdoutFilter(query) {
   return process.platform == "win32"
     ? ' | findstr /v "' + query + '"'

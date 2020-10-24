@@ -36,6 +36,9 @@ const DEFAULT_EXEC = (args, callback) => {
 const DEFAULT_LOG = console.log;
 const DEFAULT_PORT = 5037;
 
+/**
+ * Android Debug Bridge (ADB) module
+ */
 class Adb {
   constructor(options) {
     this.exec = DEFAULT_EXEC;
@@ -57,7 +60,11 @@ class Adb {
     }
   }
 
-  // Exec a command with port argument
+  /**
+   * Exec a command with port argument
+   * @param {Aarray} args - list of arguments
+   * @returns {Promise<String>} stdout
+   */
   execCommand(args) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -85,7 +92,10 @@ class Adb {
     });
   }
 
-  // Kill all adb servers and start a new one to rule them all
+  /**
+   * Kill all adb servers and start a new one to rule them all
+   * @returns {Promise}
+   */
   startServer() {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -96,7 +106,7 @@ class Adb {
           _this.log("starting adb server on port " + _this.port);
           _this
             .execCommand("start-server")
-            .then(stdout => {
+            .then(() => {
               resolve();
             })
             .catch(reject);
@@ -105,7 +115,10 @@ class Adb {
     });
   }
 
-  // Kill all running servers
+  /**
+   * Kill all running servers
+   * @returns {Promise}
+   */
   killServer() {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -118,7 +131,10 @@ class Adb {
     });
   }
 
-  // Get the devices serial number
+  /**
+   * Get the devices serial number
+   * @returns {Promise<String>} serial number
+   */
   getSerialno() {
     var _this = this;
     var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
@@ -155,6 +171,11 @@ class Adb {
     });
   }
 
+  /**
+   * run remote shell command
+   * @param {Array} args - list of shell arguments
+   * @returns {Promise<String>} stdout
+   */
   shell(args) {
     return this.execCommand(["shell"].concat(args)).then(stdout => {
       if (stdout) return stdout.replace("\n", "");
@@ -162,6 +183,13 @@ class Adb {
     });
   }
 
+  /**
+   * copy local files/directories to device
+   * @param {String} file - path to file to push
+   * @param {String} dest - target path
+   * @param {Integer} interval - poll interval
+   * @returns {Promise}
+   */
   push(file, dest, interval) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -233,7 +261,11 @@ class Adb {
     });
   }
 
-  // Reboot to a state (system, recovery, bootloader)
+  /**
+   * Reboot to a state
+   * @param {String} state - system, recovery, bootloader
+   * @returns {Promise}
+   */
   reboot(state) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -252,7 +284,11 @@ class Adb {
     });
   }
 
-  // sideload an ota package
+  /**
+   * sideload an ota package
+   * @param {String} file - path to a file to sideload
+   * @returns {Promise}
+   */
   sideload(file) {
     return this.execCommand([
       "sideload",
@@ -261,7 +297,10 @@ class Adb {
     ]);
   }
 
-  // Return the status of the device (bootloader, recovery, device)
+  /**
+   * Return the status of the device
+   * @returns {Promise<String>} bootloader, recovery, device
+   */
   getState() {
     return this.execCommand(["get-state"]).then(stdout => stdout.trim());
   }
@@ -270,7 +309,11 @@ class Adb {
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
 
-  // Reboot to a state (system, recovery, bootloader)
+  /**
+   * Reboot to a requested state, if not already in it
+   * @param {String} state - system, recovery, bootloader
+   * @returns {Promise}
+   */
   ensureState(state) {
     return this.getState().then(currentState =>
       currentState === state ||
@@ -280,8 +323,13 @@ class Adb {
     );
   }
 
-  // Push an array of files and report progress
-  // { src, dest }
+  /**
+   * Push an array of files and report progress
+   * @param {Array<{ src, dest }>} files file objects
+   * @param {Function} progress progress function
+   * @param {Integer} interval how often to call the progress function
+   * @returns {Promise}
+   */
   pushArray(files = [], progress = () => {}, interval) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -326,7 +374,10 @@ class Adb {
     });
   }
 
-  // Get device codename
+  /**
+   * get device codename from getprop or by reading the default.prop file
+   * @returns {Promise<String>} codename
+   */
   getDeviceName() {
     var _this = this;
     return _this
@@ -358,14 +409,20 @@ class Adb {
       });
   }
 
-  // Find out what operating system the device is running (currently android and ubuntu touch)
+  /**
+   * Find out what operating system the device is running (currently android and ubuntu touch)
+   * @returns {Promise<String>} ubuntutouch, android
+   */
   getOs() {
     return this.shell(["cat", "/etc/system-image/channel.ini"]).then(stdout => {
       return stdout ? "ubuntutouch" : "android";
     });
   }
 
-  // Find out if a device can be seen by adb
+  /**
+   * Find out if a device can be seen by adb
+   * @returns {Promise<Boolean>} access?
+   */
   hasAccess() {
     return this.shell(["echo", "."])
       .then(stdout => {
@@ -381,7 +438,11 @@ class Adb {
       });
   }
 
-  // Wait for a device
+  /**
+   * Wait for a device
+   * @param {Integer} interval how often to poll
+   * @param {Integer} timeout when to time out
+   */
   waitForDevice(interval, timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -415,12 +476,18 @@ class Adb {
     });
   }
 
-  // Stop waiting for a device
+  /**
+   * Stop waiting for a device
+   */
   stopWaiting() {
     this.adbEvent.emit("stop");
   }
 
-  // Format partition
+  /**
+   * Format partition
+   * @param {String} partition partition to format
+   * @returns {Promise}
+   */
   format(partition) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -458,7 +525,10 @@ class Adb {
     });
   }
 
-  // If cache can not be formated, rm it
+  /**
+   * If cache can not be formated, rm it
+   * @returns {Promise}
+   */
   wipeCache() {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -476,7 +546,12 @@ class Adb {
     });
   }
 
-  // Find the partition associated with a mountpoint in an fstab
+  /**
+   * Find the partition associated with a mountpoint in an fstab
+   * @param {String} partition partition to find
+   * @param {String} fstab fstab
+   * @returns {String} partition
+   */
   findPartitionInFstab(partition, fstab) {
     try {
       return fstab
@@ -491,7 +566,12 @@ class Adb {
     }
   }
 
-  // Find a partition and verify its type
+  /**
+   * Find a partition and verify its type
+   * @param {String} partition partition to verify
+   * @param {String} type expected type
+   * @returns {Promise<Boolean>} verified?
+   */
   verifyPartitionType(partition, type) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -515,7 +595,11 @@ class Adb {
     });
   }
 
-  // size of a file or directory
+  /**
+   * size of a file or directory
+   * @param {String} file file or directory
+   * @returns {Promise<Float>} size
+   */
   getFileSize(file) {
     return this.shell("du -shk " + file)
       .then(size => {
@@ -528,7 +612,11 @@ class Adb {
       });
   }
 
-  // available size of a partition
+  /**
+   * available size of a partition
+   * @param {String} partition partition to check
+   * @returns {Promise<Integer>} available size
+   */
   getAvailablePartitionSize(partition) {
     return this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
@@ -542,7 +630,11 @@ class Adb {
       });
   }
 
-  // total size of a partition
+  /**
+   * total size of a partition
+   * @param {String} partition partition to check
+   * @returns {Promise<Integer>} total size
+   */
   getTotalPartitionSize(partition) {
     return this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
@@ -556,7 +648,13 @@ class Adb {
       });
   }
 
-  // Backup "srcfile" from the device to local tar "destfile"
+  /**
+   * Backup "srcfile" from the device to local tar "destfile"
+   * @param {String} srcfile file to back up
+   * @param {String} destfile target destination
+   * @param {Function} progress progress function
+   * @returns {Promise}
+   */
   createBackupTar(srcfile, destfile, progress) {
     return Promise.all([
       this.ensureState("recovery")
@@ -602,7 +700,11 @@ class Adb {
       });
   }
 
-  // Restore tar "srcfile"
+  /**
+   * Restore tar "srcfile"
+   * @param {String} srcfile file to restore
+   * @returns {Promise}
+   */
   restoreBackupTar(srcfile) {
     return this.ensureState("recovery")
       .then(() => this.shell("mkfifo /restore.pipe"))
@@ -618,6 +720,11 @@ class Adb {
       });
   }
 
+  /**
+   * List backups
+   * @param {String} backupBaseDir path to backup storage location
+   * @returns {Promise<Array<Object>>} backup list
+   */
   listUbuntuBackups(backupBaseDir) {
     return fs
       .readdir(backupBaseDir)
@@ -637,6 +744,14 @@ class Adb {
       .catch(() => []);
   }
 
+  /**
+   * create a full backup of ubuntu touch
+   * @param {String} backupBaseDir path to backup storage location
+   * @param {String} [comment] description of the backup
+   * @param {String} [dataPartition="/data"] data partition on the device
+   * @param {Function} [progress] progress function
+   * @returns {Promise<Object>} backup object
+   */
   async createUbuntuTouchBackup(
     backupBaseDir,
     comment,
@@ -688,6 +803,12 @@ class Adb {
       });
   }
 
+  /**
+   * restore a full backup of ubuntu touch
+   * @param {String} dir directory where backup is stored
+   * @param {Function} [progress] progress function
+   * @returns {Promise<Object>} backup object
+   */
   async restoreUbuntuTouchBackup(dir, progress = () => {}) {
     progress(0); // FIXME report actual push progress
     let metadata = JSON.parse(

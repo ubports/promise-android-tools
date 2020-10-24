@@ -63,7 +63,7 @@ typings/
 
 
 # End of https://www.gitignore.io/api/node
-
+docs
 
 # ignore test output
 test

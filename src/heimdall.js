@@ -28,6 +28,9 @@ const DEFAULT_EXEC = (args, callback) => {
 };
 const DEFAULT_LOG = console.log;
 
+/**
+ * heimdall: flash firmware on samsung devices
+ */
 class Heimdall {
   constructor(options) {
     this.exec = DEFAULT_EXEC;
@@ -40,7 +43,11 @@ class Heimdall {
     }
   }
 
-  // Exec a command
+  /**
+   * Exec a command
+   * @param {Aarray} args - list of arguments
+   * @returns {Promise<String>} stdout
+   */
   execCommand(args) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -61,12 +68,18 @@ class Heimdall {
     });
   }
 
-  // Alias for hasAccess()
+  /**
+   * Find out if a device in download mode can be seen by heimdall
+   * @returns {Promise<Boolean>}
+   */
   detect() {
     return this.hasAccess();
   }
 
-  // Find out if a device in download mode can be seen by heimdall
+  /**
+   * Find out if a device in download mode can be seen by heimdall
+   * @returns {Promise<Boolean>}
+   */
   hasAccess() {
     return this.execCommand(["detect"])
       .then(() => {
@@ -85,7 +98,11 @@ class Heimdall {
       });
   }
 
-  // Wait for a device
+  /**
+   * Wait for a device
+   * @param {Integer} interval how often to try
+   * @param {Integer} timeout how long to try
+   */
   waitForDevice(interval, timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -119,12 +136,18 @@ class Heimdall {
     });
   }
 
-  // Stop waiting for a device
+  /**
+   * Stop waiting for a device
+   */
   stopWaiting() {
     this.heimdallEvent.emit("stop");
   }
 
-  // Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device.
+  /**
+   * Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device.
+   * @param {String} file pit file to print
+   * @returns {Promise<String>}
+   */
   printPit(file) {
     return this.execCommand([
       "print-pit",
@@ -142,6 +165,10 @@ class Heimdall {
       });
   }
 
+  /**
+   * get partitions from pit file
+   * @returns {Promise<String>}
+   */
   getPartitions() {
     return this.printPit().then(r =>
       r.map(r =>
@@ -156,13 +183,21 @@ class Heimdall {
     );
   }
 
-  // Flashes a firmware file to a partition (name or identifier)
+  /**
+   * Flashes a firmware file to a partition (name or identifier)
+   * @param {String} partition partition name
+   * @param {String} file image file
+   * @returns {Promise}
+   */
   flash(partition, file) {
     return this.flashArray([{ partition, file }]);
   }
 
-  // Flash firmware files to partitions (names or identifiers)
-  // [ {partition, file} ]
+  /**
+   * Flash firmware files to partitions (names or identifiers)
+   * @param {Array<Object>} images [ {partition, file} ]
+   * @returns {Promise}
+   */
   flashArray(images) {
     return this.execCommand([
       "flash",

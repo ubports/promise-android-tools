@@ -8,7 +8,8 @@
     "test-travis": "./node_modules/nyc/bin/nyc.js --exclude=tests/* --reporter=lcov --reporter=text ./node_modules/mocha/bin/_mocha -- -R spec ./tests/unit-tests/* ./tests/integration.js",
     "integration": "mocha ./tests/integration.js",
     "lint": "./node_modules/.bin/eslint tests/unit-tests/*.js src/*.js",
-    "lint-fix": "npm run lint -- --fix"
+    "lint-fix": "npm run lint -- --fix",
+    "docs": "npx jsdoc -c jsdoc-config.json"
   },
   "files": [
     "src/*.js",
@@ -45,6 +46,7 @@
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.14.0",
     "eslint-plugin-prettier": "^3.1.4",
+    "jsdoc": "^3.6.6",
     "mocha": "^6.2.3",
     "nyc": "^15.1.0",
     "prettier": "^1.19.1",
