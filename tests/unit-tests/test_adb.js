@@ -379,6 +379,38 @@ describe("Adb module", function() {
           });
         });
       });
+      it("should reject on failure in stdout", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "failed", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.reboot("bootloader").catch(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "reboot",
+            "bootloader"
+          ]);
+          done();
+        });
+      });
+      it("should reject on error", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(666, "everything exploded", "what!?");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.reboot("bootloader").catch(() => {
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "reboot",
+            "bootloader"
+          ]);
+          done();
+        });
+      });
       it("should reject on invalid state", function() {
         const execFake = sinon.spy();
         const logSpy = sinon.spy();
@@ -387,14 +419,6 @@ describe("Adb module", function() {
           "unknown state: someinvalidstate"
         );
       });
-    });
-    describe("backup()", function() {
-      it("should create backup");
-      it("should reject if backup failed");
-    });
-    describe("restore()", function() {
-      it("should restore backup");
-      it("should reject if backup failed");
     });
     describe("forward()", function() {
       it("should create forward connection");
@@ -442,12 +466,6 @@ describe("Adb module", function() {
       it("should disconnect from given TCP/IP device on default port 5555");
       it("should disconnect from given TCP/IP device on custom port");
       it("should reject if no host specified");
-      it("should reject on error");
-    });
-    describe("getState()", function() {
-      it("should resolve offline");
-      it("should resolve bootloader");
-      it("should resolve device");
       it("should reject on error");
     });
     describe("ppp()", function() {
@@ -519,9 +537,55 @@ describe("Adb module", function() {
       it("should reject if package inaccessible");
       it("should reject on error");
     });
+    describe("getState()", function() {
+      it("should resolve state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "recovery", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getState().then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
+        });
+      });
+    });
   });
 
   describe("convenience functions", function() {
+    describe("ensureState()", function() {
+      it("should resolve if already in requested state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "recovery", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.ensureState("recovery").then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
+        });
+      });
+      it("should properly handle device state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "device", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.ensureState("system").then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
+        });
+      });
+      it("should reboot to correct state", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "recovery", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        sinon.stub(adb, "reboot").resolves();
+        sinon.stub(adb, "waitForDevice").resolves();
+        return adb.ensureState("system").then(() => {
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "get-state"]);
+        });
+      });
+    });
     describe("pushArray()", function() {
       it("should resolve on empty array", function() {
         const execFake = sinon.spy();
@@ -1038,6 +1102,115 @@ describe("Adb module", function() {
           expect(r.message).to.eql(
             'partition not found: Error: {"error":true,"stdout":null,"stderr":"everything exploded"}'
           );
+        });
+      });
+    });
+    describe("getFileSize()", function() {
+      it("should resolve file size", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "1337", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getFileSize("/wtf").then(size => {
+          expect(size).to.eql(1337);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "du -shk /wtf"
+          ]);
+        });
+      });
+      it("should reject on invalid response file size", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getFileSize().catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+    });
+    describe("getAvailablePartitionSize()", function() {
+      it("should resolve available partition size", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "a\n/wtf 1337 a b", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getAvailablePartitionSize("/wtf").then(size => {
+          expect(size).to.eql(1337);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "df -k -P /wtf"
+          ]);
+        });
+      });
+      it("should reject on invalid response", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getAvailablePartitionSize("/wtf").catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+      it("should reject on error", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(69, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getAvailablePartitionSize().catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+    });
+    describe("getTotalPartitionSize()", function() {
+      it("should resolve available partition size", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "a\n/wtf 1337 a b c d", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return adb.getTotalPartitionSize("/wtf").then(size => {
+          expect(size).to.eql(1337);
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "shell",
+            "df -k -P /wtf"
+          ]);
+        });
+      });
+      it("should reject on invalid response", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getTotalPartitionSize("/wtf").catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
+        });
+      });
+      it("should reject on error", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(69, "invalid response :)", null);
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        adb.getTotalPartitionSize().catch(() => {
+          expect(execFake).to.have.been.calledOnce;
+          done();
         });
       });
     });

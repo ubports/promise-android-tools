@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 const exec = require("child_process").exec;
 const events = require("events");
@@ -32,6 +32,7 @@ const DEFAULT_EXEC = (args, callback) => {
     callback
   );
 };
+
 const DEFAULT_LOG = console.log;
 const DEFAULT_PORT = 5037;
 
@@ -172,6 +173,7 @@ class Adb {
       }
       var fileSize = fs.statSync(file)["size"];
       var lastSize = 0;
+      // FIXME use stream and parse stdout instead of polling with stat
       var progressInterval = setInterval(() => {
         _this
           .shell([
@@ -259,9 +261,24 @@ class Adb {
     ]);
   }
 
+  // Return the status of the device (bootloader, recovery, device)
+  getState() {
+    return this.execCommand(["get-state"]).then(stdout => stdout.trim());
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
+
+  // Reboot to a state (system, recovery, bootloader)
+  ensureState(state) {
+    return this.getState().then(currentState =>
+      currentState === state ||
+      (currentState === "device" && state === "system")
+        ? Promise.resolve()
+        : this.reboot(state).then(() => this.waitForDevice())
+    );
+  }
 
   // Push an array of files and report progress
   // { src, dest }
@@ -496,6 +513,207 @@ class Adb {
           reject(new Error("partition not found" + (error ? ": " + error : "")))
         );
     });
+  }
+
+  // size of a file or directory
+  getFileSize(file) {
+    return this.shell("du -shk " + file)
+      .then(size => {
+        if (isNaN(parseFloat(size)))
+          throw new Error(`Cannot parse size from ${size}`);
+        else return parseFloat(size);
+      })
+      .catch(e => {
+        throw new Error(`Unable to get size: ${e}`);
+      });
+  }
+
+  // available size of a partition
+  getAvailablePartitionSize(partition) {
+    return this.shell("df -k -P " + partition)
+      .then(stdout => stdout.split(/[ ,]+/))
+      .then(arr => parseInt(arr[arr.length - 3]))
+      .then(size => {
+        if (isNaN(size)) throw new Error(`Cannot parse size from ${size}`);
+        else return size;
+      })
+      .catch(e => {
+        throw new Error(`Unable to get size: ${e}`);
+      });
+  }
+
+  // total size of a partition
+  getTotalPartitionSize(partition) {
+    return this.shell("df -k -P " + partition)
+      .then(stdout => stdout.split(/[ ,]+/))
+      .then(arr => parseInt(arr[arr.length - 5]))
+      .then(size => {
+        if (isNaN(size)) throw new Error(`Cannot parse size from ${size}`);
+        else return size;
+      })
+      .catch(e => {
+        throw new Error(`Unable to get size: ${e}`);
+      });
+  }
+
+  // Backup "srcfile" from the device to local tar "destfile"
+  createBackupTar(srcfile, destfile, progress) {
+    return Promise.all([
+      this.ensureState("recovery")
+        .then(() => this.shell("mkfifo /backup.pipe"))
+        .then(() => this.getFileSize(srcfile)),
+      fs.ensureFile(destfile)
+    ])
+      .then(([fileSize]) => {
+        progress(0);
+        // FIXME with gzip compression (the -z flag on tar), the progress estimate is way off. It's still beneficial to enable it, because it saves a lot of space.
+        const progressInterval = setInterval(() => {
+          const { size } = fs.statSync(destfile);
+          progress((size / 1024 / fileSize) * 100);
+        }, 1000);
+
+        // FIXME replace shell pipe to dd with node stream
+        return Promise.all([
+          this.execCommand([
+            "exec-out 'tar -cpz " +
+              "--exclude=*/var/cache " +
+              "--exclude=*/var/log " +
+              "--exclude=*/.cache/upstart " +
+              "--exclude=*/.cache/*.qmlc " +
+              "--exclude=*/.cache/*/qmlcache " +
+              "--exclude=*/.cache/*/qml_cache",
+            srcfile,
+            " 2>/backup.pipe' | dd of=" + destfile
+          ]),
+          this.shell("cat /backup.pipe")
+        ])
+          .then(() => {
+            clearInterval(progressInterval);
+            progress(100);
+          })
+          .catch(e => {
+            clearInterval(progressInterval);
+            throw new Error(e);
+          });
+      })
+      .then(() => this.shell("rm /backup.pipe"))
+      .catch(e => {
+        throw new Error(`Backup failed: ${e}`);
+      });
+  }
+
+  // Restore tar "srcfile"
+  restoreBackupTar(srcfile) {
+    return this.ensureState("recovery")
+      .then(() => this.shell("mkfifo /restore.pipe"))
+      .then(() =>
+        Promise.all([
+          this.push(srcfile, "/restore.pipe"),
+          this.shell(["'cd /; cat /restore.pipe | tar -xvz'"])
+        ])
+      )
+      .then(() => this.shell(["rm", "/restore.pipe"]))
+      .catch(e => {
+        throw new Error(`Restore failed: ${e}`);
+      });
+  }
+
+  listUbuntuBackups(backupBaseDir) {
+    return fs
+      .readdir(backupBaseDir)
+      .then(backups =>
+        Promise.all(
+          backups.map(backup =>
+            fs
+              .readFile(path.join(backupBaseDir, backup, "metadata.json"))
+              .then(metadataBuffer => ({
+                ...JSON.parse(metadataBuffer.toString()),
+                dir: path.join(backupBaseDir, backup)
+              }))
+              .catch(() => null)
+          )
+        ).then(r => r.filter(r => r))
+      )
+      .catch(() => []);
+  }
+
+  async createUbuntuTouchBackup(
+    backupBaseDir,
+    comment,
+    dataPartition = "/data",
+    progress = () => {}
+  ) {
+    const time = new Date();
+    const dir = path.join(backupBaseDir, time.toISOString());
+    return this.ensureState("recovery")
+      .then(() => fs.ensureDir(dir))
+      .then(() =>
+        Promise.all([
+          this.shell(["stat", "/data/user-data"]),
+          this.shell(["stat", "/data/syste-mdata"])
+        ]).catch(() => this.shell(["mount", dataPartition, "/data"]))
+      )
+      .then(() =>
+        this.createBackupTar(
+          "/data/system-data",
+          path.join(dir, "system.tar.gz"),
+          p => progress(p * 0.5)
+        )
+      )
+      .then(() =>
+        this.createBackupTar(
+          "/data/user-data",
+          path.join(dir, "user.tar.gz"),
+          p => progress(50 + p * 0.5)
+        )
+      )
+      .then(async () => {
+        const metadata = {
+          codename: await this.getDeviceName(),
+          serialno: await this.getSerialno(),
+          size:
+            (await this.getFileSize("/data/user-data")) +
+            (await this.getFileSize("/data/system-data")),
+          time,
+          comment:
+            comment || `Ubuntu Touch backup created on ${time.toISOString()}`,
+          restorations: []
+        };
+        return fs
+          .writeJSON(path.join(dir, "metadata.json"), metadata)
+          .then(() => ({ ...metadata, dir }))
+          .catch(e => {
+            throw new Error(`Failed to restore: ${e}`);
+          });
+      });
+  }
+
+  async restoreUbuntuTouchBackup(dir, progress = () => {}) {
+    progress(0); // FIXME report actual push progress
+    let metadata = JSON.parse(
+      await fs.readFile(path.join(dir, "metadata.json"))
+    );
+    return this.ensureState("recovery")
+      .then(async () => {
+        metadata.restorations = metadata.restorations || [];
+        metadata.restorations.push({
+          codename: await this.getDeviceName(),
+          serialno: await this.getSerialno(),
+          time: new Date().toISOString()
+        });
+      })
+      .then(() => progress(10))
+      .then(() => this.restoreBackupTar(path.join(dir, "system.tar.gz")))
+      .then(() => progress(50))
+      .then(() => this.restoreBackupTar(path.join(dir, "user.tar.gz")))
+      .then(() => progress(90))
+      .then(() => fs.writeJSON(path.join(dir, "metadata.json"), metadata))
+      .then(() => this.reboot("system"))
+      .then(() => progress(100))
+      .then(() => ({ ...metadata, dir }))
+      .catch(e => {
+        throw new Error(`Failed to restore: ${e}`);
+      });
   }
 }
 
