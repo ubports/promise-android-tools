@@ -164,15 +164,18 @@ describe("Fastboot module", function() {
         });
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return fastboot.flashRaw("boot", "/path/to/image", true).then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith([
-            "flash:raw",
-            "boot",
-            "--force",
-            common.quotepath("/path/to/image")
-          ]);
-        });
+        return fastboot
+          .flashRaw("boot", "/path/to/image", "--force", "--disable-verity")
+          .then(r => {
+            expect(execFake).to.have.been.called;
+            expect(execFake).to.have.been.calledWith([
+              "flash:raw",
+              "boot",
+              "--force",
+              "--disable-verity",
+              common.quotepath("/path/to/image")
+            ]);
+          });
       });
     });
     describe("boot()", function() {
@@ -495,20 +498,37 @@ describe("Fastboot module", function() {
         return fastboot
           .flashArray([
             { partition: "p1", file: "f1" },
-            { partition: "p2", file: "f2" }
+            { partition: "p2", file: "f2", raw: true },
+            { partition: "p3", file: "f3", raw: true, flags: ["--force"] },
+            {
+              partition: "p4",
+              file: "f4",
+              flags: ["--disable-verification", "--disable-verity"]
+            }
           ])
           .then(r => {
-            expect(execFake).to.have.been.calledTwice;
-            expect(execFake).to.not.have.been.calledThrice;
             expect(execFake).to.have.been.calledWith([
               "flash",
               "p1",
               common.quotepath("f1")
             ]);
             expect(execFake).to.have.been.calledWith([
-              "flash",
+              "flash:raw",
               "p2",
               common.quotepath("f2")
+            ]);
+            expect(execFake).to.have.been.calledWith([
+              "flash:raw",
+              "p3",
+              "--force",
+              common.quotepath("f3")
+            ]);
+            expect(execFake).to.have.been.calledWith([
+              "flash",
+              "p4",
+              "--disable-verification",
+              "--disable-verity",
+              common.quotepath("f4")
             ]);
           });
       });

@@ -63,14 +63,14 @@ class Fastboot {
     });
   }
 
-  flash(partition, file, force = false, raw = false) {
+  flash(partition, file, raw = false, ...flags) {
     return this.execCommand([
       raw ? "flash:raw" : "flash",
       partition,
-      ...(force ? ["--force"] : []),
+      ...flags,
       common.quotepath(file)
     ])
-      .then(stdout => {
+      .then(() => {
         return;
       })
       .catch(error => {
@@ -78,8 +78,8 @@ class Fastboot {
       });
   }
 
-  flashRaw(partition, file, force = false) {
-    return this.flash(partition, file, force, true);
+  flashRaw(partition, file, ...flags) {
+    return this.flash(partition, file, true, ...flags);
   }
 
   boot(image) {
@@ -197,7 +197,7 @@ class Fastboot {
   }
 
   // Flash image to a partition
-  // [ {partition, file, force, raw} ]
+  // [ {partition, file, raw, flags}, ... ]
   flashArray(images) {
     var _this = this;
     return new Promise(function(resolve, reject) {
@@ -206,8 +206,8 @@ class Fastboot {
           .flash(
             images[i].partition,
             images[i].file,
-            images[i].force,
-            images[i].raw
+            images[i].raw,
+            ...(images[i].flags || [])
           )
           .then(() => {
             if (i + 1 < images.length) flashNext(i + 1);
