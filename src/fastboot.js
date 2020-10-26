@@ -221,6 +221,24 @@ class Fastboot {
       });
   }
 
+  /**
+   * Sets the active slot
+   * @param {String} slot - slot to set as active
+   */
+  setActive(slot) {
+    return this.execCommand(["--set-active", slot])
+      .then(stdout => {
+        if (stdout && stdout.includes("error")) {
+          throw new Error(stdout);
+        } else {
+          return;
+        }
+      })
+      .catch(error => {
+        throw new Error(`failed to set active slot: ${error}`);
+      });
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////

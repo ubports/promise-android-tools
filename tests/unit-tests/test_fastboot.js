@@ -486,6 +486,48 @@ describe("Fastboot module", function() {
         );
       });
     });
+    describe("setActive()", function() {
+      it("should resolve after setting active slot", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, null);
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return fastboot.setActive("a").then(r => {
+          expect(execFake).to.have.been.called;
+          expect(execFake).to.have.been.calledWith(["--set-active", "a"]);
+        });
+      });
+      it("should reject if locking failed", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            {
+              killed: false,
+              code: 1,
+              signal: null,
+              cmd: "fastboot --set-active a"
+            },
+            "",
+            "error: Device does not support slots."
+          );
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(fastboot.setActive("a")).to.have.been.rejectedWith(
+          'failed to set active slot: Error: {"error":{"killed":false,"code":1,"signal":null,"cmd":"fastboot --set-active a"},"stdout":"","stderr":"error: Device does not support slots."}'
+        );
+      });
+      it("should reject if locking failed with non-zero exit code", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "error: everything exploded");
+        });
+        const logSpy = sinon.spy();
+        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        return expect(fastboot.setActive("a")).to.have.been.rejectedWith(
+          "failed to set active slot: Error: error: everything exploded"
+        );
+      });
+    });
   });
   describe("convenience functions", function() {
     describe("flashArray()", function() {
