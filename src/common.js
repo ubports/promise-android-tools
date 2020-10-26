@@ -55,6 +55,7 @@ function handleError(error, stdout, stderr) {
   } else if (
     stderr &&
     (stderr.includes("FAILED (remote: not supported in locked device)") ||
+      stderr.includes("FAILED (remote: ‘not supported in locked device’)") ||
       stderr.includes("FAILED (remote: 'Bootloader is locked.')") ||
       stderr.includes("FAILED (remote: 'not allowed in locked state')") ||
       stderr.includes(
