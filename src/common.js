@@ -60,6 +60,9 @@ function handleError(error, stdout, stderr) {
       stderr.includes("FAILED (remote: 'not allowed in locked state')") ||
       stderr.includes(
         "FAILED (remote: 'Device not unlocked cannot flash or erase')"
+      ) ||
+      stderr.includes(
+        "FAILED (remote: '\tDevice not unlocked cannot flash or erase')"
       ))
   ) {
     return "bootloader is locked";
