@@ -495,7 +495,7 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return fastboot.setActive("a").then(r => {
           expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["--set-active", "a"]);
+          expect(execFake).to.have.been.calledWith(["--set-active=a"]);
         });
       });
       it("should reject if locking failed", function() {
@@ -505,7 +505,7 @@ describe("Fastboot module", function() {
               killed: false,
               code: 1,
               signal: null,
-              cmd: "fastboot --set-active a"
+              cmd: "fastboot --set-active=a"
             },
             "",
             "error: Device does not support slots."
@@ -514,7 +514,7 @@ describe("Fastboot module", function() {
         const logSpy = sinon.spy();
         const fastboot = new Fastboot({ exec: execFake, log: logSpy });
         return expect(fastboot.setActive("a")).to.have.been.rejectedWith(
-          'failed to set active slot: Error: {"error":{"killed":false,"code":1,"signal":null,"cmd":"fastboot --set-active a"},"stdout":"","stderr":"error: Device does not support slots."}'
+          'failed to set active slot: Error: {"error":{"killed":false,"code":1,"signal":null,"cmd":"fastboot --set-active=a"},"stdout":"","stderr":"error: Device does not support slots."}'
         );
       });
       it("should reject if locking failed with non-zero exit code", function() {

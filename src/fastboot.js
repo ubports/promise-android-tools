@@ -226,7 +226,7 @@ class Fastboot {
    * @param {String} slot - slot to set as active
    */
   setActive(slot) {
-    return this.execCommand(["--set-active", slot])
+    return this.execCommand([`--set-active=${slot}`])
       .then(stdout => {
         if (stdout && stdout.includes("error")) {
           throw new Error(stdout);
