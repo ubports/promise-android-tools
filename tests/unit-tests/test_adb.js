@@ -173,6 +173,83 @@ describe("Adb module", function() {
       });
     });
 
+    describe("reconnect()", function() {
+      it("should reconnect", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback();
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        sinon.stub(adb, "killServer").returns();
+        sinon.stub(adb, "waitForDevice").resolves();
+        return adb.reconnect().then(r => {
+          expect(r).to.equal(undefined);
+          expect(execFake).to.have.been.calledOnce;
+          expect(execFake).to.not.have.been.calledTwice;
+          expect(execFake).to.have.been.calledWith(["-P", 5037, "reconnect"]);
+        });
+      });
+      it("should reject on no device", function(done) {
+        const execFake = sinon.fake((args, callback) => {
+          callback(null, "no devices/emulators found");
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        sinon.stub(adb, "killServer").returns();
+        sinon.stub(adb, "waitForDevice").resolves();
+        adb.reconnect().catch(error => {
+          expect(error.message).to.eql("no device");
+          done();
+        });
+      });
+    });
+
+    describe("reconnectDevice()", function() {
+      it("should reconnect from device side", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback();
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        sinon.stub(adb, "killServer").returns();
+        sinon.stub(adb, "waitForDevice").resolves();
+        return adb.reconnectDevice().then(r => {
+          expect(r).to.equal(undefined);
+          expect(execFake).to.have.been.calledOnce;
+          expect(execFake).to.not.have.been.calledTwice;
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "reconnect",
+            "device"
+          ]);
+        });
+      });
+    });
+
+    describe("reconnectOffline()", function() {
+      it("should reconnect offline devices", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback();
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        sinon.stub(adb, "killServer").returns();
+        sinon.stub(adb, "waitForDevice").resolves();
+        return adb.reconnectOffline().then(r => {
+          expect(r).to.equal(undefined);
+          expect(execFake).to.have.been.calledOnce;
+          expect(execFake).to.not.have.been.calledTwice;
+          expect(execFake).to.have.been.calledWith([
+            "-P",
+            5037,
+            "reconnect",
+            "offline"
+          ]);
+        });
+      });
+    });
+
     describe("getSerialno()", function() {
       it("should return serialnumber", function() {
         const execFake = sinon.fake((args, callback) => {

@@ -132,6 +132,41 @@ class Adb {
   }
 
   /**
+   * kick connection from host side to force reconnect
+   * @param {String} [modifier] - "device" or "offline"
+   * @returns {Promise}
+   */
+  reconnect(modifier = "") {
+    this.stopWaiting();
+    return this.execCommand(["reconnect", modifier].filter(i => i)).then(
+      stdout => {
+        console.log("stdout", stdout);
+        if (stdout && stdout.includes("no devices/emulators found")) {
+          throw new Error("no device");
+        } else {
+          return this.waitForDevice();
+        }
+      }
+    );
+  }
+
+  /**
+   * kick connection from device side to force reconnect
+   * @returns {Promise}
+   */
+  reconnectDevice() {
+    return this.reconnect("device");
+  }
+
+  /**
+   * reset offline/unauthorized devices to force reconnect
+   * @returns {Promise}
+   */
+  reconnectOffline() {
+    return this.reconnect("offline");
+  }
+
+  /**
    * Get the devices serial number
    * @returns {Promise<String>} serial number
    */
