@@ -62,6 +62,12 @@ function handleError(error, stdout, stderr) {
     return "bootloader is locked";
   } else if (
     stderr &&
+    (stderr.includes("Check 'Allow OEM Unlock' in Developer Options") ||
+      stderr.includes("Unlock operation is not allowed"))
+  ) {
+    return "enable unlocking";
+  } else if (
+    stderr &&
     (stderr.includes("error: device unauthorized") ||
       stderr.includes("error: device still authorizing"))
   ) {

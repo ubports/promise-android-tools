@@ -96,6 +96,20 @@ const recognizedErrors = [
     stderr: "FAILED (remote: '\tDevice not unlocked cannot flash or erase')"
   },
   {
+    expectedReturn: "enable unlocking",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr:
+      "(bootloader) Check 'Allow OEM Unlock' in Developer Options.\nFAILED (remote: '')\nfastboot: error: Command failed"
+  },
+  {
+    expectedReturn: "enable unlocking",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr:
+      "(bootloader) Start unlock flow\n\nFAILED (remote: '\nUnlock operation is not allowed\n')\nfastboot: error: Command failed"
+  },
+  {
     expectedReturn: "low battery",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
