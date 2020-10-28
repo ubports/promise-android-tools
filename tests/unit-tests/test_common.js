@@ -110,6 +110,13 @@ const recognizedErrors = [
       "(bootloader) Start unlock flow\n\nFAILED (remote: '\nUnlock operation is not allowed\n')\nfastboot: error: Command failed"
   },
   {
+    expectedReturn: "enable unlocking",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr:
+      "FAILED (remote: 'oem unlock is not allowed')fastboot: error: Command failed"
+  },
+  {
     expectedReturn: "low battery",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
