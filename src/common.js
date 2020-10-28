@@ -42,12 +42,6 @@ function handleError(error, stdout, stderr) {
   } else if (stderr && stderr.includes("error: device offline")) {
     return "device offline";
   } else if (
-    error &&
-    error.message &&
-    error.message.includes("incorrect password")
-  ) {
-    return "incorrect password";
-  } else if (
     stderr &&
     stderr.includes("FAILED (remote: low power, need battery charging.)")
   ) {
@@ -66,6 +60,8 @@ function handleError(error, stdout, stderr) {
       ))
   ) {
     return "bootloader is locked";
+  } else if (stderr && stderr.includes("error: device unauthorized")) {
+    return "unauthorized";
   } else if (stderr && stderr.includes("FAILED (remote failure)")) {
     return "failed to boot";
   } else if (

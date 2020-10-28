@@ -35,16 +35,23 @@ const recognizedErrors = [
     stderr: "error: no devices/emulators found"
   },
   {
+    expectedReturn: "unauthorized",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: "",
+    stderr:
+      "error: device unauthorized.\nThis adb server's $ADB_VENDOR_KEYS is not set\nTry 'adb kill-server' if that seems wrong.\nOtherwise check for a confirmation dialog on your device."
+  },
+  {
     expectedReturn: "device offline",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "error: error: device offline"
   },
   {
-    expectedReturn: "incorrect password",
-    error: { message: "this error includes incorrect password" },
-    stdout: undefined,
-    stderr: undefined
+    expectedReturn: "device offline",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: "",
+    stderr: "error: error: device offline\n"
   },
   {
     expectedReturn: "bootloader is locked",
