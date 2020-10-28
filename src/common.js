@@ -60,7 +60,11 @@ function handleError(error, stdout, stderr) {
       ))
   ) {
     return "bootloader is locked";
-  } else if (stderr && stderr.includes("error: device unauthorized")) {
+  } else if (
+    stderr &&
+    (stderr.includes("error: device unauthorized") ||
+      stderr.includes("error: device still authorizing"))
+  ) {
     return "unauthorized";
   } else if (stderr && stderr.includes("FAILED (remote failure)")) {
     return "failed to boot";

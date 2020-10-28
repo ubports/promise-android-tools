@@ -42,6 +42,12 @@ const recognizedErrors = [
       "error: device unauthorized.\nThis adb server's $ADB_VENDOR_KEYS is not set\nTry 'adb kill-server' if that seems wrong.\nOtherwise check for a confirmation dialog on your device."
   },
   {
+    expectedReturn: "unauthorized",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: "",
+    stderr: "error: device still authorizing"
+  },
+  {
     expectedReturn: "device offline",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
