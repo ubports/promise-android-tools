@@ -268,7 +268,8 @@ class Adb {
           if (
             stdout &&
             (stdout.includes("no devices/emulators found") ||
-              stdout.includes("couldn't read from device"))
+              stdout.includes("couldn't read from device") ||
+              stdout.includes("remote Bad file number"))
           ) {
             reject(new Error("connection lost"));
           } else if (

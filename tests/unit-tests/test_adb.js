@@ -334,6 +334,20 @@ describe("Adb module", function() {
           adb.push("this/file/does/not/exist", "/tmp/target")
         ).to.have.been.rejectedWith("Can't access file");
       });
+      it("should reject on bad file number", function() {
+        const execFake = sinon.fake((args, callback) => {
+          callback(
+            null,
+            "adb: error: failed to copy '/a' to '/b': remote Bad file number",
+            ""
+          );
+        });
+        const logSpy = sinon.spy();
+        const adb = new Adb({ exec: execFake, log: logSpy });
+        return expect(
+          adb.push("tests/test-data/test_file", "/tmp/target")
+        ).to.have.been.rejectedWith("connection lost");
+      });
       it("should reject on connection lost", function() {
         const execFakes = [
           sinon.fake((args, callback) => {
