@@ -42,12 +42,6 @@ function handleError(error, stdout, stderr) {
   } else if (stderr && stderr.includes("error: device offline")) {
     return "device offline";
   } else if (
-    error &&
-    error.message &&
-    error.message.includes("incorrect password")
-  ) {
-    return "incorrect password";
-  } else if (
     stderr &&
     stderr.includes("FAILED (remote: low power, need battery charging.)")
   ) {
@@ -66,6 +60,19 @@ function handleError(error, stdout, stderr) {
       ))
   ) {
     return "bootloader is locked";
+  } else if (
+    stderr &&
+    (stderr.includes("Check 'Allow OEM Unlock' in Developer Options") ||
+      stderr.includes("Unlock operation is not allowed") ||
+      stderr.includes("FAILED (remote: 'oem unlock is not allowed')"))
+  ) {
+    return "enable unlocking";
+  } else if (
+    stderr &&
+    (stderr.includes("error: device unauthorized") ||
+      stderr.includes("error: device still authorizing"))
+  ) {
+    return "unauthorized";
   } else if (stderr && stderr.includes("FAILED (remote failure)")) {
     return "failed to boot";
   } else if (
