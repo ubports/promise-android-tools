@@ -62,13 +62,7 @@ class Tool extends EventEmitter {
             })
           );
           if (error) {
-            reject(
-              new Error(
-                JSON.stringify(
-                  removeFalsy({ error, stdout, stderr })
-                ).replaceAll(_this.executable, _this.tool)
-              )
-            );
+            reject(new Error(_this.handleError(error, stdout, stderr)));
           } else {
             resolve(stdout?.trim());
           }
@@ -112,6 +106,24 @@ class Tool extends EventEmitter {
       )
     );
     return cp;
+  }
+
+  /**
+   * Generate processable error messages from child_process.exec() callbacks
+   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {String} stdout stdandard output
+   * @param {String} stderr standard error
+   * @private
+   * @returns {String} error message
+   */
+  handleError(error, stdout, stderr) {
+    return JSON.stringify(
+      removeFalsy({
+        error: removeFalsy(error),
+        stdout: stdout?.trim(),
+        stderr: stderr?.trim()
+      })
+    ).replaceAll(this.executable, this.tool);
   }
 }
 

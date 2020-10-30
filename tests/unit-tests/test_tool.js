@@ -88,7 +88,7 @@ describe("Tool module", function() {
     it("should reject on error", function(done) {
       const execStub = sinon
         .stub(child_process, "exec")
-        .yields("not good", "uh oh", "terrible things");
+        .yields({ killed: true }, "uh oh", "terrible things");
       const tool = new Tool({ tool: "fastboot" });
       const execListenerStub = sinon.stub();
       tool.on("exec", execListenerStub);
@@ -96,13 +96,13 @@ describe("Tool module", function() {
         expect(e).to.be.instanceOf(Error);
         expect(execListenerStub).to.have.been.calledWith({
           cmd: ["fastboot", "asdf"],
-          error: "not good",
+          error: { killed: true },
           stderr: "terrible things",
           stdout: "uh oh"
         });
         expect(e).to.have.ownProperty(
           "message",
-          '{"error":"not good","stdout":"uh oh","stderr":"terrible things"}'
+          '{"error":{"killed":true},"stdout":"uh oh","stderr":"terrible things"}'
         );
         done();
       });
@@ -168,6 +168,25 @@ describe("Tool module", function() {
           spawnEvent.emit("exit", res.code, res.signal);
         });
       });
+    });
+  });
+  describe("handleError()", function() {
+    it("should process calbacks into useful string", function() {
+      const tool = new Tool({ tool: "adb" });
+      expect(
+        tool.handleError(
+          {
+            killed: false,
+            code: 1,
+            signal: null,
+            cmd: `${tool.executable} shell echo .`
+          },
+          "",
+          "adb: no devices/emulators found\n"
+        )
+      ).to.deep.eql(
+        '{"error":{"code":1,"cmd":"adb shell echo ."},"stderr":"adb: no devices/emulators found"}'
+      );
     });
   });
 });
