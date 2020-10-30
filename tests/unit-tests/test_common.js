@@ -35,16 +35,29 @@ const recognizedErrors = [
     stderr: "error: no devices/emulators found"
   },
   {
+    expectedReturn: "unauthorized",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: "",
+    stderr:
+      "error: device unauthorized.\nThis adb server's $ADB_VENDOR_KEYS is not set\nTry 'adb kill-server' if that seems wrong.\nOtherwise check for a confirmation dialog on your device."
+  },
+  {
+    expectedReturn: "unauthorized",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: "",
+    stderr: "error: device still authorizing"
+  },
+  {
     expectedReturn: "device offline",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "error: error: device offline"
   },
   {
-    expectedReturn: "incorrect password",
-    error: { message: "this error includes incorrect password" },
-    stdout: undefined,
-    stderr: undefined
+    expectedReturn: "device offline",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: "",
+    stderr: "error: error: device offline\n"
   },
   {
     expectedReturn: "bootloader is locked",
@@ -81,6 +94,27 @@ const recognizedErrors = [
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: '\tDevice not unlocked cannot flash or erase')"
+  },
+  {
+    expectedReturn: "enable unlocking",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr:
+      "(bootloader) Check 'Allow OEM Unlock' in Developer Options.\nFAILED (remote: '')\nfastboot: error: Command failed"
+  },
+  {
+    expectedReturn: "enable unlocking",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr:
+      "(bootloader) Start unlock flow\n\nFAILED (remote: '\nUnlock operation is not allowed\n')\nfastboot: error: Command failed"
+  },
+  {
+    expectedReturn: "enable unlocking",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr:
+      "FAILED (remote: 'oem unlock is not allowed')fastboot: error: Command failed"
   },
   {
     expectedReturn: "low battery",
