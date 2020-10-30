@@ -117,13 +117,20 @@ class Tool extends EventEmitter {
    * @returns {String} error message
    */
   handleError(error, stdout, stderr) {
-    return JSON.stringify(
-      removeFalsy({
-        error: removeFalsy(error),
-        stdout: stdout?.trim(),
-        stderr: stderr?.trim()
-      })
-    ).replaceAll(this.executable, this.tool);
+    if (
+      stderr?.includes("Killed") ||
+      stderr?.includes("killed by remote request")
+    ) {
+      return "killed";
+    } else {
+      return JSON.stringify(
+        removeFalsy({
+          error: removeFalsy(error),
+          stdout: stdout?.trim(),
+          stderr: stderr?.trim()
+        })
+      ).replaceAll(this.executable, this.tool);
+    }
   }
 }
 

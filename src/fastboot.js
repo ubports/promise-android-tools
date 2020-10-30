@@ -17,55 +17,64 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const exec = require("child_process").exec;
 const events = require("events");
 const common = require("./common.js");
+const Tool = require("./tool.js");
 
 class Event extends events {}
-
-const DEFAULT_EXEC = (args, callback) => {
-  exec(["fastboot"].concat(args).join(" "), undefined, callback);
-};
-const DEFAULT_LOG = console.log;
 
 /**
  * fastboot android flashing and booting utility
  */
-class Fastboot {
+class Fastboot extends Tool {
   constructor(options) {
-    this.exec = DEFAULT_EXEC;
-    this.log = DEFAULT_LOG;
+    super({
+      tool: "fastboot",
+      ...options
+    });
     this.fastbootEvent = new Event();
-
-    if (options) {
-      if (options.exec) this.exec = options.exec;
-      if (options.log) this.log = options.log;
-    }
   }
 
   /**
-   * Exec a command
-   * @param {Aarray} args - list of arguments
-   * @returns {Promise<String>} stdout
+   * Generate processable error messages from child_process.exec() callbacks
+   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {String} stdout stdandard output
+   * @param {String} stderr standard error
+   * @private
+   * @returns {String} error message
    */
-  execCommand(args) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.exec(args, (error, stdout, stderr) => {
-        if (error)
-          reject(
-            new Error(
-              common.handleError(
-                error,
-                stdout,
-                stderr ? stderr.trim() : undefined
-              )
-            )
-          );
-        else if (stdout) resolve(stdout.trim());
-        else resolve();
-      });
-    });
+  handleError(error, stdout, stderr) {
+    if (
+      stderr?.includes("FAILED (remote: low power, need battery charging.)")
+    ) {
+      return "low battery";
+    } else if (
+      stderr?.includes("not supported in locked device") ||
+      stderr?.includes("Bootloader is locked") ||
+      stderr?.includes("not allowed in locked state") ||
+      stderr?.includes("Device not unlocked cannot flash or erase")
+    ) {
+      return "bootloader is locked";
+    } else if (
+      stderr?.includes("Check 'Allow OEM Unlock' in Developer Options") ||
+      stderr?.includes("Unlock operation is not allowed") ||
+      stderr?.includes("oem unlock is not allowed")
+    ) {
+      return "enable unlocking";
+    } else if (stderr?.includes("FAILED (remote failure)")) {
+      return "failed to boot";
+    } else if (
+      stderr?.includes("I/O error") ||
+      stderr?.includes("FAILED (command write failed (No such device))") ||
+      stderr?.includes("FAILED (command write failed (Success))") ||
+      stderr?.includes("FAILED (status read failed (No such device))") ||
+      stderr?.includes("FAILED (data transfer failure (Broken pipe))") ||
+      stderr?.includes("FAILED (data transfer failure (Protocol error))")
+    ) {
+      return "connection lost";
+    } else {
+      return super.handleError(error, stdout, stderr);
+    }
   }
 
   /**
@@ -77,18 +86,14 @@ class Fastboot {
    * @returns {Promise}
    */
   flash(partition, file, raw = false, ...flags) {
-    return this.execCommand([
+    return this.exec(
       raw ? "flash:raw" : "flash",
       partition,
       ...flags,
       common.quotepath(file)
-    ])
-      .then(() => {
-        return;
-      })
-      .catch(error => {
-        throw new Error("flashing failed: " + error);
-      });
+    ).catch(error => {
+      throw new Error(`flashing failed: ${error}`);
+    });
   }
 
   /**
@@ -108,7 +113,7 @@ class Fastboot {
    * @returns {Promise}
    */
   boot(image) {
-    return this.execCommand(["boot", common.quotepath(image)])
+    return this.exec("boot", common.quotepath(image))
       .then(stdout => {
         return;
       })
@@ -124,11 +129,7 @@ class Fastboot {
    * @returns {Promise}
    */
   update(image, wipe) {
-    return this.execCommand([
-      wipe ? "-w" : "",
-      "update",
-      common.quotepath(image)
-    ])
+    return this.exec(wipe ? "-w" : "", "update", common.quotepath(image))
       .then(stdout => {
         return;
       })
@@ -142,7 +143,7 @@ class Fastboot {
    * @returns {Promise}
    */
   rebootBootloader() {
-    return this.execCommand(["reboot-bootloader"])
+    return this.exec("reboot-bootloader")
       .then(() => {
         return;
       })
@@ -156,7 +157,7 @@ class Fastboot {
    * @returns {Promise}
    */
   reboot() {
-    return this.execCommand(["reboot"])
+    return this.exec("reboot")
       .then(() => {
         return;
       })
@@ -170,7 +171,7 @@ class Fastboot {
    * @returns {Promise}
    */
   continue() {
-    return this.execCommand(["continue"])
+    return this.exec("continue")
       .then(() => {
         return;
       })
@@ -194,10 +195,10 @@ class Fastboot {
         )
       );
     }
-    return this.execCommand([
+    return this.exec(
       `format${type ? ":" + type : ""}${size ? ":" + size : ""}`,
       partition
-    ])
+    )
       .then(() => {
         return;
       })
@@ -212,7 +213,7 @@ class Fastboot {
    * @returns {Promise}
    */
   erase(partition) {
-    return this.execCommand(["erase", partition])
+    return this.exec("erase", partition)
       .then(() => {
         return;
       })
@@ -226,7 +227,7 @@ class Fastboot {
    * @param {String} slot - slot to set as active
    */
   setActive(slot) {
-    return this.execCommand([`--set-active=${slot}`])
+    return this.exec(`--set-active=${slot}`)
       .then(stdout => {
         if (stdout && stdout.includes("error")) {
           throw new Error(stdout);
@@ -248,7 +249,7 @@ class Fastboot {
    * @returns {Promise}
    */
   oemUnlock() {
-    return this.execCommand(["oem", "unlock"])
+    return this.exec("oem", "unlock")
       .then(() => {
         return;
       })
@@ -268,7 +269,7 @@ class Fastboot {
    * @returns {Promise}
    */
   oemLock() {
-    return this.execCommand(["oem", "lock"])
+    return this.exec("oem", "lock")
       .then(() => {
         return;
       })
@@ -310,7 +311,7 @@ class Fastboot {
    * @returns {Promise}
    */
   hasAccess() {
-    return this.execCommand(["devices"])
+    return this.exec("devices")
       .then(stdout => {
         return Boolean(stdout && stdout.includes("fastboot"));
       })

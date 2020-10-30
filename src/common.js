@@ -22,6 +22,7 @@
  * @param {Object} obj object to process
  */
 function removeFalsy(obj) {
+  if (typeof obj !== "object") return obj;
   let newObj = {};
   Object.keys(obj).forEach(prop => {
     if (obj[prop]) {
