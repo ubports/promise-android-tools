@@ -18,6 +18,20 @@
  */
 
 /**
+ * Remove falsy values
+ * @param {Object} obj object to process
+ */
+function removeFalsy(obj) {
+  let newObj = {};
+  Object.keys(obj).forEach(prop => {
+    if (obj[prop]) {
+      newObj[prop] = obj[prop];
+    }
+  });
+  return newObj;
+}
+
+/**
  * convert child_process callback data to escalabable string
  * @param {Object} error child_process error
  * @param {String} stdout stdout buffer string
@@ -114,7 +128,8 @@ function stdoutFilter(query) {
 }
 
 module.exports = {
-  handleError: handleError,
-  quotepath: quotepath,
-  stdoutFilter: stdoutFilter
+  handleError,
+  quotepath,
+  stdoutFilter,
+  removeFalsy
 };

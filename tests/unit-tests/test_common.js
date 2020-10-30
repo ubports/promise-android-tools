@@ -177,4 +177,19 @@ describe("Common module", function() {
       );
     });
   });
+  describe("removeFalsy()", function() {
+    it("should remove falsy values from an object", function() {
+      expect(
+        common.removeFalsy({
+          a: "a",
+          b: "",
+          c: 0,
+          d: null,
+          e: undefined,
+          f: { test: "this" },
+          g: 1337
+        })
+      ).to.deep.equal({ a: "a", f: { test: "this" }, g: 1337 });
+    });
+  });
 });

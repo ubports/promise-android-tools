@@ -36,9 +36,11 @@
   ],
   "homepage": "https://github.com/ubports/promise-android-tools#readme",
   "dependencies": {
+    "android-tools-bin": "^1.0.4",
     "fs-extra": "^9.0.1"
   },
   "devDependencies": {
+    "babel-eslint": "^10.1.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "command-exists": "^1.2.9",

@@ -20,9 +20,6 @@
 const Adb = require("./adb.js");
 const Fastboot = require("./fastboot.js");
 const Heimdall = require("./heimdall.js");
+const Tool = require("./tool.js");
 
-module.exports = {
-  Adb: Adb,
-  Fastboot: Fastboot,
-  Heimdall: Heimdall
-};
+module.exports = { Adb, Fastboot, Heimdall, Tool };
