@@ -9,7 +9,6 @@ matrix:
   - os: osx
   - os: linux
 node_js:
-  - "10"
   - "12"
   - "14"
   - node
