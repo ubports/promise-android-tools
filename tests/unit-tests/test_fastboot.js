@@ -29,13 +29,16 @@ const child_process = require("child_process");
 
 const Fastboot = require("../../src/module.js").Fastboot;
 const common = require("../../src/common.js");
+const { getAndroidToolPath } = require("android-tools-bin");
 
 function stubExec(error, stdout, stderr) {
   sinon.stub(child_process, "exec").yields(error, stdout, stderr);
 }
 
 function expectArgs(...args) {
-  expect(child_process.exec).to.have.been.calledWith(args.join(" "));
+  expect(child_process.exec).to.have.been.calledWith(
+    [getAndroidToolPath("fastboot"), ...args].join(" ")
+  );
 }
 
 function expectReject(error, message) {
@@ -60,12 +63,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.flash("boot", "/path/to/image").then(r => {
-          expectArgs(
-            fastboot.executable,
-            "flash",
-            "boot",
-            common.quotepath("/path/to/image")
-          );
+          expectArgs("flash", "boot", common.quotepath("/path/to/image"));
           expect(child_process.exec).to.not.have.been.calledTwice;
         });
       });
@@ -74,12 +72,7 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot();
         fastboot.flash("boot", "/path/to/image").catch(error => {
           expectReject(error, "flashing failed: Error: bootloader is locked");
-          expectArgs(
-            fastboot.executable,
-            "flash",
-            "boot",
-            common.quotepath("/path/to/image")
-          );
+          expectArgs("flash", "boot", common.quotepath("/path/to/image"));
           done();
         });
       });
@@ -100,12 +93,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.flashRaw("boot", "/path/to/image").then(() => {
-          expectArgs(
-            fastboot.executable,
-            "flash:raw",
-            "boot",
-            common.quotepath("/path/to/image")
-          );
+          expectArgs("flash:raw", "boot", common.quotepath("/path/to/image"));
         });
       });
       it("should resolve if force-flashed raw image successfully", function() {
@@ -115,7 +103,6 @@ describe("Fastboot module", function() {
           .flashRaw("boot", "/path/to/image", "--force", "--disable-verity")
           .then(r => {
             expectArgs(
-              fastboot.executable,
               "flash:raw",
               "boot",
               "--force",
@@ -130,11 +117,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.boot("/path/to/image").then(r => {
-          expectArgs(
-            fastboot.executable,
-            "boot",
-            common.quotepath("/path/to/image")
-          );
+          expectArgs("boot", common.quotepath("/path/to/image"));
         });
       });
       it("should reject if booting failed", function() {
@@ -152,36 +135,21 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.update("/path/to/image").then(r => {
-          expectArgs(
-            fastboot.executable,
-            "",
-            "update",
-            common.quotepath("/path/to/image")
-          );
+          expectArgs("", "update", common.quotepath("/path/to/image"));
         });
       });
       it("should not wipe if not specified", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.update("/path/to/image").then(r => {
-          expectArgs(
-            fastboot.executable,
-            "",
-            "update",
-            common.quotepath("/path/to/image")
-          );
+          expectArgs("", "update", common.quotepath("/path/to/image"));
         });
       });
       it("should wipe if specified", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.update("/path/to/image", true).then(r => {
-          expectArgs(
-            fastboot.executable,
-            "-w",
-            "update",
-            common.quotepath("/path/to/image")
-          );
+          expectArgs("-w", "update", common.quotepath("/path/to/image"));
         });
       });
       it("should reject if updating fails", function() {
@@ -199,7 +167,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.rebootBootloader().then(r => {
-          expectArgs(fastboot.executable, "reboot-bootloader");
+          expectArgs("reboot-bootloader");
         });
       });
       it("should reject if rebooting fails", function() {
@@ -215,7 +183,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.reboot().then(r => {
-          expectArgs(fastboot.executable, "reboot");
+          expectArgs("reboot");
         });
       });
       it("should reject if rebooting fails", function() {
@@ -231,7 +199,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.continue().then(r => {
-          expectArgs(fastboot.executable, "continue");
+          expectArgs("continue");
         });
       });
       it("should reject if continuing boot fails", function() {
@@ -247,7 +215,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.format("cache").then(r => {
-          expectArgs(fastboot.executable, "format", "cache");
+          expectArgs("format", "cache");
         });
       });
       it("should reject if formatting failed", function() {
@@ -270,14 +238,14 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.format("cache", "ext4").then(r => {
-          expectArgs(fastboot.executable, "format:ext4", "cache");
+          expectArgs("format:ext4", "cache");
         });
       });
       it("should resolve after formatting with type and size", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.format("cache", "ext4", 69).then(r => {
-          expectArgs(fastboot.executable, "format:ext4:69", "cache");
+          expectArgs("format:ext4:69", "cache");
         });
       });
     });
@@ -286,7 +254,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.erase("cache").then(r => {
-          expectArgs(fastboot.executable, "erase", "cache");
+          expectArgs("erase", "cache");
         });
       });
       it("should reject if erasing failed", function() {
@@ -302,14 +270,14 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.oemUnlock().then(r => {
-          expectArgs(fastboot.executable, "oem", "unlock");
+          expectArgs("oem", "unlock");
         });
       });
       it("should resolve if already unlocked", function() {
         stubExec(true, "FAILED (remote: Already Unlocked)");
         const fastboot = new Fastboot();
         return fastboot.oemUnlock().then(r => {
-          expectArgs(fastboot.executable, "oem", "unlock");
+          expectArgs("oem", "unlock");
         });
       });
       it("should resolve if not necessary", function() {
@@ -320,7 +288,7 @@ describe("Fastboot module", function() {
         );
         const fastboot = new Fastboot();
         return fastboot.oemUnlock().then(r => {
-          expectArgs(fastboot.executable, "oem", "unlock");
+          expectArgs("oem", "unlock");
         });
       });
       it("should reject if unlocking failed", function() {
@@ -336,7 +304,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.oemLock().then(r => {
-          expectArgs(fastboot.executable, "oem", "lock");
+          expectArgs("oem", "lock");
         });
       });
       it("should reject if locking failed", function() {
@@ -352,7 +320,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.setActive("a").then(r => {
-          expectArgs(fastboot.executable, "--set-active=a");
+          expectArgs("--set-active=a");
         });
       });
       it("should reject if locking failed", function() {
@@ -398,27 +366,10 @@ describe("Fastboot module", function() {
             }
           ])
           .then(r => {
+            expectArgs("flash", "p1", common.quotepath("f1"));
+            expectArgs("flash:raw", "p2", common.quotepath("f2"));
+            expectArgs("flash:raw", "p3", "--force", common.quotepath("f3"));
             expectArgs(
-              fastboot.executable,
-              "flash",
-              "p1",
-              common.quotepath("f1")
-            );
-            expectArgs(
-              fastboot.executable,
-              "flash:raw",
-              "p2",
-              common.quotepath("f2")
-            );
-            expectArgs(
-              fastboot.executable,
-              "flash:raw",
-              "p3",
-              "--force",
-              common.quotepath("f3")
-            );
-            expectArgs(
-              fastboot.executable,
               "flash",
               "p4",
               "--disable-verification",
@@ -445,7 +396,7 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot();
         return fastboot.hasAccess().then(r => {
           expect(r).to.eql(true);
-          expectArgs(fastboot.executable, "devices");
+          expectArgs("devices");
         });
       });
       it("should resolve false if no device is detected", function() {
@@ -453,7 +404,7 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot();
         return fastboot.hasAccess().then(r => {
           expect(r).to.eql(false);
-          expectArgs(fastboot.executable, "devices");
+          expectArgs("devices");
         });
       });
       it("should reject on error", function() {
@@ -469,7 +420,7 @@ describe("Fastboot module", function() {
         stubExec(null, "0123456789ABCDEF	fastboot");
         const fastboot = new Fastboot();
         return fastboot.waitForDevice(1).then(r => {
-          expectArgs(fastboot.executable, "devices");
+          expectArgs("devices");
         });
       });
       it("should reject on error", function() {

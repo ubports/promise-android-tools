@@ -30,13 +30,16 @@ const child_process = require("child_process");
 
 const Heimdall = require("../../src/module.js").Heimdall;
 const common = require("../../src/common.js");
+const { getAndroidToolPath } = require("android-tools-bin");
 
 function stubExec(error, stdout, stderr) {
   sinon.stub(child_process, "exec").yields(error, stdout, stderr);
 }
 
 function expectArgs(...args) {
-  expect(child_process.exec).to.have.been.calledWith(args.join(" "));
+  expect(child_process.exec).to.have.been.calledWith(
+    [getAndroidToolPath("heimdall"), ...args].join(" ")
+  );
 }
 
 const printPitFromDevice = `Heimdall v1.4.0
@@ -110,7 +113,7 @@ describe("Heimdall module", function() {
         const heimdall = new Heimdall();
         return heimdall.hasAccess().then(r => {
           expect(r).to.eql(true);
-          expectArgs(heimdall.executable, "detect");
+          expectArgs("detect");
         });
       });
       it("should resolve false if no device is detected", function() {
@@ -121,7 +124,7 @@ describe("Heimdall module", function() {
         const heimdall = new Heimdall();
         return heimdall.hasAccess().then(r => {
           expect(r).to.eql(false);
-          expectArgs(heimdall.executable, "detect");
+          expectArgs("detect");
         });
       });
       it("should reject on error", function() {
@@ -138,7 +141,7 @@ describe("Heimdall module", function() {
         const heimdall = new Heimdall();
         return heimdall.printPit().then(r => {
           expect(r.length).to.eql(3);
-          expectArgs(heimdall.executable, "print-pit");
+          expectArgs("print-pit");
         });
       });
       it("should print pit file");
@@ -170,7 +173,6 @@ describe("Heimdall module", function() {
           .then(r => {
             expect(r).to.eql(null);
             expectArgs(
-              heimdall.executable,
               "flash",
               `--BOOT ${common.quotepath("some.img")}`,
               `--RECOVERY ${common.quotepath("other.img")}`
@@ -203,7 +205,7 @@ describe("Heimdall module", function() {
         const heimdall = new Heimdall();
         return heimdall.getPartitions().then(r => {
           expect(r.length).to.eql(3);
-          expectArgs(heimdall.executable, "print-pit");
+          expectArgs("print-pit");
         });
       });
     });
@@ -233,7 +235,7 @@ describe("Heimdall module", function() {
         stubExec(null, "0123456789ABCDEF	heimdall");
         const heimdall = new Heimdall();
         return heimdall.waitForDevice(1).then(r => {
-          expectArgs(heimdall.executable, "detect");
+          expectArgs("detect");
         });
       });
       it("should reject on error", function() {
