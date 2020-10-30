@@ -368,9 +368,3 @@ class Fastboot extends Tool {
 }
 
 module.exports = Fastboot;
-
-// Missing functions
-// getvar
-// oem
-// devices
-// flashall

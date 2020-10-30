@@ -17,55 +17,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const exec = require("child_process").exec;
 const events = require("events");
 const common = require("./common.js");
+const Tool = require("./tool.js");
 
 class Event extends events {}
-
-const DEFAULT_EXEC = (args, callback) => {
-  exec(["heimdall"].concat(args).join(" "), undefined, callback);
-};
-const DEFAULT_LOG = console.log;
 
 /**
  * heimdall: flash firmware on samsung devices
  */
-class Heimdall {
+class Heimdall extends Tool {
   constructor(options) {
-    this.exec = DEFAULT_EXEC;
-    this.log = DEFAULT_LOG;
-    this.heimdallEvent = new Event();
-
-    if (options) {
-      if (options.exec) this.exec = options.exec;
-      if (options.log) this.log = options.log;
-    }
-  }
-
-  /**
-   * Exec a command
-   * @param {Aarray} args - list of arguments
-   * @returns {Promise<String>} stdout
-   */
-  execCommand(args) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.exec(args, (error, stdout, stderr) => {
-        if (error)
-          reject(
-            new Error(
-              common.handleError(
-                error,
-                stdout,
-                stderr ? stderr.trim() : undefined
-              )
-            )
-          );
-        else if (stdout) resolve(stdout.trim());
-        else resolve();
-      });
+    super({
+      tool: "heimdall",
+      ...options
     });
+    this.heimdallEvent = new Event();
   }
 
   /**
@@ -77,14 +44,32 @@ class Heimdall {
   }
 
   /**
+   * Generate processable error messages from child_process.exec() callbacks
+   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {String} stdout stdandard output
+   * @param {String} stderr standard error
+   * @private
+   * @returns {String} error message
+   */
+  handleError(error, stdout, stderr) {
+    if (
+      stderr?.includes(
+        "ERROR: Failed to detect compatible download-mode device."
+      )
+    ) {
+      return "no device";
+    } else {
+      return super.handleError(error, stdout, stderr);
+    }
+  }
+
+  /**
    * Find out if a device in download mode can be seen by heimdall
    * @returns {Promise<Boolean>}
    */
   hasAccess() {
-    return this.execCommand(["detect"])
-      .then(() => {
-        return true;
-      })
+    return this.exec("detect")
+      .then(() => true)
       .catch(error => {
         if (
           error.message.includes(
@@ -149,10 +134,10 @@ class Heimdall {
    * @returns {Promise<String>}
    */
   printPit(file) {
-    return this.execCommand([
+    return this.exec(
       "print-pit",
       ...(file ? ["--file", common.quotepath(file)] : [])
-    ])
+    )
       .then(r =>
         r
           .split("\n\nEnding session...")[0]
@@ -199,10 +184,10 @@ class Heimdall {
    * @returns {Promise}
    */
   flashArray(images) {
-    return this.execCommand([
+    return this.exec(
       "flash",
       ...images.map(i => `--${i.partition} ${common.quotepath(i.file)}`)
-    ])
+    )
       .then(() => null)
       .catch(error => {
         throw error;

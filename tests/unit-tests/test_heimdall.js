@@ -26,8 +26,18 @@ const expect = chai.expect;
 chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
+const child_process = require("child_process");
+
 const Heimdall = require("../../src/module.js").Heimdall;
 const common = require("../../src/common.js");
+
+function stubExec(error, stdout, stderr) {
+  sinon.stub(child_process, "exec").yields(error, stdout, stderr);
+}
+
+function expectArgs(...args) {
+  expect(child_process.exec).to.have.been.calledWith(args.join(" "));
+}
 
 const printPitFromDevice = `Heimdall v1.4.0
 
@@ -84,108 +94,39 @@ Releasing device interface...`;
 
 describe("Heimdall module", function() {
   describe("constructor()", function() {
-    it("should create default heimdall when called without arguments", function() {
+    it("should construct fastboot", function() {
       const heimdall = new Heimdall();
-      expect(heimdall.exec).to.exist;
-      expect(heimdall.log).to.equal(console.log);
-    });
-    it("should create default heimdall when called with unrelated object", function() {
-      const heimdall = new Heimdall({});
-      expect(heimdall.exec).to.exist;
-      expect(heimdall.log).to.equal(console.log);
-    });
-    it("should create custom heimdall when called with valid options", function() {
-      const execStub = sinon.stub();
-      const logStub = sinon.stub();
-      const heimdall = new Heimdall({ exec: execStub, log: logStub });
-      expect(heimdall.exec).to.equal(execStub);
-      expect(heimdall.exec).to.not.equal(logStub);
-      expect(heimdall.log).to.equal(logStub);
-      expect(heimdall.log).to.not.equal(execStub);
-    });
-  });
-  describe("private functions", function() {
-    describe("exec()", function() {
-      it("should call the specified function", function() {
-        const execSpy = sinon.spy();
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execSpy, log: logSpy });
-        heimdall.exec("This is an argument");
-        expect(execSpy).to.have.been.calledWith("This is an argument");
-      });
-    });
-    describe("execCommand()", function() {
-      it("should call an executable with specified argument", function() {
-        const execFake = sinon.fake((args, callback) =>
-          callback(null, args.join(" "))
-        );
-        const logStub = sinon.stub();
-        const heimdall = new Heimdall({ exec: execFake, log: logStub });
-        return heimdall.execCommand(["some", "test arguments"]).then(r => {
-          expect(execFake).to.have.been.calledWith(["some", "test arguments"]);
-          expect(r).to.equal("some test arguments");
-        });
-      });
-      it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) =>
-          callback(
-            {
-              cmd: "heimdall " + args.join(" ")
-            },
-            "everything is on fire"
-          )
-        );
-        const logStub = sinon.stub();
-        const heimdall = new Heimdall({ exec: execFake, log: logStub });
-        return heimdall
-          .execCommand(["this", "will", "not", "work"])
-          .catch(e => {
-            expect(execFake).to.have.been.calledWith([
-              "this",
-              "will",
-              "not",
-              "work"
-            ]);
-            expect(e.message).to.equal(
-              '{"error":{"cmd":"heimdall this will not work"},"stdout":"everything is on fire"}'
-            );
-          });
-      });
+      expect(heimdall).to.exist;
+      expect(heimdall.tool).to.eql("heimdall");
+      expect(heimdall.executable).to.include("heimdall");
+      expect(heimdall.extra).to.eql([]);
+      expect(heimdall.execOptions).to.eql({});
     });
   });
   describe("basic functions", function() {
     describe("hasAccess()", function() {
       it("should resolve true when a device is detected", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, "0123456789ABCDEF	heimdall");
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(null, "0123456789ABCDEF	heimdall");
+        const heimdall = new Heimdall();
         return heimdall.hasAccess().then(r => {
           expect(r).to.eql(true);
-          expect(execFake).to.have.been.calledWith(["detect"]);
+          expectArgs(heimdall.executable, "detect");
         });
       });
       it("should resolve false if no device is detected", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(
-            true,
-            "ERROR: Failed to detect compatible download-mode device."
-          );
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(
+          true,
+          "ERROR: Failed to detect compatible download-mode device."
+        );
+        const heimdall = new Heimdall();
         return heimdall.hasAccess().then(r => {
           expect(r).to.eql(false);
-          expect(execFake).to.have.been.calledWith(["detect"]);
+          expectArgs(heimdall.executable, "detect");
         });
       });
       it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const heimdall = new Heimdall();
         return expect(heimdall.hasAccess()).to.be.rejectedWith(
           "everything exploded"
         );
@@ -193,37 +134,28 @@ describe("Heimdall module", function() {
     });
     describe("printPit()", function() {
       it("should print pit from device", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, printPitFromDevice);
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(null, printPitFromDevice);
+        const heimdall = new Heimdall();
         return heimdall.printPit().then(r => {
           expect(r.length).to.eql(3);
-          expect(execFake).to.have.been.calledWith(["print-pit"]);
+          expectArgs(heimdall.executable, "print-pit");
         });
       });
       it("should print pit file");
       it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(
-            true,
-            null,
-            "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
-          );
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(
+          true,
+          null,
+          "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
+        );
+        const heimdall = new Heimdall();
         return expect(heimdall.printPit()).to.be.rejectedWith("no device");
       });
     });
     describe("flashArray()", function() {
       it("should flash partitions", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(false, "OK");
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(null, "OK");
+        const heimdall = new Heimdall();
         return heimdall
           .flashArray([
             {
@@ -237,23 +169,22 @@ describe("Heimdall module", function() {
           ])
           .then(r => {
             expect(r).to.eql(null);
-            expect(execFake).to.have.been.calledWith([
+            expectArgs(
+              heimdall.executable,
               "flash",
               `--BOOT ${common.quotepath("some.img")}`,
               `--RECOVERY ${common.quotepath("other.img")}`
-            ]);
+            );
           });
       });
       it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(
-            true,
-            null,
-            "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
-          );
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(
+          true,
+          null,
+          "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
+        );
+
+        const heimdall = new Heimdall();
         return expect(
           heimdall.flashArray([
             {
@@ -268,14 +199,11 @@ describe("Heimdall module", function() {
   describe("convenience functions", function() {
     describe("getPartitions()", function() {
       it("should get partitions from device pit", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, printPitFromDevice);
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(null, printPitFromDevice);
+        const heimdall = new Heimdall();
         return heimdall.getPartitions().then(r => {
           expect(r.length).to.eql(3);
-          expect(execFake).to.have.been.calledWith(["print-pit"]);
+          expectArgs(heimdall.executable, "print-pit");
         });
       });
     });
@@ -302,34 +230,26 @@ describe("Heimdall module", function() {
     });
     describe("waitForDevice()", function() {
       it("should resolve when a device is detected", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, "0123456789ABCDEF	heimdall");
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(null, "0123456789ABCDEF	heimdall");
+        const heimdall = new Heimdall();
         return heimdall.waitForDevice(1).then(r => {
-          expect(execFake).to.have.been.calledWith(["detect"]);
+          expectArgs(heimdall.executable, "detect");
         });
       });
       it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const heimdall = new Heimdall();
         return expect(heimdall.waitForDevice(5, 10)).to.be.rejectedWith(
           "everything exploded"
         );
       });
       it("should reject on timeout", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(
-            true,
-            "ERROR: Failed to detect compatible download-mode device."
-          );
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(
+          true,
+          "ERROR: Failed to detect compatible download-mode device."
+        );
+
+        const heimdall = new Heimdall();
         return expect(heimdall.waitForDevice(5, 10)).to.be.rejectedWith(
           "no device: timeout"
         );
@@ -337,14 +257,11 @@ describe("Heimdall module", function() {
     });
     describe("stopWaiting()", function() {
       it("should cause waitForDevice() to reject", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(
-            true,
-            "ERROR: Failed to detect compatible download-mode device."
-          );
-        });
-        const logSpy = sinon.spy();
-        const heimdall = new Heimdall({ exec: execFake, log: logSpy });
+        stubExec(
+          true,
+          "ERROR: Failed to detect compatible download-mode device."
+        );
+        const heimdall = new Heimdall();
         return new Promise(function(resolve, reject) {
           const wait = heimdall.waitForDevice(5);
           setTimeout(() => {
