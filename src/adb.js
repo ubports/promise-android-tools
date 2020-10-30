@@ -19,77 +19,26 @@
 
 const fs = require("fs-extra");
 const path = require("path");
-const exec = require("child_process").exec;
 const events = require("events");
 const common = require("./common.js");
+const Tool = require("./tool.js");
 
 class Event extends events {}
 
-const DEFAULT_EXEC = (args, callback) => {
-  exec(
-    ["adb"].concat(args).join(" "),
-    { options: { maxBuffer: 1024 * 1024 * 2 } },
-    callback
-  );
-};
-
-const DEFAULT_LOG = console.log;
 const DEFAULT_PORT = 5037;
 
 /**
  * Android Debug Bridge (ADB) module
  */
-class Adb {
+class Adb extends Tool {
   constructor(options) {
-    this.exec = DEFAULT_EXEC;
-    this.log = DEFAULT_LOG;
-    this.port = DEFAULT_PORT;
-    this.adbEvent = new Event();
-
-    // Accept options
-    if (options) {
-      if (options.exec) {
-        this.exec = options.exec;
-      }
-      if (options.log) {
-        this.log = options.log;
-      }
-      if (options.port) {
-        this.port = options.port;
-      }
-    }
-  }
-
-  /**
-   * Exec a command with port argument
-   * @param {Aarray} args - list of arguments
-   * @returns {Promise<String>} stdout
-   */
-  execCommand(args) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
-        if (error) {
-          reject(
-            new Error(
-              common.handleError(
-                error,
-                stdout,
-                stderr ? stderr.trim() : undefined
-              )
-            )
-          );
-        } else if (stdout) {
-          if (stdout.includes("no permissions")) {
-            reject(new Error("no permissions"));
-          } else {
-            resolve(stdout.trim());
-          }
-        } else {
-          resolve();
-        }
-      });
+    super({
+      tool: "adb",
+      extra: ["-P", options?.port || DEFAULT_PORT],
+      ...options
     });
+    this.port = options?.port || DEFAULT_PORT;
+    this.adbEvent = new Event();
   }
 
   /**
@@ -103,9 +52,8 @@ class Adb {
       _this
         .killServer()
         .then(() => {
-          _this.log("starting adb server on port " + _this.port);
           _this
-            .execCommand("start-server")
+            .exec("start-server")
             .then(() => {
               resolve();
             })
@@ -120,15 +68,8 @@ class Adb {
    * @returns {Promise}
    */
   killServer() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.stopWaiting();
-      _this.log("killing all running adb servers");
-      _this
-        .execCommand("kill-server")
-        .then(resolve)
-        .catch(reject);
-    });
+    this.stopWaiting();
+    return this.exec("kill-server");
   }
 
   /**
@@ -138,16 +79,13 @@ class Adb {
    */
   reconnect(modifier = "") {
     this.stopWaiting();
-    return this.execCommand(["reconnect", modifier].filter(i => i)).then(
-      stdout => {
-        console.log("stdout", stdout);
-        if (stdout && stdout.includes("no devices/emulators found")) {
-          throw new Error("no device");
-        } else {
-          return this.waitForDevice();
-        }
+    return this.exec(...["reconnect", modifier].filter(i => i)).then(stdout => {
+      if (stdout?.includes("no devices/emulators found")) {
+        throw new Error("no device");
+      } else {
+        return this.waitForDevice();
       }
-    );
+    });
   }
 
   /**
@@ -175,7 +113,7 @@ class Adb {
     var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
     return new Promise(function(resolve, reject) {
       _this
-        .execCommand("get-serialno")
+        .exec("get-serialno")
         .then(stdout => {
           if (stdout && stdout.includes("unknown")) {
             _this
@@ -211,8 +149,8 @@ class Adb {
    * @param {Array} args - list of shell arguments
    * @returns {Promise<String>} stdout
    */
-  shell(args) {
-    return this.execCommand(["shell"].concat(args)).then(stdout => {
+  shell(...args) {
+    return this.exec("shell", `'${args.join(" ")}'`).then(stdout => {
       if (stdout) return stdout.replace("\n", "");
       else return;
     });
@@ -239,11 +177,11 @@ class Adb {
       // FIXME use stream and parse stdout instead of polling with stat
       var progressInterval = setInterval(() => {
         _this
-          .shell([
+          .shell(
             "stat",
             "-t",
             common.quotepath(dest + "/" + path.basename(file))
-          ])
+          )
           .then(stat => {
             _this.adbEvent.emit(
               "push:progress:size",
@@ -253,16 +191,10 @@ class Adb {
           })
           .catch(e => {
             clearInterval(progressInterval);
-            _this.log("failed to stat: " + e);
           });
       }, interval || 1000);
       _this
-        .execCommand([
-          "push",
-          common.quotepath(file),
-          dest,
-          common.stdoutFilter("%]")
-        ])
+        .exec("push", common.quotepath(file), dest, common.stdoutFilter("%]"))
         .then(stdout => {
           clearInterval(progressInterval);
           if (
@@ -309,7 +241,7 @@ class Adb {
         reject(new Error("unknown state: " + state));
       } else {
         _this
-          .execCommand(["reboot", state])
+          .exec("reboot", state)
           .then(stdout => {
             if (stdout && stdout.includes("failed"))
               reject(new Error("reboot failed"));
@@ -326,11 +258,11 @@ class Adb {
    * @returns {Promise}
    */
   sideload(file) {
-    return this.execCommand([
+    return this.exec(
       "sideload",
       common.quotepath(file),
       common.stdoutFilter("%)")
-    ]);
+    );
   }
 
   /**
@@ -338,7 +270,7 @@ class Adb {
    * @returns {Promise<String>} bootloader, recovery, device
    */
   getState() {
-    return this.execCommand(["get-state"]).then(stdout => stdout.trim());
+    return this.exec("get-state").then(stdout => stdout.trim());
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -417,7 +349,7 @@ class Adb {
   getDeviceName() {
     var _this = this;
     return _this
-      .shell(["getprop", "ro.product.device"])
+      .shell("getprop", "ro.product.device")
       .then(stdout => {
         if (!stdout || stdout.includes("getprop: not found")) {
           throw null;
@@ -427,7 +359,7 @@ class Adb {
       })
       .catch(e => {
         return _this
-          .shell(["cat", "default.prop"])
+          .shell("cat", "default.prop")
           .catch(e => {
             throw new Error("getprop error: " + e);
           })
@@ -450,7 +382,7 @@ class Adb {
    * @returns {Promise<String>} ubuntutouch, android
    */
   getOs() {
-    return this.shell(["cat", "/etc/system-image/channel.ini"]).then(stdout => {
+    return this.shell("cat", "/etc/system-image/channel.ini").then(stdout => {
       return stdout ? "ubuntutouch" : "android";
     });
   }
@@ -460,7 +392,7 @@ class Adb {
    * @returns {Promise<Boolean>} access?
    */
   hasAccess() {
-    return this.shell(["echo", "."])
+    return this.shell("echo", ".")
       .then(stdout => {
         if (stdout == ".") return true;
         else throw new Error("unexpected response: " + stdout);
@@ -528,13 +460,12 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this
-        .shell(["cat", "/etc/recovery.fstab"])
+        .shell("cat", "/etc/recovery.fstab")
         .then(fstab => {
           if (!fstab || typeof fstab !== "string") {
             reject(new Error("unable to read recovery.fstab"));
           } else {
             const block = _this.findPartitionInFstab(partition, fstab);
-            _this.log("formatting " + block + " from recovery");
             _this
               .shell("umount /" + partition)
               .then(() => {
@@ -571,7 +502,7 @@ class Adb {
       // TODO: move to Promise.prototype.finally() instead as soon as nodejs 8 dies in january 2020
       function rm() {
         _this
-          .shell(["rm", "-rf", "/cache/*"])
+          .shell("rm", "-rf", "/cache/*")
           .then(resolve)
           .catch(e => reject(new Error("wiping cache failed: " + e)));
       }
@@ -612,7 +543,7 @@ class Adb {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this
-        .shell(["mount"])
+        .shell("mount")
         .then(stdout => {
           if (
             !(stdout.includes(" on /") && stdout.includes(" type ")) ||
@@ -708,7 +639,7 @@ class Adb {
 
         // FIXME replace shell pipe to dd with node stream
         return Promise.all([
-          this.execCommand([
+          this.exec(
             "exec-out 'tar -cpz " +
               "--exclude=*/var/cache " +
               "--exclude=*/var/log " +
@@ -718,7 +649,7 @@ class Adb {
               "--exclude=*/.cache/*/qml_cache",
             srcfile,
             " 2>/backup.pipe' | dd of=" + destfile
-          ]),
+          ),
           this.shell("cat /backup.pipe")
         ])
           .then(() => {
@@ -747,10 +678,10 @@ class Adb {
       .then(() =>
         Promise.all([
           this.push(srcfile, "/restore.pipe"),
-          this.shell(["'cd /; cat /restore.pipe | tar -xvz'"])
+          this.shell("'cd /; cat /restore.pipe | tar -xvz'")
         ])
       )
-      .then(() => this.shell(["rm", "/restore.pipe"]))
+      .then(() => this.shell("rm", "/restore.pipe"))
       .catch(e => {
         throw new Error(`Restore failed: ${e}`);
       });
@@ -800,9 +731,9 @@ class Adb {
       .then(() => fs.ensureDir(dir))
       .then(() =>
         Promise.all([
-          this.shell(["stat", "/data/user-data"]),
-          this.shell(["stat", "/data/syste-mdata"])
-        ]).catch(() => this.shell(["mount", dataPartition, "/data"]))
+          this.shell("stat", "/data/user-data"),
+          this.shell("stat", "/data/syste-mdata")
+        ]).catch(() => this.shell("mount", dataPartition, "/data"))
       )
       .then(() =>
         this.createBackupTar(

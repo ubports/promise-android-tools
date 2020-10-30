@@ -97,7 +97,7 @@ Releasing device interface...`;
 
 describe("Heimdall module", function() {
   describe("constructor()", function() {
-    it("should construct fastboot", function() {
+    it("should construct heimdall", function() {
       const heimdall = new Heimdall();
       expect(heimdall).to.exist;
       expect(heimdall.tool).to.eql("heimdall");
@@ -250,7 +250,6 @@ describe("Heimdall module", function() {
           true,
           "ERROR: Failed to detect compatible download-mode device."
         );
-
         const heimdall = new Heimdall();
         return expect(heimdall.waitForDevice(5, 10)).to.be.rejectedWith(
           "no device: timeout"
