@@ -5,9 +5,8 @@
   "main": "./src/module.js",
   "scripts": {
     "test": "npx coverage -r lcov -r html npm run test-nocover",
-    "test-nocover": "npx mocha -- -R spec './tests/unit-tests/*.js' './tests/integration.js'",
-    "integration": "mocha ./tests/integration.js",
-    "lint": "./node_modules/.bin/eslint tests/unit-tests/*.js src/*.js",
+    "test-nocover": "npx mocha -- -R spec './tests/unit-tests/*.js'",
+    "lint": "npx eslint tests/unit-tests/*.js src/*.js",
     "lint-fix": "npm run lint -- --fix",
     "docs": "npx jsdoc -c jsdoc-config.json"
   },
@@ -43,7 +42,6 @@
     "babel-eslint": "^10.1.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "command-exists": "^1.2.9",
     "coverage": "^0.4.1",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.15.0",
