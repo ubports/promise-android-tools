@@ -42,6 +42,22 @@ class Adb extends Tool {
   }
 
   /**
+   * Generate processable error messages from child_process.exec() callbacks
+   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {String} stdout stdandard output
+   * @param {String} stderr standard error
+   * @private
+   * @returns {String} error message
+   */
+  handleError(error, stdout, stderr) {
+    if (stderr?.includes("no devices/emulators found")) {
+      return "no device";
+    } else {
+      return super.handleError(error, stdout, stderr);
+    }
+  }
+
+  /**
    * Kill all adb servers and start a new one to rule them all
    * @returns {Promise}
    */

@@ -36,14 +36,6 @@ class Heimdall extends Tool {
   }
 
   /**
-   * Find out if a device in download mode can be seen by heimdall
-   * @returns {Promise<Boolean>}
-   */
-  detect() {
-    return this.hasAccess();
-  }
-
-  /**
    * Generate processable error messages from child_process.exec() callbacks
    * @param {child_process.ExecException} error error returned by child_process.exec()
    * @param {String} stdout stdandard output
@@ -61,6 +53,14 @@ class Heimdall extends Tool {
     } else {
       return super.handleError(error, stdout, stderr);
     }
+  }
+
+  /**
+   * Find out if a device in download mode can be seen by heimdall
+   * @returns {Promise<Boolean>}
+   */
+  detect() {
+    return this.hasAccess();
   }
 
   /**
