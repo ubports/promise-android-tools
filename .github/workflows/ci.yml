@@ -70,4 +70,7 @@ jobs:
       run: |
         npm install
         npm run test-travis
-        cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+
+    - name: coveralls
+      if: contains(runner.os, 'Linux')
+      run: cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
