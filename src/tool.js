@@ -129,7 +129,7 @@ class Tool extends EventEmitter {
           stdout: stdout?.trim(),
           stderr: stderr?.trim()
         })
-      ).replaceAll(this.executable, this.tool);
+      ).replace(new RegExp(this.executable, "g"), this.tool);
     }
   }
 }
