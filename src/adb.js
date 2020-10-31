@@ -19,13 +19,11 @@
 
 const fs = require("fs-extra");
 const path = require("path");
-const events = require("events");
 const common = require("./common.js");
 const Tool = require("./tool.js");
 const { CancelablePromise } = require("cancelable-promise");
 
-class Event extends events {}
-
+const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;
 
 /**
@@ -39,7 +37,6 @@ class Adb extends Tool {
       ...options
     });
     this.port = options?.port || DEFAULT_PORT;
-    this.adbEvent = new Event();
   }
 
   /**
@@ -136,38 +133,12 @@ class Adb extends Tool {
    * @returns {Promise<String>} serial number
    */
   getSerialno() {
-    const _this = this;
-    var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
-    return new Promise(function(resolve, reject) {
-      _this
-        .exec("get-serialno")
-        .then(stdout => {
-          if (stdout && stdout.includes("unknown")) {
-            _this
-              .hasAccess()
-              .then(access => {
-                if (access) {
-                  reject(new Error("device accessible. Unkown error"));
-                } else {
-                  reject(new Error("no accessible device"));
-                }
-              })
-              .catch(error => {
-                if (error.message.includes("not found")) {
-                  reject(new Error("no device found"));
-                } else if (error.message.includes("insufficient permissions")) {
-                  reject(new Error("no permissions"));
-                } else {
-                  reject(error);
-                }
-              });
-          } else if (stdout && stdout.match(Exp)) {
-            resolve(stdout.replace("\n", ""));
-          } else {
-            reject(new Error("invalid device id"));
-          }
-        })
-        .catch(reject);
+    return this.exec("get-serialno").then(stdout => {
+      if (!stdout || stdout?.includes("unknown") || !SERIALNO.test(stdout)) {
+        throw new Error(`invalid serial number: ${stdout?.trim()}`);
+      } else {
+        return stdout.trim();
+      }
     });
   }
 

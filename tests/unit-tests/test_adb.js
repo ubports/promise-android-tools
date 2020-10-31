@@ -157,11 +157,11 @@ describe("Adb module", function() {
           expectArgs("get-serialno");
         });
       });
-      it("should return error on invalid return", function() {
+      it("should throw on invalid stdout", function() {
         stubExec(false, "This is an invalid string");
         const adb = new Adb();
         return expect(adb.getSerialno()).to.be.rejectedWith(
-          "invalid device id"
+          "invalid serial number: This is an invalid string"
         );
       });
     });
