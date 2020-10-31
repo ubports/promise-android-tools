@@ -69,7 +69,7 @@ jobs:
     - name: test
       run: |
         npm install
-        npm run test-travis
+        npm run test
 
     - name: codecov.io
       uses: codecov/codecov-action@v1
