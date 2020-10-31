@@ -207,16 +207,18 @@ describe("Adb module", function() {
               cb("some.cpp writex len=NaN");
             })
           }
-        }
+        };
         sinon.stub(child_process, "spawn").callsFake(() => child);
         const adb = new Adb();
         const progress = sinon.fake();
-        return adb.push(["tests/test-data/test_file"], null, progress).then(() => {
-          expect(child_process.spawn).to.not.have.been.calledTwice;
-          expect(progress).to.have.been.calledWith(0);
-          expect(progress).to.have.been.calledWith(1);
-        });
-      })
+        return adb
+          .push(["tests/test-data/test_file"], null, progress)
+          .then(() => {
+            expect(child_process.spawn).to.not.have.been.calledTwice;
+            expect(progress).to.have.been.calledWith(0);
+            expect(progress).to.have.been.calledWith(1);
+          });
+      });
       it("should reject on error", function(done) {
         const child = {
           on: sinon.fake(),
@@ -227,7 +229,7 @@ describe("Adb module", function() {
           stderr: {
             on: sinon.fake((_, cb) => cb("b"))
           }
-        }
+        };
         sinon.stub(child_process, "spawn").callsFake(() => child);
         const adb = new Adb();
         const progress = sinon.fake();
@@ -235,10 +237,13 @@ describe("Adb module", function() {
           expect(child_process.spawn).to.not.have.been.calledTwice;
           expect(progress).to.have.been.calledWith(0);
           expect(progress).to.not.have.been.calledTwice;
-          expectReject(e, '{"error":{"code":666,"signal":"SIGTERM"},"stdout":"a","stderr":"b"}');
+          expectReject(
+            e,
+            '{"error":{"code":666,"signal":"SIGTERM"},"stdout":"a","stderr":"b"}'
+          );
           done();
         });
-      })
+      });
       it("should reject if device is out of space");
       it("should reject if file is inaccessible");
       it("should reject on bad file number");
