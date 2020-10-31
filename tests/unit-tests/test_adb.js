@@ -43,6 +43,11 @@ function expectArgs(...args) {
   );
 }
 
+function expectReject(error, message) {
+  expect(error).to.be.instanceOf(Error);
+  expect(error).to.haveOwnProperty("message", message);
+}
+
 describe("Adb module", function() {
   describe("constructor()", function() {
     it("should construct adb", function() {
@@ -575,11 +580,11 @@ describe("Adb module", function() {
       it("should resolve if cache was wiped", function() {
         stubExec();
         const adb = new Adb();
+        sinon.stub(adb, "format").resolves();
         return adb.wipeCache().then(() => {
           expectArgs("shell", "rm -rf /cache/*");
         });
       });
-      it("should reject if rm failed");
     });
 
     describe("findPartitionInFstab()", function() {
@@ -611,37 +616,11 @@ describe("Adb module", function() {
           expect(r[1]).to.eql(false);
         });
       });
-      it("should reject if partitions can't be read", function() {
-        const execFake1 = sinon.fake((args, callback) => {
-          callback(null, "some invalid return string", null);
-        });
-        const execFake2 = sinon.fake((args, callback) => {
-          callback(null, 666, null);
-        });
-
-        const adb1 = new Adb();
-        const adb2 = new Adb();
-        return Promise.all([
-          adb1.verifyPartitionType("data", "ext4"),
-          adb2.verifyPartitionType("data", "ext4")
-        ]).catch(r => {
-          expect(r.message).to.eql("unable to detect partitions");
-        });
-      });
       it("should reject if partition not found", function() {
         stubExec(null, "/dev/something on /something type ext4 (rw)");
         const adb = new Adb();
         return adb.verifyPartitionType("data", "ext4").catch(r => {
           expect(r.message).to.eql("partition not found");
-        });
-      });
-      it("should reject if adb shell rejected", function() {
-        stubExec(true, null, "everything exploded");
-        const adb = new Adb();
-        return adb.verifyPartitionType("data", "ext4").catch(r => {
-          expect(r.message).to.eql(
-            'partition not found: Error: {"error":true,"stderr":"everything exploded"}'
-          );
         });
       });
     });

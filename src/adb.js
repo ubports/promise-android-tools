@@ -73,19 +73,8 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   startServer() {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .killServer()
-        .then(() => {
-          _this
-            .exec("start-server")
-            .then(() => {
-              resolve();
-            })
-            .catch(reject);
-        })
-        .catch(reject);
+    return this.killServer().then(() => {
+      this.exec("start-server");
     });
   }
 
@@ -224,24 +213,19 @@ class Adb extends Tool {
   /**
    * Reboot to a state
    * @param {String} state - system, recovery, bootloader
+   * @async
    * @returns {Promise}
    */
-  reboot(state) {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      if (["system", "recovery", "bootloader"].indexOf(state) == -1) {
-        reject(new Error("unknown state: " + state));
-      } else {
-        _this
-          .exec("reboot", state)
-          .then(stdout => {
-            if (stdout && stdout.includes("failed"))
-              reject(new Error("reboot failed"));
-            else resolve();
-          })
-          .catch(e => reject(new Error("reboot failed: " + e)));
-      }
-    });
+  async reboot(state) {
+    if (!["system", "recovery", "bootloader"].includes(state)) {
+      throw new Error("unknown state: " + state);
+    } else {
+      return this.exec("reboot", state).then(stdout => {
+        if (stdout?.includes("failed"))
+          throw new Error(`reboot failed: ${stdout}`);
+        else return;
+      });
+    }
   }
 
   /**
@@ -412,20 +396,9 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   wipeCache() {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      // TODO: move to Promise.prototype.finally() instead as soon as nodejs 8 dies in january 2020
-      function rm() {
-        _this
-          .shell("rm", "-rf", "/cache/*")
-          .then(resolve)
-          .catch(e => reject(new Error("wiping cache failed: " + e)));
-      }
-      _this
-        .format("cache")
-        .then(rm)
-        .catch(rm);
-    });
+    return this.format("cache").finally(() =>
+      this.shell("rm", "-rf", "/cache/*")
+    );
   }
 
   /**
@@ -455,25 +428,16 @@ class Adb extends Tool {
    * @returns {Promise<Boolean>} verified?
    */
   verifyPartitionType(partition, type) {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell("mount")
-        .then(stdout => {
-          if (
-            !(stdout.includes(" on /") && stdout.includes(" type ")) ||
-            typeof stdout !== "string"
-          ) {
-            reject(new Error("unable to detect partitions"));
-          } else if (!stdout.includes("/" + partition)) {
-            reject(new Error("partition not found"));
-          } else {
-            resolve(stdout.includes(" on /" + partition + " type " + type));
-          }
-        })
-        .catch(error =>
-          reject(new Error("partition not found" + (error ? ": " + error : "")))
-        );
+    return this.shell("mount").then(stdout => {
+      if (
+        !(stdout.includes(" on /") && stdout.includes(" type ")) ||
+        typeof stdout !== "string" ||
+        !stdout.includes("/" + partition)
+      ) {
+        throw new Error("partition not found");
+      } else {
+        return stdout.includes(" on /" + partition + " type " + type);
+      }
     });
   }
 
