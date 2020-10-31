@@ -17,9 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require("fs");
-const request = require("request");
-
 const chai = require("chai");
 var sinonChai = require("sinon-chai");
 var expect = chai.expect;
