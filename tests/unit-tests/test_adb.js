@@ -599,7 +599,7 @@ describe("Adb module", function() {
       });
     });
 
-    describe.skip("verifyPartitionType()", function() {
+    describe("verifyPartitionType()", function() {
       it("should verify parition type", function() {
         stubExec(null, "/dev/userdata on /data type ext4 (rw)");
         const adb = new Adb();
