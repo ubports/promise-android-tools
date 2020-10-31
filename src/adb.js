@@ -341,9 +341,9 @@ class Adb extends Tool {
         "disconnect"
       ].includes(state)
     ) {
-      throw new Error(`Invalid state: ${state}`);
+      return Promise.reject(new Error(`Invalid state: ${state}`));
     } else if (!["any", "usb", "local"].includes(transport)) {
-      throw new Error(`Invalid transport: ${transport}`);
+      return Promise.reject(new Error(`Invalid transport: ${transport}`));
     }
     return this.exec(`wait-for-${transport}-${state}`).then(() =>
       this.getState()

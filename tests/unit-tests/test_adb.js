@@ -534,6 +534,26 @@ describe("Adb module", function() {
           expectArgs("wait-for-any-any");
         });
       });
+      it("should reject on invalid state", function(done) {
+        stubExec();
+        const adb = new Adb();
+        sinon.stub(adb, "getState").resolves("device");
+        adb.wait("what the fuck").catch(r => {
+          expectReject(r, "Invalid state: what the fuck");
+          expect(child_process.execFile).to.not.have.been.called;
+          done();
+        });
+      });
+      it("should reject on invalid transport", function(done) {
+        stubExec();
+        const adb = new Adb();
+        sinon.stub(adb, "getState").resolves("device");
+        adb.wait("any", "what the fuck").catch(r => {
+          expectReject(r, "Invalid transport: what the fuck");
+          expect(child_process.execFile).to.not.have.been.called;
+          done();
+        });
+      });
     });
 
     describe("format()", function() {
@@ -572,6 +592,15 @@ describe("Adb module", function() {
         const adb = new Adb();
         return expect(adb.format("cache")).to.be.rejectedWith(
           "failed to format cache: Error: failed to parse fstab"
+        );
+      });
+      it("should be rejected if mount failed", function() {
+        stubExec(null, "some invalid fstab");
+        const adb = new Adb();
+        sinon.stub(adb, "findPartitionInFstab").returns("cache");
+        sinon.stub(adb, "shell").resolves("some weird error");
+        return expect(adb.format("cache")).to.be.rejectedWith(
+          "failed to format cache: Error: failed to mount: some weird error"
         );
       });
     });
