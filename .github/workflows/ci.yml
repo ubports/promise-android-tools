@@ -72,6 +72,7 @@ jobs:
         npm run test
 
     - name: codecov.io
+      if: contains(runner.os, 'Linux')
       uses: codecov/codecov-action@v1
       with:
         file: coverage/lcov.info
