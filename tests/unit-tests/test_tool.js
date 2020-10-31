@@ -171,22 +171,39 @@ describe("Tool module", function() {
     });
   });
   describe("handleError()", function() {
-    it("should process calbacks into useful string", function() {
-      const tool = new Tool({ tool: "adb" });
-      expect(
-        tool.handleError(
-          {
-            killed: false,
-            code: 1,
-            signal: null,
-            cmd: `${tool.executable} shell echo .`
-          },
-          "",
-          "adb: no devices/emulators found\n"
-        )
-      ).to.deep.eql(
-        '{"error":{"code":1,"cmd":"adb shell echo ."},"stderr":"adb: no devices/emulators found"}'
-      );
-    });
+    [
+      {
+        expectedReturn: "killed",
+        error: { killed: false, code: 1, signal: null, cmd: "command" },
+        stdout: undefined,
+        stderr: "adb died: Killed"
+      },
+      {
+        expectedReturn: "killed",
+        error: { killed: false, code: 1, signal: null, cmd: "command" },
+        stdout: undefined,
+        stderr: "adb server killed by remote request"
+      },
+      {
+        expectedReturn:
+          '{"error":{"code":1,"cmd":"adb shell echo ."},"stderr":"adb: no devices/emulators found"}',
+        error: {
+          killed: false,
+          code: 1,
+          signal: null,
+          cmd: `/path/to/adb shell echo .`
+        },
+        stdout: "",
+        stderr: "adb: no devices/emulators found\n"
+      }
+    ].forEach(e =>
+      it(`should return ${e.expectedReturn}`, function() {
+        const tool = new Tool({ tool: "adb" });
+        tool.executable = "/path/to/adb";
+        expect(tool.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
+          e.expectedReturn
+        );
+      })
+    );
   });
 });
