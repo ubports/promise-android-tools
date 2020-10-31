@@ -502,11 +502,7 @@ describe("Adb module", function() {
             "/tmp/target",
             common.stdoutFilter("%]")
           );
-          expectArgs(
-            "shell",
-            "stat -t",
-            common.quotepath("/tmp/target/test_file")
-          );
+          expectArgs("shell", "stat -t", "/tmp/target/test_file");
         });
       });
       it("should reject if files are inaccessible", function() {

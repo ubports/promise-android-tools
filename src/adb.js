@@ -177,11 +177,7 @@ class Adb extends Tool {
       // FIXME use stream and parse stdout instead of polling with stat
       var progressInterval = setInterval(() => {
         _this
-          .shell(
-            "stat",
-            "-t",
-            common.quotepath(dest + "/" + path.basename(file))
-          )
+          .shell("stat", "-t", dest + "/" + path.basename(file))
           .then(stat => {
             _this.adbEvent.emit(
               "push:progress:size",
