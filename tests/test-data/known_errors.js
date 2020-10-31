@@ -131,37 +131,37 @@ const fastbootErrors = [
     stderr: "FAILED (remote failure)"
   },
   {
-    expectedReturn: "connection lost",
+    expectedReturn: "no device",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "this is an I/O error"
   },
   {
-    expectedReturn: "connection lost",
+    expectedReturn: "no device",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (command write failed (No such device))"
   },
   {
-    expectedReturn: "connection lost",
+    expectedReturn: "no device",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (command write failed (Success))"
   },
   {
-    expectedReturn: "connection lost",
+    expectedReturn: "no device",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (status read failed (No such device))"
   },
   {
-    expectedReturn: "connection lost",
+    expectedReturn: "no device",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (data transfer failure (Broken pipe))"
   },
   {
-    expectedReturn: "connection lost",
+    expectedReturn: "no device",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (data transfer failure (Protocol error))"

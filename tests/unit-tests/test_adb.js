@@ -177,104 +177,20 @@ describe("Adb module", function() {
       });
     });
 
-    describe.skip("push()", function() {
-      it("should push file", function() {
-        stubExec();
-        const adb = new Adb();
-        return adb.push("tests/test-data/test_file", "/tmp/target").then(() => {
-          expectArgs(
-            "push",
-            common.quotepath("tests/test-data/test_file"),
-            "/tmp/target",
-            common.stdoutFilter("%]")
-          );
-        });
-      });
-      it("should reject if device is out of space", function() {
-        stubExec(
-          null,
-          "adb: error: failed to copy '/local/path' to '/target/path': remote No space left on device\n" +
-            "/local/path: 0 files pushed. 5.2 MB/s (99995728 bytes in 18.348s)\n",
-          ""
-        );
-        const adb = new Adb();
-        return expect(
-          adb.push("tests/test-data/test_file", "/tmp/target")
-        ).to.have.been.rejectedWith("Push failed: out of space");
-      });
-      it("should reject if file is inaccessible", function() {
-        stubExec();
-        const adb = new Adb();
-        return expect(
-          adb.push("this/file/does/not/exist", "/tmp/target")
-        ).to.have.been.rejectedWith("Can't access file");
-      });
-      it("should reject on bad file number", function() {
-        stubExec(
-          null,
-          "adb: error: failed to copy '/a' to '/b': remote Bad file number",
-          ""
-        );
-        const adb = new Adb();
-        return expect(
-          adb.push("tests/test-data/test_file", "/tmp/target")
-        ).to.have.been.rejectedWith("connection lost");
-      });
-      it("should reject on connection lost", function() {
-        const execFakes = [
-          sinon.fake((args, callback) => {
-            if (args.includes("echo"))
-              callback(true, null, "error: no devices/emulators found");
-            else callback(true, "push-stdout", "push-stderr");
-          }),
-          sinon.fake((args, callback) => {
-            callback(false, "no devices/emulators found");
-          })
-        ];
-        return Promise.all(
-          execFakes.map(execFake => {
-            const adb = new Adb();
-            return expect(
-              adb.push("tests/test-data/test_file", "/tmp/target")
-            ).to.have.been.rejectedWith("connection lost");
-          })
-        );
-      });
-      it("should reject with original error on connection lost and device detection rejected", function() {
-        stubExec(true, "push-stdout", "push-stderr");
-        const adb = new Adb();
-        sinon.stub(adb, "hasAccess").rejects("oh no, what happened now");
-        return expect(
-          adb.push("tests/test-data/test_file", "/tmp/target")
-        ).to.have.been.rejectedWith(
-          'Push failed: Error: {"error":true,"stdout":"push-stdout","stderr":"push-stderr"}'
-        );
-      });
-      it("should reject with original error on connection lost and device detected", function() {
-        stubExec(true, "push-stdout", "push-stderr");
-        const adb = new Adb();
-        sinon.stub(adb, "hasAccess").resolves(true);
-        return expect(
-          adb.push("tests/test-data/test_file", "/tmp/target")
-        ).to.have.been.rejectedWith(
-          'Push failed: Error: {"error":true,"stdout":"push-stdout","stderr":"push-stderr"}'
-        );
-      });
-      it("should reject on unknown error", function() {
-        stubExec(false, "push-stdout: 0 files pushed", "push-stderr");
-        const adb = new Adb();
-        return expect(
-          adb.push("tests/test-data/test_file", "/tmp/target")
-        ).to.have.been.rejectedWith(
-          "Push failed: stdout: push-stdout: 0 files pushed"
-        );
-      });
-      it("should survive if stat failed", function() {
-        stubExec();
-        const adb = new Adb();
-        sinon.stub(adb, "shell").rejects("stat failed");
-        return adb.push("tests/test-data/test_file", "/tmp/target", 1);
-      });
+    describe("push()", function() {
+      it("should push file");
+      it("should reject if device is out of space");
+      it("should reject if file is inaccessible");
+      it("should reject on bad file number");
+      it("should reject on connection lost");
+      it(
+        "should reject with original error on connection lost and device detection rejected"
+      );
+      it(
+        "should reject with original error on connection lost and device detected"
+      );
+      it("should reject on unknown error");
+      it("should survive if stat failed");
     });
 
     describe("sync()", function() {
@@ -476,93 +392,6 @@ describe("Adb module", function() {
           expectArgs("get-state");
         });
       });
-    });
-    describe.skip("pushArray()", function() {
-      it("should resolve on empty array", function() {
-        stubExec();
-
-        const adb = new Adb();
-        const progressSpy = sinon.spy();
-        return Promise.all([
-          adb.pushArray([], progressSpy),
-          adb.pushArray()
-        ]).then(r => {
-          expect(r[0]).to.equal(undefined);
-          expect(r[1]).to.equal(undefined);
-          expect(child_process.execFile).to.not.have.been.called;
-          expect(progressSpy).to.have.been.calledWith(1);
-          expect(progressSpy).to.not.have.been.calledTwice;
-        });
-      });
-      it("should push files", function() {
-        stubExec(null, "1 1", null);
-        const fakeArray = [
-          { src: "tests/test-data/test_file", dest: "/tmp/target" },
-          { src: "tests/test-data/test file", dest: "/tmp/target" }
-        ];
-        const adb = new Adb();
-        sinon.stub(adb, "push").resolves();
-        const progressSpy = sinon.spy();
-        return adb.pushArray(fakeArray, progressSpy, 1).then(() => {
-          expectArgs(
-            "push",
-            common.quotepath("tests/test-data/test_file"),
-            "/tmp/target",
-            common.stdoutFilter("%]")
-          );
-          expectArgs(
-            "push",
-            common.quotepath("tests/test-data/test file"),
-            "/tmp/target",
-            common.stdoutFilter("%]")
-          );
-          expectArgs("shell", "stat -t", "/tmp/target/test_file");
-        });
-      });
-      it("should reject if files are inaccessible", function() {
-        sinon.stub(child_process, "exec").callsFake((args, callback) => {
-          if (args.includes("stat")) setTimeout(callback, 5);
-          else callback(null, "1", null);
-        });
-
-        const fakeArray = [
-          { src: "tests/test-data/test_file", dest: "/tmp/target" },
-          { src: "this/file/does/not/exist", dest: "/tmp/target" },
-          { src: "tests/test-data/test file", dest: "/tmp/target" }
-        ];
-        const adb = new Adb();
-        const progressSpy = sinon.spy();
-        return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
-          expect(e).to.exist;
-        });
-      });
-      it("should reject on error", function() {
-        sinon.stub(child_process, "exec").callsFake((args, callback) => {
-          if (args.includes("push"))
-            setTimeout(
-              () =>
-                callback(
-                  1,
-                  "adb: error: failed to copy 'tests/test-data/test_file' to '/tmp/target': couldn't read from device\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"
-                ),
-              5
-            );
-          else callback(null, "1 1", null);
-        });
-
-        const fakeArray = [
-          { src: "tests/test-data/test_file", dest: "/tmp/target" },
-          { src: "tests/test-data/test file", dest: "/tmp/target" }
-        ];
-        const adb = new Adb();
-        const progressSpy = sinon.spy();
-        return adb.pushArray(fakeArray, progressSpy, 1).catch(e => {
-          expect(e.message).to.include(
-            'Failed to push file 0: Error: Push failed: Error: {"error":1,"stdout":"adb: error: failed to copy \'tests/test-data/test_file\' to \'/tmp/target\': couldn\'t read from device\\ntests/test-data/test_file: 0 files pushed. 7.2 MB/s (22213992 bytes in 2.957s)"}'
-          );
-        });
-      });
-      it("should report progress"); // TODO: Check that the progress report actually makes sense
     });
 
     describe.skip("getDeviceName()", function() {

@@ -93,7 +93,12 @@ class Tool extends EventEmitter {
     );
     const cp = child_process.spawn(
       this.executable,
-      [...this.extra, ...args].flat()
+      [...this.extra, ...args].flat(),
+      {
+        env: {
+          ADB_TRACE: "rwx"
+        }
+      }
     );
     cp.on("exit", (code, signal) =>
       this.emit(

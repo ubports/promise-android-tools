@@ -22,7 +22,7 @@ const path = require("path");
 const events = require("events");
 const common = require("./common.js");
 const Tool = require("./tool.js");
-const { default: CancelablePromise } = require("cancelable-promise");
+const { CancelablePromise } = require("cancelable-promise");
 
 class Event extends events {}
 
@@ -58,7 +58,13 @@ class Adb extends Tool {
       return "unauthorized";
     } else if (stderr?.includes("error: device offline")) {
       return "device offline";
-    } else if (stderr?.includes("no devices/emulators found")) {
+    } else if (
+      stderr?.includes("no devices/emulators found") ||
+      stdout?.includes("no devices/emulators found") ||
+      stdout?.includes("adb: error: failed to read copy response") ||
+      stdout?.includes("couldn't read from device") ||
+      stdout?.includes("remote Bad file number")
+    ) {
       return "no device";
     } else {
       return super.handleError(error, stdout, stderr);
@@ -179,71 +185,72 @@ class Adb extends Tool {
 
   /**
    * copy local files/directories to device
-   * @param {String} file - path to file to push
-   * @param {String} dest - target path
-   * @param {Integer} interval - poll interval
-   * @returns {Promise}
+   * @param {Array<String>} files path to files
+   * @param {String} dest destination path on the device
+   * @param {Function} progress progress function
+   * @returns {CancelablePromise}
    */
-  push(file, dest, interval) {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      // Make sure file exists first
-      try {
-        fs.statSync(file);
-      } catch (e) {
-        reject(new Error("Can't access file: " + e));
-      }
-      var fileSize = fs.statSync(file)["size"];
-      var lastSize = 0;
-      // FIXME use stream and parse stdout instead of polling with stat
-      var progressInterval = setInterval(() => {
-        _this
-          .shell("stat", "-t", dest + "/" + path.basename(file))
-          .then(stat => {
-            _this.adbEvent.emit(
-              "push:progress:size",
-              eval(stat.split(" ")[1]) - lastSize
-            );
-            lastSize = eval(stat.split(" ")[1]);
-          })
-          .catch(e => {
-            clearInterval(progressInterval);
-          });
-      }, interval || 1000);
-      _this
-        .exec("push", common.quotepath(file), dest, common.stdoutFilter("%]"))
-        .then(stdout => {
-          clearInterval(progressInterval);
-          if (
-            stdout &&
-            (stdout.includes("no devices/emulators found") ||
-              stdout.includes("couldn't read from device") ||
-              stdout.includes("remote Bad file number"))
-          ) {
-            reject(new Error("connection lost"));
-          } else if (
-            stdout &&
-            stdout.includes("remote No space left on device")
-          ) {
-            reject(new Error("Push failed: out of space"));
-          } else if (stdout && stdout.includes("0 files pushed")) {
-            reject(new Error("Push failed: stdout: " + stdout));
+  push(files = [], dest, progress = () => {}) {
+    progress(0);
+    if (!files?.length) {
+      // if there are no files, report 100% and resolve
+      progress(1);
+      return Promise.resolve();
+    } else {
+      const totalSize = files.reduce(
+        (acc, file) => acc + fs.statSync(file)["size"],
+        0
+      );
+      let pushedSize = 0;
+      const _this = this;
+      return new CancelablePromise((resolve, reject, onCancel) => {
+        let stdout = "";
+        let stderr = "";
+        const cp = _this.spawn("push", ...files, dest);
+        cp.once("exit", (code, signal) => {
+          if (code || signal) {
+            // truthy value (i.e. non-zero exit code) indicates error
+            if (
+              stdout.includes("adb: error: cannot stat") &&
+              stdout.includes("No such file or directory")
+            ) {
+              reject(new Error("file not found"));
+            } else {
+              reject(
+                new Error(_this.handleError({ code, signal }, stdout, stderr))
+              );
+            }
           } else {
             resolve();
           }
-        })
-        .catch(e => {
-          clearInterval(progressInterval);
-          _this
-            .hasAccess()
-            .then(access => {
-              reject(access ? "Push failed: " + e : "connection lost");
-            })
-            .catch(() => {
-              reject(new Error("Push failed: " + e));
+        });
+
+        cp.stdout.on("data", d => (stdout += d.toString()));
+        cp.stderr.on("data", d => {
+          d.toString()
+            .split("\n")
+            .forEach(str => {
+              if (str.includes("cpp")) {
+                // logging from cpp files indicates debug output
+                if (str.includes("writex")) {
+                  // writex namespace indicates external writing
+                  pushedSize +=
+                    parseInt(str.split("len=")[1].split(" ")[0]) || 0;
+                  progress(Math.min(pushedSize / totalSize, 1));
+                }
+              } else {
+                stderr += str;
+              }
             });
         });
-    });
+
+        onCancel(() => {
+          if (!cp.kill("SIGTERM")) {
+            setTimeout(() => cp.kill("SIGKILL"), 25);
+          }
+        });
+      });
+    }
   }
 
   /**
@@ -306,57 +313,6 @@ class Adb extends Tool {
         ? Promise.resolve()
         : this.reboot(state).then(() => this.wait())
     );
-  }
-
-  /**
-   * Push an array of files and report progress
-   * @param {Array<{ src, dest }>} files file objects
-   * @param {Function} progress progress function
-   * @param {Integer} interval how often to call the progress function
-   * @returns {Promise}
-   */
-  pushArray(files = [], progress = () => {}, interval) {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      if (files.length <= 0) {
-        progress(1);
-        resolve();
-      } else {
-        var totalSize = 0;
-        var pushedSize = 0;
-        files.forEach(file => {
-          try {
-            totalSize += fs.statSync(file.src)["size"];
-          } catch (e) {
-            reject(new Error("Can't access file: " + e));
-          }
-        });
-        function progressSize(s) {
-          pushedSize += s;
-          progress(pushedSize / totalSize);
-        }
-        function pushNext(i) {
-          _this
-            .push(files[i].src, files[i].dest, interval)
-            .then(() => {
-              if (i + 1 < files.length) {
-                pushNext(i + 1);
-              } else {
-                _this.adbEvent.removeListener(
-                  "push:progress:size",
-                  progressSize
-                );
-                resolve();
-              }
-            })
-            .catch(e =>
-              reject(new Error("Failed to push file " + i + ": " + e))
-            );
-        }
-        _this.adbEvent.on("push:progress:size", progressSize);
-        pushNext(0); // Begin pushing
-      }
-    });
   }
 
   /**
@@ -676,7 +632,7 @@ class Adb extends Tool {
       .then(() => this.shell("mkfifo /restore.pipe"))
       .then(() =>
         Promise.all([
-          this.push(srcfile, "/restore.pipe"),
+          this.push([srcfile], "/restore.pipe"),
           this.shell("'cd /; cat /restore.pipe | tar -xvz'")
         ])
       )

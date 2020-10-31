@@ -71,7 +71,7 @@ class Fastboot extends Tool {
       stderr?.includes("FAILED (data transfer failure (Broken pipe))") ||
       stderr?.includes("FAILED (data transfer failure (Protocol error))")
     ) {
-      return "connection lost";
+      return "no device";
     } else {
       return super.handleError(error, stdout, stderr);
     }
