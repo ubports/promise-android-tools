@@ -69,7 +69,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   startServer() {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       _this.stopWaiting();
       _this
@@ -132,7 +132,7 @@ class Adb extends Tool {
    * @returns {Promise<String>} serial number
    */
   getSerialno() {
-    var _this = this;
+    const _this = this;
     var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
     return new Promise(function(resolve, reject) {
       _this
@@ -187,7 +187,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   push(file, dest, interval) {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       // Make sure file exists first
       try {
@@ -254,7 +254,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   reboot(state) {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       if (["system", "recovery", "bootloader"].indexOf(state) == -1) {
         reject(new Error("unknown state: " + state));
@@ -318,7 +318,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   pushArray(files = [], progress = () => {}, interval) {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       if (files.length <= 0) {
         progress(1);
@@ -366,7 +366,7 @@ class Adb extends Tool {
    * @returns {Promise<String>} codename
    */
   getDeviceName() {
-    var _this = this;
+    const _this = this;
     return _this
       .shell("getprop", "ro.product.device")
       .then(stdout => {
@@ -431,7 +431,7 @@ class Adb extends Tool {
    * @param {Integer} timeout when to time out
    */
   waitForDevice(interval, timeout) {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       const accessInterval = setInterval(() => {
         _this
@@ -476,7 +476,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   format(partition) {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       _this
         .shell("cat", "/etc/recovery.fstab")
@@ -516,7 +516,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   wipeCache() {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       // TODO: move to Promise.prototype.finally() instead as soon as nodejs 8 dies in january 2020
       function rm() {
@@ -559,7 +559,7 @@ class Adb extends Tool {
    * @returns {Promise<Boolean>} verified?
    */
   verifyPartitionType(partition, type) {
-    var _this = this;
+    const _this = this;
     return new Promise(function(resolve, reject) {
       _this
         .shell("mount")
