@@ -29,6 +29,7 @@ const EventEmitter = require("events");
 const child_process = require("child_process");
 
 const { Tool } = require("../../src/module.js");
+const { genericErrors } = require("../test-data/known_errors.js");
 
 const validOptions = [
   { tool: "adb" },
@@ -170,33 +171,9 @@ describe("Tool module", function() {
       });
     });
   });
+
   describe("handleError()", function() {
-    [
-      {
-        expectedReturn: "killed",
-        error: { killed: false, code: 1, signal: null, cmd: "command" },
-        stdout: undefined,
-        stderr: "adb died: Killed"
-      },
-      {
-        expectedReturn: "killed",
-        error: { killed: false, code: 1, signal: null, cmd: "command" },
-        stdout: undefined,
-        stderr: "adb server killed by remote request"
-      },
-      {
-        expectedReturn:
-          '{"error":{"code":1,"cmd":"adb shell echo ."},"stderr":"adb: no devices/emulators found"}',
-        error: {
-          killed: false,
-          code: 1,
-          signal: null,
-          cmd: `/path/to/adb shell echo .`
-        },
-        stdout: "",
-        stderr: "adb: no devices/emulators found\n"
-      }
-    ].forEach(e =>
+    genericErrors("adb").forEach(e =>
       it(`should return ${e.expectedReturn}`, function() {
         const tool = new Tool({ tool: "adb" });
         tool.executable = "/path/to/adb";

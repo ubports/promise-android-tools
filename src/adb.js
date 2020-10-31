@@ -50,7 +50,14 @@ class Adb extends Tool {
    * @returns {String} error message
    */
   handleError(error, stdout, stderr) {
-    if (stderr?.includes("no devices/emulators found")) {
+    if (
+      stderr?.includes("error: device unauthorized") ||
+      stderr?.includes("error: device still authorizing")
+    ) {
+      return "unauthorized";
+    } else if (stderr?.includes("error: device offline")) {
+      return "device offline";
+    } else if (stderr?.includes("no devices/emulators found")) {
       return "no device";
     } else {
       return super.handleError(error, stdout, stderr);

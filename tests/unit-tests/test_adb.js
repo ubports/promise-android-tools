@@ -30,6 +30,7 @@ const child_process = require("child_process");
 const Adb = require("../../src/module.js").Adb;
 const common = require("../../src/common.js");
 const { getAndroidToolPath } = require("android-tools-bin");
+const { adbErrors } = require("../test-data/known_errors.js");
 
 function stubExec(error, stdout, stderr) {
   sinon.stub(child_process, "exec").yields(error, stdout, stderr);
@@ -54,6 +55,18 @@ describe("Adb module", function() {
   });
 
   describe("basic functions", function() {
+    describe("handleError()", function() {
+      adbErrors.forEach(e =>
+        it(`should return ${e.expectedReturn}`, function() {
+          const adb = new Adb();
+          adb.executable = "/path/to/adb";
+          expect(adb.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
+            e.expectedReturn
+          );
+        })
+      );
+    });
+
     describe("startServer()", function() {
       it("should kill all servers and start a new one", function() {
         stubExec();

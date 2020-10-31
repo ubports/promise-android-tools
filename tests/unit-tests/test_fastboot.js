@@ -30,6 +30,7 @@ const child_process = require("child_process");
 const Fastboot = require("../../src/module.js").Fastboot;
 const common = require("../../src/common.js");
 const { getAndroidToolPath } = require("android-tools-bin");
+const { fastbootErrors } = require("../test-data/known_errors.js");
 
 function stubExec(error, stdout, stderr) {
   sinon.stub(child_process, "exec").yields(error, stdout, stderr);
@@ -58,6 +59,17 @@ describe("Fastboot module", function() {
     });
   });
   describe("basic functions", function() {
+    describe("handleError()", function() {
+      fastbootErrors.forEach(e =>
+        it(`should return ${e.expectedReturn}`, function() {
+          const fastboot = new Fastboot();
+          fastboot.executable = "/path/to/fastboot";
+          expect(fastboot.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
+            e.expectedReturn
+          );
+        })
+      );
+    });
     describe("flash()", function() {
       it("should resolve if flashed successfully", function() {
         stubExec();

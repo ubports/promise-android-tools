@@ -31,6 +31,7 @@ const child_process = require("child_process");
 const Heimdall = require("../../src/module.js").Heimdall;
 const common = require("../../src/common.js");
 const { getAndroidToolPath } = require("android-tools-bin");
+const { heimdallErrors } = require("../test-data/known_errors.js");
 
 function stubExec(error, stdout, stderr) {
   sinon.stub(child_process, "exec").yields(error, stdout, stderr);
@@ -107,6 +108,18 @@ describe("Heimdall module", function() {
     });
   });
   describe("basic functions", function() {
+    describe("handleError()", function() {
+      heimdallErrors.forEach(e =>
+        it(`should return ${e.expectedReturn}`, function() {
+          const heimdall = new Heimdall();
+          heimdall.executable = "/path/to/heimdall";
+          expect(heimdall.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
+            e.expectedReturn
+          );
+        })
+      );
+    });
+
     describe("hasAccess()", function() {
       it("should resolve true when a device is detected", function() {
         stubExec(null, "0123456789ABCDEF	heimdall");

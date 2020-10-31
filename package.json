@@ -6,7 +6,7 @@
   "scripts": {
     "test": "npx coverage -r lcov -r html npm run test-nocover",
     "test-nocover": "npx mocha -- -R spec './tests/unit-tests/*.js'",
-    "lint": "npx eslint tests/unit-tests/*.js src/*.js",
+    "lint": "npx eslint tests/**/*.js src/*.js",
     "lint-fix": "npm run lint -- --fix",
     "docs": "npx jsdoc -c jsdoc-config.json"
   },
