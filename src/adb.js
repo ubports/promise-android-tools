@@ -22,6 +22,7 @@ const path = require("path");
 const events = require("events");
 const common = require("./common.js");
 const Tool = require("./tool.js");
+const { default: CancelablePromise } = require("cancelable-promise");
 
 class Event extends events {}
 
@@ -71,7 +72,6 @@ class Adb extends Tool {
   startServer() {
     const _this = this;
     return new Promise(function(resolve, reject) {
-      _this.stopWaiting();
       _this
         .killServer()
         .then(() => {
@@ -91,29 +91,27 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   killServer() {
-    this.stopWaiting();
     return this.exec("kill-server");
   }
 
   /**
    * kick connection from host side to force reconnect
    * @param {String} [modifier] - "device" or "offline"
-   * @returns {Promise}
+   * @returns {Promise<String>} resolves device state
    */
   reconnect(modifier = "") {
-    this.stopWaiting();
     return this.exec(...["reconnect", modifier].filter(i => i)).then(stdout => {
       if (stdout?.includes("no devices/emulators found")) {
         throw new Error("no device");
       } else {
-        return this.waitForDevice();
+        return this.wait();
       }
     });
   }
 
   /**
    * kick connection from device side to force reconnect
-   * @returns {Promise}
+   * @returns {Promise<String>} resolves device state
    */
   reconnectDevice() {
     return this.reconnect("device");
@@ -121,7 +119,7 @@ class Adb extends Tool {
 
   /**
    * reset offline/unauthorized devices to force reconnect
-   * @returns {Promise}
+   * @returns {Promise<String>} resolves device state
    */
   reconnectOffline() {
     return this.reconnect("offline");
@@ -173,8 +171,8 @@ class Adb extends Tool {
    * @returns {Promise<String>} stdout
    */
   shell(...args) {
-    return this.exec("shell", `'${args.join(" ")}'`).then(stdout => {
-      if (stdout) return stdout.replace("\n", "");
+    return this.exec("shell", args.join(" ")).then(stdout => {
+      if (stdout) return stdout.trim();
       else return;
     });
   }
@@ -306,7 +304,7 @@ class Adb extends Tool {
       currentState === state ||
       (currentState === "device" && state === "system")
         ? Promise.resolve()
-        : this.reboot(state).then(() => this.waitForDevice())
+        : this.reboot(state).then(() => this.wait())
     );
   }
 
@@ -426,48 +424,30 @@ class Adb extends Tool {
   }
 
   /**
-   * Wait for a device
-   * @param {Integer} interval how often to poll
-   * @param {Integer} timeout when to time out
+   * wait for device to be in a given state
+   * @param {String} [state] any, device, recovery, rescue, sideload, bootloader, or disconnect
+   * @param {String} [transport] any, usb, local
+   * @returns {CancelablePromise<String>} resolves state (offline, bootloader, device)
    */
-  waitForDevice(interval, timeout) {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      const accessInterval = setInterval(() => {
-        _this
-          .hasAccess()
-          .then(access => {
-            if (access) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              resolve();
-            }
-          })
-          .catch(error => {
-            if (error) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              reject(error);
-            }
-          });
-      }, interval || 2000);
-      const accessTimeout = setTimeout(() => {
-        clearInterval(accessInterval);
-        reject(new Error("no device: timeout"));
-      }, timeout || 60000);
-      _this.adbEvent.once("stop", () => {
-        clearInterval(accessInterval);
-        clearTimeout(accessTimeout);
-        reject(new Error("stopped waiting"));
-      });
-    });
-  }
-
-  /**
-   * Stop waiting for a device
-   */
-  stopWaiting() {
-    this.adbEvent.emit("stop");
+  wait(state = "any", transport = "any") {
+    if (
+      ![
+        "any",
+        "device",
+        "recovery",
+        "rescue",
+        "sideload",
+        "bootloader",
+        "disconnect"
+      ].includes(state)
+    ) {
+      throw new Error(`Invalid state: ${state}`);
+    } else if (!["any", "usb", "local"].includes(transport)) {
+      throw new Error(`Invalid transport: ${transport}`);
+    }
+    return this.exec(`wait-for-${transport}-${state}`).then(() =>
+      this.getState()
+    );
   }
 
   /**

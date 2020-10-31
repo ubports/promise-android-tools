@@ -21,6 +21,7 @@ const child_process = require("child_process");
 const { getAndroidToolPath } = require("android-tools-bin");
 const EventEmitter = require("events");
 const { removeFalsy } = require("./common");
+const { CancelablePromise } = require("cancelable-promise");
 
 /**
  * generic tool class
@@ -42,14 +43,14 @@ class Tool extends EventEmitter {
    * Execute a command. Used for short operations and operations that do not require real-time data access.
    * @param  {...any} args tool arguments
    * @private
-   * @async
-   * @returns {Promise<String>} stdout
+   * @returns {CancelablePromise<String>} stdout
    */
-  async exec(...args) {
+  exec(...args) {
     const _this = this;
-    return new Promise(function(resolve, reject) {
-      child_process.exec(
-        [_this.executable, ..._this.extra, ...args].join(" "),
+    return new CancelablePromise((resolve, reject, onCancel) => {
+      const cp = child_process.execFile(
+        _this.executable,
+        [..._this.extra, ...args],
         _this.execOptions,
         (error, stdout, stderr) => {
           _this.emit(
@@ -68,6 +69,14 @@ class Tool extends EventEmitter {
           }
         }
       );
+
+      onCancel(() => {
+        if (!cp.kill("SIGTERM")) {
+          setTimeout(() => {
+            cp.kill("SIGKILL");
+          }, 25);
+        }
+      });
     });
   }
 

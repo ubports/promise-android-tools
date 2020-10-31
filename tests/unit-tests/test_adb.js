@@ -33,12 +33,13 @@ const { getAndroidToolPath } = require("android-tools-bin");
 const { adbErrors } = require("../test-data/known_errors.js");
 
 function stubExec(error, stdout, stderr) {
-  sinon.stub(child_process, "exec").yields(error, stdout, stderr);
+  sinon.stub(child_process, "execFile").yields(error, stdout, stderr);
 }
 
 function expectArgs(...args) {
-  expect(child_process.exec).to.have.been.calledWith(
-    [getAndroidToolPath("adb"), "-P", 5037, ...args].join(" ")
+  expect(child_process.execFile).to.have.been.calledWith(
+    getAndroidToolPath("adb"),
+    ["-P", 5037, ...args]
   );
 }
 
@@ -73,7 +74,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.startServer().then(r => {
           expect(r).to.equal(undefined);
-          expect(child_process.exec).to.have.been.calledTwice;
+          expect(child_process.execFile).to.have.been.calledTwice;
           expectArgs("kill-server");
           expectArgs("start-server");
         });
@@ -96,11 +97,11 @@ describe("Adb module", function() {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
-        sinon.stub(adb, "waitForDevice").resolves();
+        sinon.stub(adb, "wait").resolves("device");
         return adb.reconnect().then(r => {
-          expect(r).to.equal(undefined);
-          expect(child_process.exec).to.have.been.calledOnce;
-          expect(child_process.exec).to.not.have.been.calledTwice;
+          expect(r).to.equal("device");
+          expect(child_process.execFile).to.have.been.calledOnce;
+          expect(child_process.execFile).to.not.have.been.calledTwice;
           expectArgs("reconnect");
         });
       });
@@ -108,7 +109,7 @@ describe("Adb module", function() {
         stubExec(null, "no devices/emulators found");
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
-        sinon.stub(adb, "waitForDevice").resolves();
+        sinon.stub(adb, "wait").resolves("device");
         adb.reconnect().catch(error => {
           expect(error.message).to.eql("no device");
           done();
@@ -121,11 +122,11 @@ describe("Adb module", function() {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
-        sinon.stub(adb, "waitForDevice").resolves();
+        sinon.stub(adb, "wait").resolves("device");
         return adb.reconnectDevice().then(r => {
-          expect(r).to.equal(undefined);
-          expect(child_process.exec).to.have.been.calledOnce;
-          expect(child_process.exec).to.not.have.been.calledTwice;
+          expect(r).to.equal("device");
+          expect(child_process.execFile).to.have.been.calledOnce;
+          expect(child_process.execFile).to.not.have.been.calledTwice;
           expectArgs("reconnect", "device");
         });
       });
@@ -136,11 +137,11 @@ describe("Adb module", function() {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
-        sinon.stub(adb, "waitForDevice").resolves();
+        sinon.stub(adb, "wait").resolves("device");
         return adb.reconnectOffline().then(r => {
-          expect(r).to.equal(undefined);
-          expect(child_process.exec).to.have.been.calledOnce;
-          expect(child_process.exec).to.not.have.been.calledTwice;
+          expect(r).to.equal("device");
+          expect(child_process.execFile).to.have.been.calledOnce;
+          expect(child_process.execFile).to.not.have.been.calledTwice;
           expectArgs("reconnect", "offline");
         });
       });
@@ -152,7 +153,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getSerialno().then(r => {
           expect(r).to.equal("1234567890ABCDEF");
-          expect(child_process.exec).to.have.been.calledOnce;
+          expect(child_process.execFile).to.have.been.calledOnce;
           expectArgs("get-serialno");
         });
       });
@@ -171,7 +172,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.shell(["one", "two", "three"]).then(r => {
           expect(r).to.equal("This string is returned over stdout");
-          expect(child_process.exec).to.have.been.called;
+          expect(child_process.execFile).to.have.been.called;
         });
       });
     });
@@ -470,7 +471,7 @@ describe("Adb module", function() {
         stubExec(null, "recovery");
         const adb = new Adb();
         sinon.stub(adb, "reboot").resolves();
-        sinon.stub(adb, "waitForDevice").resolves();
+        sinon.stub(adb, "wait").resolves("device");
         return adb.ensureState("system").then(() => {
           expectArgs("get-state");
         });
@@ -488,7 +489,7 @@ describe("Adb module", function() {
         ]).then(r => {
           expect(r[0]).to.equal(undefined);
           expect(r[1]).to.equal(undefined);
-          expect(child_process.exec).to.not.have.been.called;
+          expect(child_process.execFile).to.not.have.been.called;
           expect(progressSpy).to.have.been.calledWith(1);
           expect(progressSpy).to.not.have.been.calledTwice;
         });
@@ -570,7 +571,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getDeviceName().then(r => {
           expect(r).to.equal("thisisadevicecodename");
-          expectArgs("shell", "'getprop ro.product.device'");
+          expectArgs("shell", "getprop ro.product.device");
         });
       });
       ["getprop: not found", null].forEach(response => {
@@ -592,8 +593,8 @@ describe("Adb module", function() {
           const adb = new Adb();
           return adb.getDeviceName().then(r => {
             expect(r).to.equal("thisisadevicecodename");
-            expectArgs("shell", "'getprop ro.product.device'");
-            expectArgs("shell", "'cat default.prop'");
+            expectArgs("shell", "getprop ro.product.device");
+            expectArgs("shell", "cat default.prop");
           });
         });
       });
@@ -615,8 +616,8 @@ describe("Adb module", function() {
           expect(e.message).to.equal(
             'getprop error: Error: {"error":{"error":"something broke"}}'
           );
-          expectArgs("shell", "'getprop ro.product.device'");
-          expectArgs("shell", "'cat default.prop'");
+          expectArgs("shell", "getprop ro.product.device");
+          expectArgs("shell", "cat default.prop");
         });
       });
       it("should reject if default.prop didn't include ro.product.device", function() {
@@ -631,8 +632,8 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getDeviceName().catch(e => {
           expect(e.message).to.equal("unknown getprop error");
-          expectArgs("shell", "'getprop ro.product.device'");
-          expectArgs("shell", "'cat default.prop'");
+          expectArgs("shell", "getprop ro.product.device");
+          expectArgs("shell", "cat default.prop");
         });
       });
     });
@@ -643,7 +644,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getOs().then(r => {
           expect(r).to.equal("ubuntutouch");
-          expectArgs("shell", "'cat /etc/system-image/channel.ini'");
+          expectArgs("shell", "cat /etc/system-image/channel.ini");
         });
       });
       it('should resolve "android"', function() {
@@ -651,7 +652,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getOs().then(r => {
           expect(r).to.equal("android");
-          expectArgs("shell", "'cat /etc/system-image/channel.ini'");
+          expectArgs("shell", "cat /etc/system-image/channel.ini");
         });
       });
     });
@@ -662,7 +663,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.hasAccess().then(r => {
           expect(r).to.equal(true);
-          expectArgs("shell", "'echo .'");
+          expectArgs("shell", "echo .");
         });
       });
       it("should resolve false", function() {
@@ -670,7 +671,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.hasAccess().then(r => {
           expect(r).to.equal(false);
-          expectArgs("shell", "'echo .'");
+          expectArgs("shell", "echo .");
         });
       });
       it("should reject", function() {
@@ -682,41 +683,15 @@ describe("Adb module", function() {
       });
     });
 
-    describe("waitForDevice()", function() {
+    describe("wait()", function() {
       it("should resolve when a device is detected", function() {
-        stubExec(null, ".");
+        stubExec();
         const adb = new Adb();
-        return adb.waitForDevice(1).then(r => {
-          expect(child_process.exec).to.have.been.called;
-          expectArgs("shell", "'echo .'");
-        });
-      });
-      it("should reject on error", function() {
-        stubExec(true, null, "everything exploded");
-        const adb = new Adb();
-        return expect(adb.waitForDevice(5, 10)).to.be.rejectedWith(
-          "everything exploded"
-        );
-      });
-      it("should reject on timeout", function() {
-        stubExec(true, null, "error: no devices/emulators found");
-        const adb = new Adb();
-        return expect(adb.waitForDevice(5, 10)).to.be.rejectedWith(
-          "no device: timeout"
-        );
-      });
-    });
-
-    describe("stopWaiting()", function() {
-      it("should cause waitForDevice() to reject", function() {
-        stubExec(true, null, "error: no devices/emulators found");
-        const adb = new Adb();
-        return new Promise(function(resolve, reject) {
-          const wait = adb.waitForDevice(5);
-          setTimeout(() => {
-            adb.stopWaiting();
-            resolve(expect(wait).to.be.rejectedWith("stopped waiting"));
-          }, 10);
+        sinon.stub(adb, "getState").resolves("device");
+        return adb.wait().then(r => {
+          expect(r).to.eql("device");
+          expect(adb.getState).to.have.been.called;
+          expectArgs("wait-for-any-any");
         });
       });
     });
@@ -734,13 +709,13 @@ describe("Adb module", function() {
 
         const adb = new Adb();
         return adb.format("cache").then(() => {
-          expectArgs("shell", "'cat /etc/recovery.fstab'");
-          expectArgs("shell", "'umount /cache'");
+          expectArgs("shell", "cat /etc/recovery.fstab");
+          expectArgs("shell", "umount /cache");
           expectArgs(
             "shell",
             "'make_ext4fs /dev/block/platform/mtk-msdc.0/by-name/cache'"
           );
-          expectArgs("shell", "'mount /cache'");
+          expectArgs("shell", "mount /cache");
         });
       });
       it("should be rejected if fstab can't be read", function() {
@@ -764,7 +739,7 @@ describe("Adb module", function() {
         stubExec();
         const adb = new Adb();
         return adb.wipeCache().then(() => {
-          expectArgs("shell", "'rm -rf /cache/*'");
+          expectArgs("shell", "rm -rf /cache/*");
         });
       });
       it("should reject if rm failed");
@@ -839,14 +814,14 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getFileSize("/wtf").then(size => {
           expect(size).to.eql(1337);
-          expectArgs("shell", "'du -shk /wtf'");
+          expectArgs("shell", "du -shk /wtf");
         });
       });
       it("should reject on invalid response file size", function(done) {
         stubExec(null, "invalid response :)");
         const adb = new Adb();
         adb.getFileSize().catch(() => {
-          expect(child_process.exec).to.have.been.calledOnce;
+          expect(child_process.execFile).to.have.been.calledOnce;
           done();
         });
       });
@@ -857,14 +832,14 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getAvailablePartitionSize("/wtf").then(size => {
           expect(size).to.eql(1337);
-          expectArgs("shell", "'df -k -P /wtf'");
+          expectArgs("shell", "df -k -P /wtf");
         });
       });
       it("should reject on invalid response", function(done) {
         stubExec(null, "invalid response :)");
         const adb = new Adb();
         adb.getAvailablePartitionSize("/wtf").catch(() => {
-          expect(child_process.exec).to.have.been.calledOnce;
+          expect(child_process.execFile).to.have.been.calledOnce;
           done();
         });
       });
@@ -872,7 +847,7 @@ describe("Adb module", function() {
         stubExec(69, "invalid response :)");
         const adb = new Adb();
         adb.getAvailablePartitionSize().catch(() => {
-          expect(child_process.exec).to.have.been.calledOnce;
+          expect(child_process.execFile).to.have.been.calledOnce;
           done();
         });
       });
@@ -883,14 +858,14 @@ describe("Adb module", function() {
         const adb = new Adb();
         return adb.getTotalPartitionSize("/wtf").then(size => {
           expect(size).to.eql(1337);
-          expectArgs("shell", "'df -k -P /wtf'");
+          expectArgs("shell", "df -k -P /wtf");
         });
       });
       it("should reject on invalid response", function(done) {
         stubExec(null, "invalid response :)");
         const adb = new Adb();
         adb.getTotalPartitionSize("/wtf").catch(() => {
-          expect(child_process.exec).to.have.been.calledOnce;
+          expect(child_process.execFile).to.have.been.calledOnce;
           done();
         });
       });
@@ -898,7 +873,7 @@ describe("Adb module", function() {
         stubExec(69, "invalid response :)");
         const adb = new Adb();
         adb.getTotalPartitionSize().catch(() => {
-          expect(child_process.exec).to.have.been.calledOnce;
+          expect(child_process.execFile).to.have.been.calledOnce;
           done();
         });
       });

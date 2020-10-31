@@ -34,12 +34,13 @@ const { getAndroidToolPath } = require("android-tools-bin");
 const { heimdallErrors } = require("../test-data/known_errors.js");
 
 function stubExec(error, stdout, stderr) {
-  sinon.stub(child_process, "exec").yields(error, stdout, stderr);
+  sinon.stub(child_process, "execFile").yields(error, stdout, stderr);
 }
 
 function expectArgs(...args) {
-  expect(child_process.exec).to.have.been.calledWith(
-    [getAndroidToolPath("heimdall"), ...args].join(" ")
+  expect(child_process.execFile).to.have.been.calledWith(
+    getAndroidToolPath("heimdall"),
+    args
   );
 }
 

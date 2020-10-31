@@ -36,6 +36,7 @@
   "homepage": "https://github.com/ubports/promise-android-tools#readme",
   "dependencies": {
     "android-tools-bin": "^1.0.4",
+    "cancelable-promise": "^3.2.0",
     "fs-extra": "^9.0.1"
   },
   "devDependencies": {

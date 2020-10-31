@@ -33,12 +33,13 @@ const { getAndroidToolPath } = require("android-tools-bin");
 const { fastbootErrors } = require("../test-data/known_errors.js");
 
 function stubExec(error, stdout, stderr) {
-  sinon.stub(child_process, "exec").yields(error, stdout, stderr);
+  sinon.stub(child_process, "execFile").yields(error, stdout, stderr);
 }
 
 function expectArgs(...args) {
-  expect(child_process.exec).to.have.been.calledWith(
-    [getAndroidToolPath("fastboot"), ...args].join(" ")
+  expect(child_process.execFile).to.have.been.calledWith(
+    getAndroidToolPath("fastboot"),
+    args
   );
 }
 
@@ -76,7 +77,7 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot();
         return fastboot.flash("boot", "/path/to/image").then(r => {
           expectArgs("flash", "boot", common.quotepath("/path/to/image"));
-          expect(child_process.exec).to.not.have.been.calledTwice;
+          expect(child_process.execFile).to.not.have.been.calledTwice;
         });
       });
       it("should reject if bootloader is locked", function(done) {

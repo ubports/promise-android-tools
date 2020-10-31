@@ -30,6 +30,7 @@ const child_process = require("child_process");
 
 const { Tool } = require("../../src/module.js");
 const { genericErrors } = require("../test-data/known_errors.js");
+const { kill } = require("process");
 
 const validOptions = [
   { tool: "adb" },
@@ -66,9 +67,7 @@ describe("Tool module", function() {
       it(`should resolve stdout if constructed with ${JSON.stringify(
         options
       )}`, function() {
-        const execStub = sinon
-          .stub(child_process, "exec")
-          .yields(undefined, "ok");
+        sinon.stub(child_process, "execFile").yields(undefined, "ok");
         const tool = new Tool(options);
         const args = ["these", "-are", "--all=valid", "./arguments"];
         const execListenerStub = sinon.stub();
@@ -79,8 +78,9 @@ describe("Tool module", function() {
             cmd: [tool.tool, ...tool.extra, ...args],
             stdout: "ok"
           });
-          expect(execStub).to.have.been.calledWith(
-            [tool.executable, ...tool.extra, ...args].join(" "),
+          expect(child_process.execFile).to.have.been.calledWith(
+            tool.executable,
+            [...tool.extra, ...args],
             tool.execOptions
           );
         });
@@ -88,7 +88,7 @@ describe("Tool module", function() {
     });
     it("should reject on error", function(done) {
       const execStub = sinon
-        .stub(child_process, "exec")
+        .stub(child_process, "execFile")
         .yields({ killed: true }, "uh oh", "terrible things");
       const tool = new Tool({ tool: "fastboot" });
       const execListenerStub = sinon.stub();
@@ -107,6 +107,23 @@ describe("Tool module", function() {
         );
         done();
       });
+    });
+    it("should allow cancelling", function(done) {
+      const killFake = sinon.stub().returns(true);
+      sinon.stub(child_process, "execFile").callsFake((...cpArgs) => ({
+        kill(sig) {
+          killFake(sig);
+          if (sig === "SIGKILL") cpArgs[3]();
+        }
+      }));
+      const tool = new Tool({ tool: "fastboot" });
+      const job = tool.exec("asdf").finally(() => {
+        expect(killFake).to.have.been.calledWith("SIGTERM");
+        expect(killFake).to.have.been.calledWith("SIGKILL");
+        expect(killFake).to.not.have.been.calledThrice;
+        done();
+      });
+      setTimeout(() => job.cancel(), 1);
     });
   });
 
