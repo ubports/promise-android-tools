@@ -70,3 +70,8 @@ jobs:
       run: |
         npm install
         npm run test-travis
+
+    - uses: actions/checkout@master
+    - uses: codecov/codecov-action@v1
+      with:
+        verbose: true
