@@ -356,39 +356,24 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   format(partition) {
-    const _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell("cat", "/etc/recovery.fstab")
-        .then(fstab => {
-          if (!fstab || typeof fstab !== "string") {
-            reject(new Error("unable to read recovery.fstab"));
-          } else {
-            const block = _this.findPartitionInFstab(partition, fstab);
-            _this
-              .shell("umount /" + partition)
-              .then(() => {
-                _this
-                  .shell("make_ext4fs " + block)
-                  .then(() => {
-                    _this
-                      .shell("mount /" + partition)
-                      .then(error => {
-                        if (error)
-                          reject(new Error("failed to mount: " + error));
-                        else resolve();
-                      })
-                      .catch(reject);
-                  })
-                  .catch(reject);
-              })
-              .catch(reject);
-          }
-        })
-        .catch(error => {
-          reject(new Error("failed to format " + partition + ": " + error));
-        });
-    });
+    return this.shell("cat", "/etc/recovery.fstab")
+      .then(fstab => {
+        if (!fstab || typeof fstab !== "string") {
+          throw new Error("unable to read recovery.fstab");
+        } else {
+          const block = this.findPartitionInFstab(partition, fstab);
+          return this.shell("umount /" + partition)
+            .then(() => this.shell("make_ext4fs " + block))
+            .then(() => this.shell("mount /" + partition))
+            .then(error => {
+              if (error) throw new Error("failed to mount: " + error);
+              else return;
+            });
+        }
+      })
+      .catch(error => {
+        throw new Error("failed to format " + partition + ": " + error);
+      });
   }
 
   /**
