@@ -177,10 +177,7 @@ class Adb extends Tool {
    * @returns {Promise<String>} stdout
    */
   shell(...args) {
-    return this.exec("shell", args.join(" ")).then(stdout => {
-      if (stdout) return stdout.trim();
-      else return;
-    });
+    return this.exec("shell", args.join(" ")).then(stdout => stdout?.trim());
   }
 
   /**
@@ -320,34 +317,26 @@ class Adb extends Tool {
    * @returns {Promise<String>} codename
    */
   getDeviceName() {
-    const _this = this;
-    return _this
-      .shell("getprop", "ro.product.device")
-      .then(stdout => {
-        if (!stdout || stdout.includes("getprop: not found")) {
-          throw null;
-        } else {
-          return stdout.replace(/\W/g, "");
-        }
-      })
-      .catch(e => {
-        return _this
-          .shell("cat", "default.prop")
+    return this.shell("getprop", "ro.product.device").then(stdout => {
+      if (!stdout || stdout?.includes("getprop: not found")) {
+        return this.shell("cat", "default.prop")
           .catch(e => {
             throw new Error("getprop error: " + e);
           })
           .then(stdout => {
             if (stdout && stdout.includes("ro.product.device=")) {
               return stdout
-                .split("\n")
-                .filter(p => p.includes("ro.product.device="))[0]
-                .replace("ro.product.device=", "")
+                .split("ro.product.device=")[1]
+                .split("\n")[0]
                 .trim();
             } else {
               throw new Error("unknown getprop error");
             }
           });
-      });
+      } else {
+        return stdout.trim();
+      }
+    });
   }
 
   /**

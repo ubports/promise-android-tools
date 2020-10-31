@@ -394,7 +394,7 @@ describe("Adb module", function() {
       });
     });
 
-    describe.skip("getDeviceName()", function() {
+    describe("getDeviceName()", function() {
       it("should get device name from getprop", function() {
         stubExec(null, "thisisadevicecodename");
         const adb = new Adb();
@@ -405,19 +405,21 @@ describe("Adb module", function() {
       });
       ["getprop: not found", null].forEach(response => {
         it("should cat default.prop on " + (response || "empty"), function() {
-          sinon.stub(child_process, "exec").callsFake((args, callback) => {
-            if (args.includes("getprop")) {
-              callback(null, response);
-            } else {
-              callback(
-                null,
-                "asdf=wasd\n" +
-                  "1=234\n" +
-                  "ro.product.device=thisisadevicecodename\n" +
-                  "something=somethingelse"
-              );
-            }
-          });
+          sinon
+            .stub(child_process, "execFile")
+            .callsFake((executable, args, options, callback) => {
+              if (args.includes("getprop ro.product.device")) {
+                callback(null, response);
+              } else {
+                callback(
+                  null,
+                  "asdf=wasd\r\n" +
+                    "1=234\r\n" +
+                    "ro.product.device=thisisadevicecodename\r\n" +
+                    "something=somethingelse\r\n"
+                );
+              }
+            });
 
           const adb = new Adb();
           return adb.getDeviceName().then(r => {
@@ -435,10 +437,12 @@ describe("Adb module", function() {
         });
       });
       it("should reject on error", function() {
-        sinon.stub(child_process, "exec").callsFake((args, callback) => {
-          if (args.includes("getprop")) callback();
-          else callback({ error: "something broke" });
-        });
+        sinon
+          .stub(child_process, "execFile")
+          .callsFake((executable, args, options, callback) => {
+            if (args.includes("getprop ro.product.device")) callback();
+            else callback({ error: "something broke" });
+          });
 
         const adb = new Adb();
         return adb.getDeviceName().catch(e => {
@@ -450,13 +454,15 @@ describe("Adb module", function() {
         });
       });
       it("should reject if default.prop didn't include ro.product.device", function() {
-        sinon.stub(child_process, "exec").callsFake((args, callback) => {
-          if (args.includes("getprop")) {
-            callback();
-          } else {
-            callback(null, "asdf=wasd\n1=234\nsomething=somethingelse");
-          }
-        });
+        sinon
+          .stub(child_process, "execFile")
+          .callsFake((executable, args, options, callback) => {
+            if (args.includes("getprop ro.product.device")) {
+              callback();
+            } else {
+              callback(null, "asdf=wasd\n1=234\nsomething=somethingelse");
+            }
+          });
 
         const adb = new Adb();
         return adb.getDeviceName().catch(e => {
@@ -525,16 +531,18 @@ describe("Adb module", function() {
       });
     });
 
-    describe.skip("format()", function() {
+    describe("format()", function() {
       it("should format partition", function() {
-        sinon.stub(child_process, "exec").callsFake((args, callback) => {
-          if (args.includes("/etc/recovery.fstab"))
-            callback(
-              null,
-              "/dev/block/platform/mtk-msdc.0/by-name/cache /cache"
-            );
-          callback();
-        });
+        sinon
+          .stub(child_process, "execFile")
+          .callsFake((executable, args, options, callback) => {
+            if (args.includes("cat /etc/recovery.fstab"))
+              callback(
+                null,
+                "/dev/block/platform/mtk-msdc.0/by-name/cache /cache"
+              );
+            callback();
+          });
 
         const adb = new Adb();
         return adb.format("cache").then(() => {
@@ -542,7 +550,7 @@ describe("Adb module", function() {
           expectArgs("shell", "umount /cache");
           expectArgs(
             "shell",
-            "'make_ext4fs /dev/block/platform/mtk-msdc.0/by-name/cache'"
+            "make_ext4fs /dev/block/platform/mtk-msdc.0/by-name/cache"
           );
           expectArgs("shell", "mount /cache");
         });
