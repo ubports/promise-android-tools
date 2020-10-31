@@ -73,6 +73,6 @@ jobs:
 
     - name: codecov.io
       uses: codecov/codecov-action@v1
-      file: coverage/lcov.info
       with:
+        file: coverage/lcov.info
         verbose: true
