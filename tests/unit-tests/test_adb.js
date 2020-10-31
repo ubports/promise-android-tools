@@ -244,7 +244,47 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject if device is out of space");
+      it("should reject on inaccessible file", function(done) {
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(666, "SIGTERM"), 10)),
+          stdout: {
+            on: sinon.fake((_, cb) =>
+              cb("adb: error: cannot stat: 'file' No such file or directory")
+            )
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => cb("b"))
+          }
+        };
+        sinon.stub(child_process, "spawn").callsFake(() => child);
+        const adb = new Adb();
+        const progress = sinon.fake();
+        adb.push(["tests/test-data/test_file"], null, progress).catch(e => {
+          expect(child_process.spawn).to.not.have.been.calledTwice;
+          expect(progress).to.have.been.calledWith(0);
+          expect(progress).to.not.have.been.calledTwice;
+          expectReject(e, "file not found");
+          done();
+        });
+      });
+      it("should be cancelable", function() {
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake(),
+          stdout: {
+            on: sinon.fake((_, cb) => cb("a"))
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => cb("b"))
+          },
+          kill: sinon.fake()
+        };
+        sinon.stub(child_process, "spawn").callsFake(() => child);
+        const adb = new Adb();
+        const cp = adb.push(["tests/test-data/test_file"]);
+        cp.cancel();
+      });
       it("should reject if file is inaccessible");
       it("should reject on bad file number");
       it("should reject on connection lost");
