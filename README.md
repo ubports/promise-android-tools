@@ -1,6 +1,4 @@
-# promise-android-tools
-
-[![Build Status](https://travis-ci.org/ubports/promise-android-tools.svg?branch=master)](https://travis-ci.org/ubports/promise-android-tools) [![Coverage Status](https://coveralls.io/repos/github/ubports/promise-android-tools/badge.svg?branch=master)](https://coveralls.io/github/ubports/promise-android-tools?branch=master) [![Build status](https://ci.appveyor.com/api/projects/status/wmjs1hijnnpknp9w?svg=true)](https://ci.appveyor.com/project/NeoTheThird/promise-android-tools)
+# promise-android-tools ![Continuous Integration](https://github.com/ubports/promise-android-tools/workflows/Continuous%20Integration/badge.svg) [![npm](https://img.shields.io/npm/v/promise-android-tools)](https://www.npmjs.com/package/promise-android-tools) [![Coverage Status](https://coveralls.io/repos/github/ubports/promise-android-tools/badge.svg?branch=master)](https://coveralls.io/github/ubports/promise-android-tools?branch=master)
 
 A wrapper for adb and fastboot that returns convenient promises.
 
