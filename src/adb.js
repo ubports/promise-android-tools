@@ -60,7 +60,8 @@ class Adb extends Tool {
       stdout?.includes("no devices/emulators found") ||
       stdout?.includes("adb: error: failed to read copy response") ||
       stdout?.includes("couldn't read from device") ||
-      stdout?.includes("remote Bad file number")
+      stdout?.includes("remote Bad file number") ||
+      stdout?.includes("remote Broken pipe")
     ) {
       return "no device";
     } else {
@@ -536,15 +537,17 @@ class Adb extends Tool {
   /**
    * [EXPERIMENTAL] Restore tar "srcfile"
    * @param {String} srcfile file to restore
+   * @param {Function} progress progress callback
    * @returns {Promise}
    */
-  restoreBackupTar(srcfile) {
+  restoreBackupTar(srcfile, progress = () => {}) {
+    progress();
     return this.ensureState("recovery")
       .then(() => this.shell("mkfifo /restore.pipe"))
       .then(() =>
         Promise.all([
-          this.push([srcfile], "/restore.pipe"),
-          this.shell("'cd /; cat /restore.pipe | tar -xvz'")
+          this.push([srcfile], "/restore.pipe", progress),
+          this.shell("cd /;", "cat /restore.pipe | tar -xvz")
         ])
       )
       .then(() => this.shell("rm", "/restore.pipe"))

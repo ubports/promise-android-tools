@@ -868,12 +868,30 @@ describe("Adb module", function() {
         sinon.stub(adb, "execOut").resolves();
         const progress = sinon.spy();
         return adb.createBackupTar("src", "dest", progress).then(r => {
-          expect(r).to.eql(undefined)
-        })
+          expect(r).to.eql(undefined);
+        });
       });
     });
     describe("restoreBackupTar()", function() {
-      it("should restore backup tar image");
+      it("should restore backup tar image", function() {
+        const adb = new Adb();
+        sinon.stub(adb, "ensureState").resolves("recovery");
+        sinon.stub(adb, "shell").resolves();
+        sinon.stub(adb, "push").resolves();
+        const progress = sinon.spy();
+        return adb.restoreBackupTar("src", progress).then(r => {
+          expect(r).to.eql(undefined);
+        });
+      });
+      it("should reject on error", function(done) {
+        const adb = new Adb();
+        sinon.stub(adb, "ensureState").rejects(new Error("oh no!"));
+        adb.restoreBackupTar("src").catch(e => {
+          expect;
+          expectReject(e, "Restore failed: Error: oh no!");
+          done();
+        });
+      });
     });
     describe("listUbuntuBackups()", function() {
       it("should list backups", function() {
