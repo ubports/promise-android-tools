@@ -861,7 +861,16 @@ describe("Adb module", function() {
       });
     });
     describe("createBackupTar()", function() {
-      it("should create backup tar image");
+      it("should create backup tar image", function() {
+        const adb = new Adb();
+        sinon.stub(adb, "getFileSize").resolves(50);
+        sinon.stub(fs, "statSync").returns(25);
+        sinon.stub(adb, "execOut").resolves();
+        const progress = sinon.spy();
+        return adb.createBackupTar("src", "dest", progress).then(r => {
+          expect(r).to.eql(undefined)
+        })
+      });
     });
     describe("restoreBackupTar()", function() {
       it("should restore backup tar image");

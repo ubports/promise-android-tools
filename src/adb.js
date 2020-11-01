@@ -503,51 +503,34 @@ class Adb extends Tool {
    * @param {String} srcfile file to back up
    * @param {String} destfile target destination
    * @param {Function} progress progress function
+   * @async
    * @returns {Promise}
    */
-  createBackupTar(srcfile, destfile, progress) {
-    return Promise.all([
-      this.ensureState("recovery")
-        .then(() => this.shell("mkfifo /backup.pipe"))
-        .then(() => this.getFileSize(srcfile)),
-      fs.ensureFile(destfile)
-    ])
-      .then(([fileSize]) => {
-        progress(0);
-        // FIXME with gzip compression (the -z flag on tar), the progress estimate is way off. It's still beneficial to enable it, because it saves a lot of space.
-        const progressInterval = setInterval(() => {
-          const { size } = fs.statSync(destfile);
-          progress((size / 1024 / fileSize) * 100);
-        }, 1000);
-
-        // FIXME replace shell pipe to dd with node stream
-        return Promise.all([
-          this.exec(
-            "exec-out 'tar -cpz " +
-              "--exclude=*/var/cache " +
-              "--exclude=*/var/log " +
-              "--exclude=*/.cache/upstart " +
-              "--exclude=*/.cache/*.qmlc " +
-              "--exclude=*/.cache/*/qmlcache " +
-              "--exclude=*/.cache/*/qml_cache",
-            srcfile,
-            " 2>/backup.pipe' | dd of=" + destfile
-          ),
-          this.shell("cat /backup.pipe")
-        ])
-          .then(() => {
-            clearInterval(progressInterval);
-            progress(100);
-          })
-          .catch(e => {
-            clearInterval(progressInterval);
-            throw new Error(e);
-          });
-      })
-      .then(() => this.shell("rm /backup.pipe"))
-      .catch(e => {
-        throw new Error(`Backup failed: ${e}`);
-      });
+  async createBackupTar(srcfile, destfile, progress) {
+    progress(0);
+    const stream = fs.createWriteStream(destfile);
+    const fileSize = await this.getFileSize(srcfile);
+    // FIXME with gzip compression (the -z flag on tar), the progress estimate is way off. It's still beneficial to enable it, because it saves a lot of space.
+    let timeout;
+    function poll() {
+      const { size } = fs.statSync(destfile);
+      progress(size / 1024 / fileSize);
+      timeout = setTimeout(poll, 1000);
+    }
+    poll();
+    return this.execOut(
+      stream,
+      "tar",
+      "-cpz",
+      "--exclude=*/var/cache ",
+      "--exclude=*/var/log ",
+      "--exclude=*/.cache/upstart ",
+      "--exclude=*/.cache/*.qmlc ",
+      "--exclude=*/.cache/*/qmlcache ",
+      "--exclude=*/.cache/*/qml_cache",
+      srcfile,
+      "2>/dev/null"
+    ).finally(() => clearTimeout(timeout));
   }
 
   /**
