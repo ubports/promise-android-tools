@@ -234,11 +234,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   sideload(file) {
-    return this.exec(
-      "sideload",
-      common.quotepath(file),
-      common.stdoutFilter("%)")
-    );
+    return this.exec("sideload", common.quotepath(file));
   }
 
   /**

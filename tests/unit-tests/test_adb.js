@@ -439,11 +439,7 @@ describe("Adb module", function() {
         stubExec();
         const adb = new Adb();
         return adb.sideload("tests/test-data/test_file").then(() => {
-          expectArgs(
-            "sideload",
-            common.quotepath("tests/test-data/test_file"),
-            common.stdoutFilter("%)")
-          );
+          expectArgs("sideload", common.quotepath("tests/test-data/test_file"));
         });
       });
       it("should reject if no package specified");
