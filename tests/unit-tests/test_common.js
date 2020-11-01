@@ -18,8 +18,9 @@
  */
 
 const chai = require("chai");
-var sinonChai = require("sinon-chai");
-var expect = chai.expect;
+const sinon = require("sinon");
+const sinonChai = require("sinon-chai");
+const expect = chai.expect;
 chai.use(sinonChai);
 
 const common = require("../../src/common.js");
@@ -33,6 +34,16 @@ describe("Common module", function() {
           : '"some/path with/ spaces"'
       );
     });
+    [
+      { platform: "darwin", q: "'" },
+      { platform: "linux", q: '"' },
+      { platform: "win32", q: '"' }
+    ].forEach(p =>
+      it(`should use ${p.q} on ${p.platform}`, function() {
+        sinon.stub(process, "platform").value(p.platform);
+        expect(common.quotepath("a")).to.eql(`${p.q}a${p.q}`);
+      })
+    );
   });
   describe("removeFalsy()", function() {
     it("should remove falsy values from an object", function() {
