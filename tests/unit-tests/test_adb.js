@@ -865,6 +865,7 @@ describe("Adb module", function() {
         const adb = new Adb();
         sinon.stub(adb, "getFileSize").resolves(50);
         sinon.stub(fs, "statSync").returns(25);
+        sinon.stub(fs, "createWriteStream").returns();
         sinon.stub(adb, "execOut").resolves();
         const progress = sinon.spy();
         return adb.createBackupTar("src", "dest", progress).then(r => {
