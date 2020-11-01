@@ -86,7 +86,7 @@ class Fastboot extends Tool {
       raw ? "flash:raw" : "flash",
       partition,
       ...flags,
-      common.quotepath(file)
+      file
     ).catch(error => {
       throw new Error(`flashing failed: ${error}`);
     });

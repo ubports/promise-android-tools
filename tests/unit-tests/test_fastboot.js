@@ -76,7 +76,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.flash("boot", "/path/to/image").then(r => {
-          expectArgs("flash", "boot", common.quotepath("/path/to/image"));
+          expectArgs("flash", "boot", "/path/to/image");
           expect(child_process.execFile).to.not.have.been.calledTwice;
         });
       });
@@ -85,7 +85,7 @@ describe("Fastboot module", function() {
         const fastboot = new Fastboot();
         fastboot.flash("boot", "/path/to/image").catch(error => {
           expectReject(error, "flashing failed: Error: bootloader is locked");
-          expectArgs("flash", "boot", common.quotepath("/path/to/image"));
+          expectArgs("flash", "boot", "/path/to/image");
           done();
         });
       });
@@ -106,7 +106,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.flashRaw("boot", "/path/to/image").then(() => {
-          expectArgs("flash:raw", "boot", common.quotepath("/path/to/image"));
+          expectArgs("flash:raw", "boot", "/path/to/image");
         });
       });
       it("should resolve if force-flashed raw image successfully", function() {
@@ -120,7 +120,7 @@ describe("Fastboot module", function() {
               "boot",
               "--force",
               "--disable-verity",
-              common.quotepath("/path/to/image")
+              "/path/to/image"
             );
           });
       });
@@ -379,15 +379,15 @@ describe("Fastboot module", function() {
             }
           ])
           .then(r => {
-            expectArgs("flash", "p1", common.quotepath("f1"));
-            expectArgs("flash:raw", "p2", common.quotepath("f2"));
-            expectArgs("flash:raw", "p3", "--force", common.quotepath("f3"));
+            expectArgs("flash", "p1", "f1");
+            expectArgs("flash:raw", "p2", "f2");
+            expectArgs("flash:raw", "p3", "--force", "f3");
             expectArgs(
               "flash",
               "p4",
               "--disable-verification",
               "--disable-verity",
-              common.quotepath("f4")
+              "f4"
             );
           });
       });
