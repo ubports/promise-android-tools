@@ -285,17 +285,6 @@ describe("Adb module", function() {
         const cp = adb.push(["tests/test-data/test_file"]);
         cp.cancel();
       });
-      it("should reject if file is inaccessible");
-      it("should reject on bad file number");
-      it("should reject on connection lost");
-      it(
-        "should reject with original error on connection lost and device detection rejected"
-      );
-      it(
-        "should reject with original error on connection lost and device detected"
-      );
-      it("should reject on unknown error");
-      it("should survive if stat failed");
     });
 
     describe("sync()", function() {

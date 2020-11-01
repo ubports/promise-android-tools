@@ -146,6 +146,46 @@ class Tool extends EventEmitter {
       ).replace(new RegExp(this.executable, "g"), this.tool);
     }
   }
+
+  /**
+   * Find out if a device can be seen
+   * @virtual
+   * @returns {CancelablePromise<Boolean>} access?
+   */
+  hasAccess() {
+    return CancelablePromise.reject(new Error("virtual"));
+  }
+
+  /**
+   * Wait for a device
+   * @returns {CancelablePromise}
+   */
+  wait() {
+    var _this = this;
+    return new CancelablePromise(function(resolve, reject, onCancel) {
+      let access;
+      function poll() {
+        _this
+          .hasAccess()
+          .then(access => {
+            if (access) {
+              clearTimeout(access);
+              resolve();
+            } else {
+              access = setTimeout(poll, 500);
+            }
+          })
+          .catch(error => {
+            if (error) {
+              clearTimeout(access);
+              reject(error);
+            }
+          });
+      }
+      onCancel(() => clearTimeout(access));
+      poll();
+    });
+  }
 }
 
 module.exports = Tool;

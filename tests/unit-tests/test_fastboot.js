@@ -428,41 +428,5 @@ describe("Fastboot module", function() {
         );
       });
     });
-    describe("waitForDevice()", function() {
-      it("should resolve when a device is detected", function() {
-        stubExec(null, "0123456789ABCDEF	fastboot");
-        const fastboot = new Fastboot();
-        return fastboot.waitForDevice(1).then(r => {
-          expectArgs("devices");
-        });
-      });
-      it("should reject on error", function() {
-        stubExec(true, "everything exploded");
-        const fastboot = new Fastboot();
-        return expect(fastboot.waitForDevice(5, 10)).to.be.rejectedWith(
-          "everything exploded"
-        );
-      });
-      it("should reject on timeout", function() {
-        stubExec();
-        const fastboot = new Fastboot();
-        return expect(fastboot.waitForDevice(5, 10)).to.be.rejectedWith(
-          "no device: timeout"
-        );
-      });
-    });
-    describe("stopWaiting()", function() {
-      it("should cause waitForDevice() to reject", function() {
-        stubExec();
-        const fastboot = new Fastboot();
-        return new Promise(function(resolve, reject) {
-          const wait = fastboot.waitForDevice(5);
-          setTimeout(() => {
-            fastboot.stopWaiting();
-            resolve(expect(wait).to.be.rejectedWith("stopped waiting"));
-          }, 10);
-        });
-      });
-    });
   });
 });

@@ -200,4 +200,24 @@ describe("Tool module", function() {
       })
     );
   });
+
+  describe("wait()", function() {
+    it("should resolve when a device is detected", function() {
+      const tool = new Tool({ tool: "adb" });
+      sinon.stub(tool, "hasAccess").resolves(true);
+      return tool.wait().then(r => {
+        expect(r).to.eql(undefined);
+      });
+    });
+    it("should reject on error", function() {
+      const tool = new Tool({ tool: "adb" });
+      return expect(tool.wait()).to.be.rejectedWith("virtual");
+    });
+    it("should be cancelable", function() {
+      const tool = new Tool({ tool: "adb" });
+      sinon.stub(tool, "hasAccess").resolves(false);
+      const cp = tool.wait().catch(() => {});
+      cp.cancel();
+    });
+  });
 });

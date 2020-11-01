@@ -17,11 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const events = require("events");
 const common = require("./common.js");
 const Tool = require("./tool.js");
-
-class Event extends events {}
+const { CancelablePromise } = require("cancelable-promise");
 
 /**
  * heimdall: flash firmware on samsung devices
@@ -32,7 +30,6 @@ class Heimdall extends Tool {
       tool: "heimdall",
       ...options
     });
-    this.heimdallEvent = new Event();
   }
 
   /**
@@ -81,51 +78,6 @@ class Heimdall extends Tool {
           throw error;
         }
       });
-  }
-
-  /**
-   * Wait for a device
-   * @param {Integer} interval how often to try
-   * @param {Integer} timeout how long to try
-   */
-  waitForDevice(interval, timeout) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      const accessInterval = setInterval(() => {
-        _this
-          .hasAccess()
-          .then(access => {
-            if (access) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              resolve();
-            }
-          })
-          .catch(error => {
-            if (error) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              reject(error);
-            }
-          });
-      }, interval || 2000);
-      const accessTimeout = setTimeout(() => {
-        clearInterval(accessInterval);
-        reject(new Error("no device: timeout"));
-      }, timeout || 60000);
-      _this.heimdallEvent.once("stop", () => {
-        clearInterval(accessInterval);
-        clearTimeout(accessTimeout);
-        reject(new Error("stopped waiting"));
-      });
-    });
-  }
-
-  /**
-   * Stop waiting for a device
-   */
-  stopWaiting() {
-    this.heimdallEvent.emit("stop");
   }
 
   /**

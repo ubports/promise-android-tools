@@ -17,11 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const events = require("events");
 const common = require("./common.js");
 const Tool = require("./tool.js");
-
-class Event extends events {}
 
 /**
  * fastboot android flashing and booting utility
@@ -32,7 +29,6 @@ class Fastboot extends Tool {
       tool: "fastboot",
       ...options
     });
-    this.fastbootEvent = new Event();
   }
 
   /**
@@ -318,52 +314,6 @@ class Fastboot extends Tool {
       .catch(error => {
         throw error;
       });
-  }
-
-  /**
-   * Wait for a device
-   * @param {Integer} interval how often to poll
-   * @param {Integer} timeout how long to try
-   * @returns {Promise}
-   */
-  waitForDevice(interval, timeout) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      const accessInterval = setInterval(() => {
-        _this
-          .hasAccess()
-          .then(access => {
-            if (access) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              resolve();
-            }
-          })
-          .catch(error => {
-            if (error) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              reject(error);
-            }
-          });
-      }, interval || 2000);
-      const accessTimeout = setTimeout(() => {
-        clearInterval(accessInterval);
-        reject(new Error("no device: timeout"));
-      }, timeout || 60000);
-      _this.fastbootEvent.once("stop", () => {
-        clearInterval(accessInterval);
-        clearTimeout(accessTimeout);
-        reject(new Error("stopped waiting"));
-      });
-    });
-  }
-
-  /**
-   * Stop waiting for a device
-   */
-  stopWaiting() {
-    this.fastbootEvent.emit("stop");
   }
 }
 

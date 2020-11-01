@@ -44,6 +44,11 @@ function expectArgs(...args) {
   );
 }
 
+function expectReject(error, message) {
+  expect(error).to.be.instanceOf(Error);
+  expect(error).to.haveOwnProperty("message", message);
+}
+
 const printPitFromDevice = `Heimdall v1.4.0
 
 a lot of bullshit text goes here...
@@ -158,7 +163,18 @@ describe("Heimdall module", function() {
           expectArgs("print-pit");
         });
       });
-      it("should print pit file");
+      it("should print pit file", function() {
+        stubExec(null, printPitFromDevice);
+        const heimdall = new Heimdall();
+        return heimdall.printPit("/test/test-data/test_file").then(r => {
+          expect(r.length).to.eql(3);
+          expectArgs(
+            "print-pit",
+            "--file",
+            common.quotepath("/test/test-data/test_file")
+          );
+        });
+      });
       it("should reject on error", function() {
         stubExec(
           true,
@@ -242,48 +258,6 @@ describe("Heimdall module", function() {
         heimdall.hasAccess = sinon.spy();
         heimdall.detect();
         expect(heimdall.hasAccess).to.have.been.called;
-      });
-    });
-    describe("waitForDevice()", function() {
-      it("should resolve when a device is detected", function() {
-        stubExec(null, "0123456789ABCDEF	heimdall");
-        const heimdall = new Heimdall();
-        return heimdall.waitForDevice(1).then(r => {
-          expectArgs("detect");
-        });
-      });
-      it("should reject on error", function() {
-        stubExec(true, "everything exploded");
-        const heimdall = new Heimdall();
-        return expect(heimdall.waitForDevice(5, 10)).to.be.rejectedWith(
-          "everything exploded"
-        );
-      });
-      it("should reject on timeout", function() {
-        stubExec(
-          true,
-          "ERROR: Failed to detect compatible download-mode device."
-        );
-        const heimdall = new Heimdall();
-        return expect(heimdall.waitForDevice(5, 10)).to.be.rejectedWith(
-          "no device: timeout"
-        );
-      });
-    });
-    describe("stopWaiting()", function() {
-      it("should cause waitForDevice() to reject", function() {
-        stubExec(
-          true,
-          "ERROR: Failed to detect compatible download-mode device."
-        );
-        const heimdall = new Heimdall();
-        return new Promise(function(resolve, reject) {
-          const wait = heimdall.waitForDevice(5);
-          setTimeout(() => {
-            heimdall.stopWaiting();
-            resolve(expect(wait).to.be.rejectedWith("stopped waiting"));
-          }, 10);
-        });
       });
     });
   });
