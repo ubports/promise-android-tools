@@ -95,6 +95,7 @@ class Tool extends EventEmitter {
       this.executable,
       [...this.extra, ...args].flat(),
       {
+        shell: true,
         env: {
           ADB_TRACE: "rwx"
         }

@@ -477,7 +477,29 @@ class Adb extends Tool {
   }
 
   /**
-   * Backup "srcfile" from the device to local tar "destfile"
+   * [EXPERIMENTAL] Run a command via adb exec-out and pipe the result to a stream
+   * @param {steam.writable} writableStream e.g. fs.createWriteStream() to write to a file
+   * @param  {...any} args command to execute
+   * @returns {Promise}
+   */
+  execOut(writableStream, ...args) {
+    const _this = this;
+    return new Promise(function(resolve, reject) {
+      let stderr = "";
+      const cp = _this.spawn("exec-out", `'${args.join(" ")}'`);
+      cp.stdout.pipe(writableStream);
+      cp.stderr.on("data", d => (stderr += d.toString()));
+      cp.once("exit", (code, signal) => {
+        writableStream.close();
+        if (code || signal)
+          reject(new Error(_this.handleError({ code, signal }, null, stderr)));
+        else resolve();
+      });
+    });
+  }
+
+  /**
+   * [EXPERIMENTAL] Backup "srcfile" from the device to local tar "destfile"
    * @param {String} srcfile file to back up
    * @param {String} destfile target destination
    * @param {Function} progress progress function
@@ -529,7 +551,7 @@ class Adb extends Tool {
   }
 
   /**
-   * Restore tar "srcfile"
+   * [EXPERIMENTAL] Restore tar "srcfile"
    * @param {String} srcfile file to restore
    * @returns {Promise}
    */

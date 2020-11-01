@@ -813,6 +813,53 @@ describe("Adb module", function() {
   });
 
   describe("backup and restore", function() {
+    describe("execOut()", function() {
+      it("should pipe to stream and resolve", function() {
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 10)),
+          stdout: {
+            pipe: sinon.spy()
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => cb("something"))
+          }
+        };
+        sinon.stub(child_process, "spawn").callsFake(() => child);
+        const adb = new Adb();
+        const stream = {
+          close: sinon.spy()
+        };
+        return adb.execOut(stream, "echo hello world").then(r => {
+          expect(r).to.eql(undefined);
+          expect(stream.close).to.have.been.called;
+          expect(child.stdout.pipe).to.have.been.calledWith(stream);
+        });
+      });
+      it("should reject on error", function(done) {
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(1, null), 10)),
+          stdout: {
+            pipe: sinon.spy()
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => cb("something"))
+          }
+        };
+        sinon.stub(child_process, "spawn").callsFake(() => child);
+        const adb = new Adb();
+        const stream = {
+          close: sinon.spy()
+        };
+        adb.execOut(stream, "echo hello world").catch(e => {
+          expectReject(e, '{"error":{"code":1},"stderr":"something"}');
+          expect(stream.close).to.have.been.called;
+          expect(child.stdout.pipe).to.have.been.calledWith(stream);
+          done();
+        });
+      });
+    });
     describe("createBackupTar()", function() {
       it("should create backup tar image");
     });
@@ -931,7 +978,7 @@ describe("Adb module", function() {
     });
     it("should reject on error", function(done) {
       stubExec(1, "something went wrong");
-      sinon.stub(fs, "readJSON").resolves({ a: "b"});
+      sinon.stub(fs, "readJSON").resolves({ a: "b" });
       const adb = new Adb();
       sinon.stub(adb, "ensureState").resolvesArg(0);
       adb.restoreUbuntuTouchBackup("/tmp").catch(e => {
