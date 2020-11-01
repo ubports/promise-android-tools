@@ -813,6 +813,12 @@ describe("Adb module", function() {
   });
 
   describe("backup and restore", function() {
+    describe("createBackupTar()", function() {
+      it("should create backup tar image");
+    });
+    describe("restoreBackupTar()", function() {
+      it("should restore backup tar image");
+    });
     describe("listUbuntuBackups()", function() {
       it("should list backups", function() {
         sinon.stub(fs, "readdir").resolves(["a", "b"]);
@@ -829,6 +835,111 @@ describe("Adb module", function() {
         sinon.stub(fs, "readdir").resolves([]);
         const adb = new Adb();
         adb.listUbuntuBackups().then(r => expect(r).to.eql([]));
+      });
+    });
+  });
+  describe("createUbuntuTouchBackup()", function() {
+    it("should create backup", function() {
+      stubExec(1, "should not be called");
+      sinon.stub(fs, "ensureDir").resolves();
+      sinon.useFakeTimers({});
+      const adb = new Adb();
+      sinon.stub(adb, "createBackupTar").resolves();
+      sinon.stub(adb, "ensureState").resolves("recovery");
+      sinon.stub(adb, "shell").resolves();
+      sinon.stub(adb, "getDeviceName").resolves("codename");
+      sinon.stub(adb, "getSerialno").resolves("1337");
+      sinon.stub(adb, "getFileSize").resolves("1337");
+      sinon.stub(fs, "writeJSON").resolvesArg(1);
+      return adb.createUbuntuTouchBackup("/tmp").then(r => {
+        expect(r).to.eql({
+          codename: "codename",
+          comment: "Ubuntu Touch backup created on 1970-01-01T00:00:00.000Z",
+          dir: `/tmp/1970-01-01T00:00:00.000Z`,
+          restorations: [],
+          serialno: "1337",
+          size: "13371337",
+          time: new Date()
+        });
+      });
+    });
+    it("should reject if backup failed", function(done) {
+      stubExec(1, "should not be called");
+      sinon.stub(fs, "ensureDir").resolves();
+      const adb = new Adb();
+      sinon.stub(adb, "createBackupTar").resolves();
+      sinon.stub(adb, "ensureState").resolves("recovery");
+      sinon.stub(adb, "shell").resolves();
+      sinon.stub(adb, "getDeviceName").resolves("codename");
+      sinon.stub(adb, "getSerialno").resolves("1337");
+      sinon.stub(adb, "getFileSize").resolves("1337");
+      adb.createUbuntuTouchBackup("/tmp").catch(e => {
+        expect(e.message).to.include(
+          "Failed to restore: Error: ENOENT: no such file or directory, open"
+        );
+        done();
+      });
+    });
+    it("should reject on invalid args", function(done) {
+      stubExec(1, "should not be called");
+      const adb = new Adb();
+      adb.createUbuntuTouchBackup().catch(r => {
+        console.log("here", r);
+        done();
+      });
+    });
+  });
+  describe("restoreUbuntuTouchBackup()", function() {
+    it("should restore full backup", function() {
+      stubExec(1, "should not be called");
+      sinon.useFakeTimers({});
+      sinon.stub(fs, "readJSON").returns({
+        codename: "codename",
+        comment: "Ubuntu Touch backup created on 1970-01-01T00:00:00.000Z",
+        dir: `/tmp/1970-01-01T00:00:00.000Z`,
+        restorations: [],
+        serialno: "1337",
+        size: "13371337",
+        time: new Date()
+      });
+      sinon.stub(fs, "writeJSON").resolvesArg(1);
+      const adb = new Adb();
+      sinon.stub(adb, "ensureState").resolves("recovery");
+      sinon.stub(adb, "getDeviceName").resolves("codename");
+      sinon.stub(adb, "getSerialno").resolves("1337");
+      sinon.stub(adb, "restoreBackupTar").resolves();
+      sinon.stub(adb, "reboot").resolves();
+      return adb
+        .restoreUbuntuTouchBackup("/tmp/1970-01-01T00:00:00.000Z")
+        .then(r => {
+          expect(r).to.eql({
+            codename: "codename",
+            comment: "Ubuntu Touch backup created on 1970-01-01T00:00:00.000Z",
+            restorations: [
+              {
+                codename: "codename",
+                serialno: "1337",
+                time: "1970-01-01T00:00:00.000Z"
+              }
+            ],
+            dir: `/tmp/1970-01-01T00:00:00.000Z`,
+            serialno: "1337",
+            size: "13371337",
+            time: new Date()
+          });
+        });
+    });
+    it("should reject on error", function(done) {
+      stubExec(1, "something went wrong");
+      sinon.stub(fs, "readJSON").resolves({ a: "b"});
+      const adb = new Adb();
+      sinon.stub(adb, "ensureState").resolvesArg(0);
+      adb.restoreUbuntuTouchBackup("/tmp").catch(e => {
+        expectReject(
+          e,
+          'Failed to restore: Error: {"error":1,"stdout":"something went wrong"}'
+        );
+        done();
       });
     });
   });

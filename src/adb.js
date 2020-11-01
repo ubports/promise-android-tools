@@ -586,6 +586,7 @@ class Adb extends Tool {
     dataPartition = "/data",
     progress = () => {}
   ) {
+    progress(0);
     const time = new Date();
     const dir = path.join(backupBaseDir, time.toISOString());
     return this.ensureState("recovery")
