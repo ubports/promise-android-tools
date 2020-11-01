@@ -929,7 +929,7 @@ describe("Adb module", function() {
         expect(r).to.eql({
           codename: "codename",
           comment: "Ubuntu Touch backup created on 1970-01-01T00:00:00.000Z",
-          dir: `/tmp/1970-01-01T00:00:00.000Z`,
+          dir: path.join("/tmp", "1970-01-01T00:00:00.000Z"),
           restorations: [],
           serialno: "1337",
           size: "13371337",
