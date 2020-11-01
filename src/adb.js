@@ -234,6 +234,7 @@ class Adb extends Tool {
    * @returns {Promise}
    */
   sideload(file) {
+    // TODO adopt child_process.spawn
     return this.exec("sideload", common.quotepath(file));
   }
 
@@ -559,9 +560,9 @@ class Adb extends Tool {
         Promise.all(
           backups.map(backup =>
             fs
-              .readFile(path.join(backupBaseDir, backup, "metadata.json"))
-              .then(metadataBuffer => ({
-                ...JSON.parse(metadataBuffer.toString()),
+              .readJSON(path.join(backupBaseDir, backup, "metadata.json"))
+              .then(metadata => ({
+                ...metadata,
                 dir: path.join(backupBaseDir, backup)
               }))
               .catch(() => null)
@@ -638,9 +639,7 @@ class Adb extends Tool {
    */
   async restoreUbuntuTouchBackup(dir, progress = () => {}) {
     progress(0); // FIXME report actual push progress
-    let metadata = JSON.parse(
-      await fs.readFile(path.join(dir, "metadata.json"))
-    );
+    let metadata = await fs.readJSON(path.join(dir, "metadata.json"));
     return this.ensureState("recovery")
       .then(async () => {
         metadata.restorations = metadata.restorations || [];

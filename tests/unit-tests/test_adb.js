@@ -26,6 +26,8 @@ chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const child_process = require("child_process");
+const fs = require("fs-extra");
+const path = require("path");
 
 const Adb = require("../../src/module.js").Adb;
 const common = require("../../src/common.js");
@@ -806,6 +808,27 @@ describe("Adb module", function() {
           expect(child_process.execFile).to.have.been.calledOnce;
           done();
         });
+      });
+    });
+  });
+
+  describe("backup and restore", function() {
+    describe("listUbuntuBackups()", function() {
+      it("should list backups", function() {
+        sinon.stub(fs, "readdir").resolves(["a", "b"]);
+        sinon.stub(fs, "readJSON").resolves({ a: "b" });
+        const adb = new Adb();
+        adb.listUbuntuBackups("/tmp").then(r =>
+          expect(r).to.deep.eql([
+            { a: "b", dir: path.join("/tmp", "a") },
+            { a: "b", dir: path.join("/tmp", "b") }
+          ])
+        );
+      });
+      it("should resolve empty list if necessary", function() {
+        sinon.stub(fs, "readdir").resolves([]);
+        const adb = new Adb();
+        adb.listUbuntuBackups().then(r => expect(r).to.eql([]));
       });
     });
   });
