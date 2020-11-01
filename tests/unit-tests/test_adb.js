@@ -959,7 +959,6 @@ describe("Adb module", function() {
       stubExec(1, "should not be called");
       const adb = new Adb();
       adb.createUbuntuTouchBackup().catch(r => {
-        console.log("here", r);
         done();
       });
     });
