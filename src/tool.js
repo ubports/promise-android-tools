@@ -37,6 +37,14 @@ class Tool extends EventEmitter {
     this.executable = getAndroidToolPath(options?.tool);
     this.extra = options?.extra || [];
     this.execOptions = options?.execOptions || {};
+    this.processes = [];
+  }
+
+  /**
+   * Terminate all child processes with extreme prejudice.
+   */
+  kill() {
+    this.processes.forEach(child => child.kill()); // HE EVEN KILLED THE YOUNGLINGS
   }
 
   /**
@@ -66,9 +74,12 @@ class Tool extends EventEmitter {
             reject(new Error(_this.handleError(error, stdout, stderr)));
           } else {
             resolve(stdout?.trim());
+            this.processes.splice(this.processes.indexOf(cp), 1);
           }
         }
       );
+
+      this.processes.push(cp);
 
       onCancel(() => {
         if (!cp.kill("SIGTERM")) {
@@ -101,7 +112,9 @@ class Tool extends EventEmitter {
         }
       }
     );
-    cp.on("exit", (code, signal) =>
+    this.processes.push(cp);
+    cp.on("exit", (code, signal) => {
+      this.processes.splice(this.processes.indexOf(cp), 1);
       this.emit(
         "spawn:exit",
         removeFalsy({
@@ -109,8 +122,8 @@ class Tool extends EventEmitter {
           code,
           signal
         })
-      )
-    );
+      );
+    });
     cp.on("error", error =>
       this.emit(
         "spawn:error",

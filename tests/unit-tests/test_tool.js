@@ -30,7 +30,6 @@ const child_process = require("child_process");
 
 const { Tool } = require("../../src/module.js");
 const { genericErrors } = require("../test-data/known_errors.js");
-const { kill } = require("process");
 
 const validOptions = [
   { tool: "adb" },
@@ -62,6 +61,22 @@ describe("Tool module", function() {
     });
   });
 
+  describe("kill()", function() {
+    it("should kill childprocesses", function() {
+      const tool = new Tool({ tool: "adb" });
+      expect(tool.processes).to.eql([]);
+      tool.processes = [{ kill: sinon.spy() }, { kill: sinon.spy() }];
+      expect(tool.kill()).to.eql(undefined);
+      expect(tool.processes[0].kill).to.have.been.calledOnce;
+      expect(tool.processes[1].kill).to.have.been.calledOnce;
+    });
+    it("should do nothing if there's nothing to do", function() {
+      const tool = new Tool({ tool: "adb" });
+      expect(tool.processes).to.eql([]);
+      expect(tool.kill()).to.eql(undefined);
+    });
+  });
+
   describe("exec()", function() {
     validOptions.forEach(options => {
       it(`should resolve stdout if constructed with ${JSON.stringify(
@@ -87,7 +102,7 @@ describe("Tool module", function() {
       });
     });
     it("should reject on error", function(done) {
-      const execStub = sinon
+      sinon
         .stub(child_process, "execFile")
         .yields({ killed: true }, "uh oh", "terrible things");
       const tool = new Tool({ tool: "fastboot" });
@@ -121,9 +136,25 @@ describe("Tool module", function() {
         expect(killFake).to.have.been.calledWith("SIGTERM");
         expect(killFake).to.have.been.calledWith("SIGKILL");
         expect(killFake).to.not.have.been.calledThrice;
+        expect(tool.processes).to.have.lengthOf(0);
         done();
       });
+      expect(tool.processes).to.have.lengthOf(1);
       setTimeout(() => job.cancel(), 1);
+    });
+    it("should allow killing", function(done) {
+      sinon.stub(child_process, "execFile").callsFake((...cpArgs) => ({
+        kill() {
+          cpArgs[3]();
+        }
+      }));
+      const tool = new Tool({ tool: "fastboot" });
+      tool.exec("asdf").finally(() => {
+        expect(tool.processes).to.have.lengthOf(0);
+        done();
+      });
+      expect(tool.processes).to.have.lengthOf(1);
+      setTimeout(() => tool.kill(), 1);
     });
   });
 
