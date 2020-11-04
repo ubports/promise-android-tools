@@ -185,12 +185,12 @@ describe("Heimdall module", function() {
         return expect(heimdall.printPit()).to.be.rejectedWith("no device");
       });
     });
-    describe("flashArray()", function() {
+    describe("flash()", function() {
       it("should flash partitions", function() {
         stubExec(null, "OK");
         const heimdall = new Heimdall();
         return heimdall
-          .flashArray([
+          .flash([
             {
               partition: "BOOT",
               file: "some.img"
@@ -218,7 +218,7 @@ describe("Heimdall module", function() {
 
         const heimdall = new Heimdall();
         return expect(
-          heimdall.flashArray([
+          heimdall.flash([
             {
               partition: "BOOT",
               file: "some.img"
@@ -237,19 +237,6 @@ describe("Heimdall module", function() {
           expect(r.length).to.eql(3);
           expectArgs("print-pit");
         });
-      });
-    });
-    describe("flash()", function() {
-      it("shold call flashArray()", function() {
-        const heimdall = new Heimdall();
-        heimdall.flashArray = sinon.spy();
-        heimdall.flash("BOOT", "some.img");
-        expect(heimdall.flashArray).to.have.been.calledWith([
-          {
-            partition: "BOOT",
-            file: "some.img"
-          }
-        ]);
       });
     });
     describe("detect()", function() {

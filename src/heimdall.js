@@ -121,29 +121,22 @@ class Heimdall extends Tool {
   }
 
   /**
-   * Flashes a firmware file to a partition (name or identifier)
-   * @param {String} partition partition name
-   * @param {String} file image file
-   * @returns {Promise}
+   * @typedef HeimdallFlashImage
+   * @property {String} partition partition to flash
+   * @property {String} file path to an image file
    */
-  flash(partition, file) {
-    return this.flashArray([{ partition, file }]);
-  }
 
   /**
    * Flash firmware files to partitions (names or identifiers)
-   * @param {Array<Object>} images [ {partition, file} ]
+   * @param {Array<HeimdallFlashImage>} images Images to flash
    * @returns {Promise}
    */
-  flashArray(images) {
+  flash(images) {
+    // TODO report progress similar to fastboot.flash()
     return this.exec(
       "flash",
       ...images.map(i => `--${i.partition} ${common.quotepath(i.file)}`)
-    )
-      .then(() => null)
-      .catch(error => {
-        throw error;
-      });
+    ).then(() => null);
   }
 }
 
