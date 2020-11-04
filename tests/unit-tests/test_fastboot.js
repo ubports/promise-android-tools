@@ -73,56 +73,121 @@ describe("Fastboot module", function() {
     });
     describe("flash()", function() {
       it("should resolve if flashed successfully", function() {
-        stubExec();
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 5)),
+          stdout: {
+            on: sinon.fake((_, cb) => cb("a"))
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => {
+              cb("Sending 'boot'");
+              setTimeout(() => cb("Writing 'boot'"), 1);
+              setTimeout(() => cb("Finished 'boot'"), 2);
+            })
+          }
+        };
+        sinon.stub(child_process, "spawn").returns(child);
         const fastboot = new Fastboot();
-        return fastboot.flash("boot", "/path/to/image").then(r => {
-          expectArgs("flash", "boot", "/path/to/image");
-          expect(child_process.execFile).to.not.have.been.calledTwice;
-        });
-      });
-      it("should reject if bootloader is locked", function(done) {
-        stubExec(true, "", "FAILED (remote: 'Bootloader is locked.')");
-        const fastboot = new Fastboot();
-        fastboot.flash("boot", "/path/to/image").catch(error => {
-          expectReject(error, "flashing failed: Error: bootloader is locked");
-          expectArgs("flash", "boot", "/path/to/image");
-          done();
-        });
-      });
-      it("should reject if flashing failed", function(done) {
-        stubExec(true, "everything exploded");
-        const fastboot = new Fastboot();
-        fastboot.flash("boot", "/path/to/image").catch(error => {
-          expectReject(
-            error,
-            'flashing failed: Error: {"error":true,"stdout":"everything exploded"}'
-          );
-          done();
-        });
-      });
-    });
-    describe("flashRaw()", function() {
-      it("should resolve if flashed raw image successfully", function() {
-        stubExec();
-        const fastboot = new Fastboot();
-        return fastboot.flashRaw("boot", "/path/to/image").then(() => {
-          expectArgs("flash:raw", "boot", "/path/to/image");
-        });
-      });
-      it("should resolve if force-flashed raw image successfully", function() {
-        stubExec();
-        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "wait").resolves();
+        const progress = sinon.spy();
         return fastboot
-          .flashRaw("boot", "/path/to/image", "--force", "--disable-verity")
+          .flash(
+            [
+              { partition: "boot", file: "/path/to/boot.img" },
+              {
+                partition: "recovery",
+                file: "/path/to/recovery.img",
+                raw: true,
+                flags: ["--force", "--disable-verity"]
+              }
+            ],
+            progress
+          )
           .then(r => {
-            expectArgs(
-              "flash:raw",
+            expect(r).to.eql(undefined);
+            expect(
+              child_process.spawn
+            ).to.have.been.calledWith(fastboot.executable, [
+              "flash",
               "boot",
+              "/path/to/boot.img"
+            ]);
+            expect(
+              child_process.spawn
+            ).to.have.been.calledWith(fastboot.executable, [
+              "flash:raw",
+              "recovery",
               "--force",
               "--disable-verity",
-              "/path/to/image"
-            );
+              "/path/to/recovery.img"
+            ]);
+            expect(progress).to.have.been.calledWith(0);
+            expect(progress).to.have.been.calledWith(0.1);
+            expect(progress).to.have.been.calledWith(0.3);
+            expect(progress).to.have.been.calledWith(0.495);
+            expect(progress).to.have.been.calledWith(0.5);
+            expect(progress).to.have.been.calledWith(0.6);
+            expect(progress).to.have.been.calledWith(0.8);
+            expect(progress).to.have.been.calledWith(0.995);
+            expect(progress).to.have.been.calledWith(1);
           });
+      });
+      [
+        {
+          description: "should reject if bootloader is locked",
+          exit: 1,
+          stdout: "",
+          stderr: "FAILED (remote: 'Bootloader is locked.')",
+          expectedError: "Flashing failed: bootloader locked"
+        },
+        {
+          description: "should reject if flashing failed",
+          exit: 1,
+          stdout: "",
+          stderr: "everything exploded",
+          expectedError:
+            'Flashing failed: {"error":{"code":1},"stderr":"everything exploded"}'
+        }
+      ].forEach(variation =>
+        it(variation.description, function(done) {
+          const child = {
+            on: sinon.fake(),
+            once: sinon.fake((_, cb) => setTimeout(() => cb(1, null), 5)),
+            stdout: {
+              on: sinon.fake((_, cb) => cb(variation.stdout))
+            },
+            stderr: {
+              on: sinon.fake((_, cb) => cb(variation.stderr))
+            }
+          };
+          sinon.stub(child_process, "spawn").returns(child);
+          const fastboot = new Fastboot();
+          sinon.stub(fastboot, "wait").resolves();
+          fastboot
+            .flash([{ partition: "boot", file: "/path/to/image" }])
+            .catch(error => {
+              expectReject(error, variation.expectedError);
+              expect(
+                child_process.spawn
+              ).to.have.been.calledWith(fastboot.executable, [
+                "flash",
+                "boot",
+                "/path/to/image"
+              ]);
+              done();
+            });
+        })
+      );
+      it("should reject if wait rejected", function(done) {
+        sinon.stub(child_process, "spawn");
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "wait").rejects("wait error");
+        fastboot.flash([]).catch(e => {
+          expectReject(e, "Flashing failed: wait error");
+          expect(child_process.spawn).to.not.have.been.called;
+          done();
+        });
       });
     });
     describe("boot()", function() {
@@ -363,46 +428,6 @@ describe("Fastboot module", function() {
     });
   });
   describe("convenience functions", function() {
-    describe("flashArray()", function() {
-      it("should resolve if flashed successfully", function() {
-        stubExec();
-        const fastboot = new Fastboot();
-        return fastboot
-          .flashArray([
-            { partition: "p1", file: "f1" },
-            { partition: "p2", file: "f2", raw: true },
-            { partition: "p3", file: "f3", raw: true, flags: ["--force"] },
-            {
-              partition: "p4",
-              file: "f4",
-              flags: ["--disable-verification", "--disable-verity"]
-            }
-          ])
-          .then(r => {
-            expectArgs("flash", "p1", "f1");
-            expectArgs("flash:raw", "p2", "f2");
-            expectArgs("flash:raw", "p3", "--force", "f3");
-            expectArgs(
-              "flash",
-              "p4",
-              "--disable-verification",
-              "--disable-verity",
-              "f4"
-            );
-          });
-      });
-      it("should reject if flashing failed", function() {
-        stubExec(true, "everything exploded");
-        const fastboot = new Fastboot();
-        return expect(
-          fastboot.flashArray([
-            { partition: "p", file: "f" },
-            { partition: "p", file: "f" }
-          ])
-        ).to.have.been.rejectedWith("flashing failed");
-      });
-      it("should report progress");
-    });
     describe("hasAccess()", function() {
       it("should resolve true when a device is detected", function() {
         stubExec(null, "0123456789ABCDEF	fastboot");

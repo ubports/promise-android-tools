@@ -62,37 +62,37 @@ const adbErrors = [
 const fastbootErrors = [
   ...genericErrors("fastboot"),
   {
-    expectedReturn: "bootloader is locked",
+    expectedReturn: "bootloader locked",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: 'Bootloader is locked.')"
   },
   {
-    expectedReturn: "bootloader is locked",
+    expectedReturn: "bootloader locked",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: not supported in locked device)"
   },
   {
-    expectedReturn: "bootloader is locked",
+    expectedReturn: "bootloader locked",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: ‘not supported in locked device’)"
   },
   {
-    expectedReturn: "bootloader is locked",
+    expectedReturn: "bootloader locked",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: 'not allowed in locked state')"
   },
   {
-    expectedReturn: "bootloader is locked",
+    expectedReturn: "bootloader locked",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: 'Device not unlocked cannot flash or erase')"
   },
   {
-    expectedReturn: "bootloader is locked",
+    expectedReturn: "bootloader locked",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
     stderr: "FAILED (remote: '\tDevice not unlocked cannot flash or erase')"

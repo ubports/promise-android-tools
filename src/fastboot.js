@@ -50,7 +50,7 @@ class Fastboot extends Tool {
       stderr?.includes("not allowed in locked state") ||
       stderr?.includes("Device not unlocked cannot flash or erase")
     ) {
-      return "bootloader is locked";
+      return "bootloader locked";
     } else if (
       stderr?.includes("Check 'Allow OEM Unlock' in Developer Options") ||
       stderr?.includes("Unlock operation is not allowed") ||
@@ -74,33 +74,74 @@ class Fastboot extends Tool {
   }
 
   /**
-   * Write a file to a flash partition
-   * @param {String} partition partition to flash
-   * @param {String} file path to an image file
-   * @param {Boolean} [raw=false] use flash:raw
-   * @param  {...any} [flags] additional cli-flags like --force and --disable-verification
-   * @returns {Promise}
+   * @typedef FastbootFlashImage
+   * @property {String} partition partition to flash
+   * @property {String} file path to an image file
+   * @property {Boolean} raw use `fastboot flash:raw` instead of `fastboot flash`
+   * @property {Array<String>} flags additional cli-flags like --force and --disable-verification
    */
-  flash(partition, file, raw = false, ...flags) {
-    return this.exec(
-      raw ? "flash:raw" : "flash",
-      partition,
-      ...flags,
-      file
-    ).catch(error => {
-      throw new Error(`flashing failed: ${error}`);
-    });
-  }
 
   /**
-   * Write a raw file to a flash partition
-   * @param {String} partition partition to flash
-   * @param {String} file path to an image file
-   * @param  {...any} [flags] additional cli-flags like --force and --disable-verification
+   * Write a file to a flash partition
+   * @param {Array<FastbootFlashImage>} images Images to flash
+   * @param {Function} progress progress callback
    * @returns {Promise}
    */
-  flashRaw(partition, file, ...flags) {
-    return this.flash(partition, file, true, ...flags);
+  flash(images, progress = () => {}) {
+    progress(0);
+    const _this = this;
+    // build a promise chain to flash all images sequentially
+    return images
+      .reduce(
+        (prev, image, i) =>
+          prev.then(
+            () =>
+              new Promise((resolve, reject) => {
+                let stdout = "";
+                let stderr = "";
+                let offset = i / images.length;
+                let scale = 1 / images.length;
+                progress(offset);
+                const cp = _this.spawn(
+                  image.raw ? "flash:raw" : "flash",
+                  image.partition,
+                  ...(image?.flags || []),
+                  image.file
+                );
+                cp.once("exit", (code, signal) => {
+                  if (code || signal) {
+                    reject(_this.handleError({ code, signal }, stdout, stderr));
+                  } else {
+                    resolve();
+                  }
+                });
+                cp.stdout.on("data", d => (stdout += d.toString()));
+                cp.stderr.on("data", d => {
+                  d.toString()
+                    .trim()
+                    .split("\n")
+                    .forEach(str => {
+                      if (!str.includes("OKAY")) {
+                        if (str.includes("Sending")) {
+                          progress(offset + scale * 0.2);
+                        } else if (str.includes("Writing")) {
+                          progress(offset + scale * 0.6);
+                        } else if (str.includes("Finished")) {
+                          progress(offset + scale * 0.99);
+                        } else {
+                          stderr += str;
+                        }
+                      }
+                    });
+                });
+              })
+          ),
+        _this.wait()
+      )
+      .then(() => progress(1))
+      .catch(e => {
+        throw new Error(`Flashing failed: ${e}`);
+      });
   }
 
   /**
@@ -272,34 +313,6 @@ class Fastboot extends Tool {
       .catch(error => {
         throw new Error("oem lock failed: " + error);
       });
-  }
-
-  /**
-   * Write files to flash partitions
-   * @param {Array<Object>} images [ {partition, file, raw, flags}, ... ]
-   * @returns {Promise}
-   */
-  flashArray(images) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      function flashNext(i) {
-        _this
-          .flash(
-            images[i].partition,
-            images[i].file,
-            images[i].raw,
-            ...(images[i].flags || [])
-          )
-          .then(() => {
-            if (i + 1 < images.length) flashNext(i + 1);
-            else resolve();
-          })
-          .catch(error => {
-            reject(error);
-          });
-      }
-      flashNext(0);
-    });
   }
 
   /**
