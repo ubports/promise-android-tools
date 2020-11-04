@@ -1,6 +1,6 @@
 # promise-android-tools ![Continuous Integration](https://github.com/ubports/promise-android-tools/workflows/Continuous%20Integration/badge.svg) [![npm](https://img.shields.io/npm/v/promise-android-tools)](https://www.npmjs.com/package/promise-android-tools) [![codecov](https://codecov.io/gh/ubports/promise-android-tools/branch/master/graph/badge.svg?token=cEneFUUbgt)](https://codecov.io/gh/ubports/promise-android-tools/)
 
-A wrapper for adb and fastboot that returns convenient promises.
+A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.
 
 ## IMPORTANT NOTE
 

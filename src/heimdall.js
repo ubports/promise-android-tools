@@ -68,16 +68,20 @@ class Heimdall extends Tool {
     return this.exec("detect")
       .then(() => true)
       .catch(error => {
-        if (
-          error.message.includes(
-            "ERROR: Failed to detect compatible download-mode device."
-          )
-        ) {
+        if (error.message.includes("no device")) {
           return false;
         } else {
           throw error;
         }
       });
+  }
+
+  /**
+   * Wait for a device
+   * @returns {CancelablePromise}
+   */
+  wait() {
+    return super.wait().then(() => "download");
   }
 
   /**

@@ -453,5 +453,15 @@ describe("Fastboot module", function() {
         );
       });
     });
+    describe("wait()", function() {
+      it("should resolve mode as soon as device is detected", function() {
+        stubExec(null, "0123456789ABCDEF	fastboot");
+        const fastboot = new Fastboot();
+        return fastboot.wait().then(r => {
+          expect(r).to.eql("bootloader");
+          expectArgs("devices");
+        });
+      });
+    });
   });
 });

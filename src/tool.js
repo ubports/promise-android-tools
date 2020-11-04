@@ -177,26 +177,34 @@ class Tool extends EventEmitter {
   wait() {
     var _this = this;
     return new CancelablePromise(function(resolve, reject, onCancel) {
-      let access;
+      let timeout;
+      let stop;
       function poll() {
-        _this
-          .hasAccess()
-          .then(access => {
-            if (access) {
-              clearTimeout(access);
-              resolve();
-            } else {
-              access = setTimeout(poll, 500);
-            }
-          })
-          .catch(error => {
-            if (error) {
-              clearTimeout(access);
-              reject(error);
-            }
-          });
+        if (!stop) {
+          _this
+            .hasAccess()
+            .then(access => {
+              if (access) {
+                clearTimeout(timeout);
+                resolve();
+              } else {
+                timeout = setTimeout(poll, 2000);
+              }
+            })
+            .catch(error => {
+              if (error) {
+                clearTimeout(timeout);
+                reject(error);
+              }
+            });
+        } else {
+          clearTimeout(timeout);
+        }
       }
-      onCancel(() => clearTimeout(access));
+      onCancel(() => {
+        clearTimeout(timeout);
+        stop = true;
+      });
       poll();
     });
   }

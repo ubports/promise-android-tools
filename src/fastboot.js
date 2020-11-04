@@ -328,6 +328,14 @@ class Fastboot extends Tool {
         throw error;
       });
   }
+
+  /**
+   * Wait for a device
+   * @returns {CancelablePromise}
+   */
+  wait() {
+    return super.wait().then(() => "bootloader");
+  }
 }
 
 module.exports = Fastboot;

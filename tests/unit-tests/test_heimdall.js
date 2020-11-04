@@ -138,6 +138,7 @@ describe("Heimdall module", function() {
       it("should resolve false if no device is detected", function() {
         stubExec(
           true,
+          "",
           "ERROR: Failed to detect compatible download-mode device."
         );
         const heimdall = new Heimdall();
@@ -152,6 +153,16 @@ describe("Heimdall module", function() {
         return expect(heimdall.hasAccess()).to.be.rejectedWith(
           "everything exploded"
         );
+      });
+    });
+    describe("wait()", function() {
+      it("should resolve mode as soon as device is detected", function() {
+        stubExec(null, "0123456789ABCDEF	heimdall");
+        const heimdall = new Heimdall();
+        return heimdall.wait().then(r => {
+          expect(r).to.eql("download");
+          expectArgs("detect");
+        });
       });
     });
     describe("printPit()", function() {

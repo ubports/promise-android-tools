@@ -22,14 +22,18 @@
  * @param {Object} obj object to process
  */
 function removeFalsy(obj) {
-  if (typeof obj !== "object") return obj;
-  let newObj = {};
-  Object.keys(obj).forEach(prop => {
-    if (obj[prop]) {
-      newObj[prop] = obj[prop];
+  if (typeof obj !== "object" || Array.isArray(obj)) return obj;
+  for (var i in obj) {
+    if (!obj[i]) {
+      delete obj[i];
+    } else {
+      obj[i] = removeFalsy(obj[i]);
+      if (!obj[i]) {
+        delete obj[i];
+      }
     }
-  });
-  return newObj;
+  }
+  return Object.keys(obj).length ? obj : null;
 }
 
 /**

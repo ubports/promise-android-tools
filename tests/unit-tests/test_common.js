@@ -55,9 +55,19 @@ describe("Common module", function() {
           d: null,
           e: undefined,
           f: { test: "this" },
-          g: 1337
+          g: 1337,
+          h: {},
+          i: { test: null },
+          j: ["a", "b"],
+          k: { foo: { bar: null }, baz: true, brz: {} }
         })
-      ).to.deep.equal({ a: "a", f: { test: "this" }, g: 1337 });
+      ).to.deep.equal({
+        a: "a",
+        f: { test: "this" },
+        g: 1337,
+        j: ["a", "b"],
+        k: { baz: true }
+      });
     });
   });
 });
