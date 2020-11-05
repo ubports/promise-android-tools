@@ -1,7 +1,7 @@
 {
   "name": "promise-android-tools",
-  "version": "3.0.3",
-  "description": "A wrapper for adb and fastboot that returns convenient promises.",
+  "version": "4.0.0",
+  "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "main": "./src/module.js",
   "scripts": {
     "test": "npx coverage -r lcov -r html npm run test-nocover",
