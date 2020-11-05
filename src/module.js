@@ -22,4 +22,67 @@ const Fastboot = require("./fastboot.js");
 const Heimdall = require("./heimdall.js");
 const Tool = require("./tool.js");
 
-module.exports = { Adb, Fastboot, Heimdall, Tool };
+const EventEmitter = require("events");
+const { CancelablePromise } = require("cancelable-promise");
+
+/**
+ * A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.
+ */
+class DeviceTools extends EventEmitter {
+  constructor() {
+    super();
+    this.adb = new Adb();
+    this.fastboot = new Fastboot();
+    this.heimdall = new Heimdall();
+
+    ["adb", "fastboot", "heimdall"].forEach(tool => {
+      this[tool].on("exec", r => this.emit("exec", r));
+      this[tool].on("spawn:start", r => this.emit("spawn:start", r));
+      this[tool].on("spawn:exit", r => this.emit("spawn:exit", r));
+      this[tool].on("spawn:error", r => this.emit("spawn:error", r));
+    });
+  }
+
+  /**
+   * Wait for a device
+   * @returns {CancelablePromise<String>}
+   */
+  wait() {
+    const _this = this;
+    return new CancelablePromise(function(resolve, reject, onCancel) {
+      const waitPromises = [
+        _this.adb.wait(),
+        _this.fastboot.wait(),
+        _this.heimdall.wait()
+      ];
+      CancelablePromise.race(waitPromises)
+        .then(state => {
+          waitPromises.forEach(p => p.cancel());
+          resolve(state);
+        })
+        .catch(() => {
+          reject(new Error("no device"));
+        });
+
+      onCancel(() => waitPromises.forEach(p => p.cancel()));
+    });
+  }
+
+  /**
+   * Wait for a device
+   * @returns {Promise<String>}
+   */
+  getDeviceName() {
+    return Promise.any([
+      this.adb.getDeviceName(),
+      this.fastboot.getDeviceName(),
+      this.heimdall.hasAccess().then(() => {
+        throw new Error(`Can't get name from heimdall`);
+      })
+    ]).catch(() => {
+      throw new Error("no device");
+    });
+  }
+}
+
+module.exports = { Adb, Fastboot, Heimdall, Tool, DeviceTools };
