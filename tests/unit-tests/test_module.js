@@ -80,17 +80,23 @@ describe("DeviceTools module", function() {
     });
   });
   describe("getDeviceName()", function() {
-    it("should resolve device name", function() {
+    it("should resolve device name from adb", function() {
       const deviceTools = new DeviceTools();
       sinon
         .stub(deviceTools.adb, "getDeviceName")
         .returns(CancelablePromise.resolve("asdf"));
+      return deviceTools.getDeviceName().then(r => {
+        expect(r).to.eql("asdf");
+      });
+    });
+    it("should resolve device name from fastboot", function() {
+      const deviceTools = new DeviceTools();
       sinon
-        .stub(deviceTools.fastboot, "getDeviceName")
+        .stub(deviceTools.adb, "getDeviceName")
         .returns(CancelablePromise.reject());
       sinon
-        .stub(deviceTools.heimdall, "hasAccess")
-        .returns(CancelablePromise.resolve(false));
+        .stub(deviceTools.fastboot, "getDeviceName")
+        .returns(CancelablePromise.resolve("asdf"));
       return deviceTools.getDeviceName().then(r => {
         expect(r).to.eql("asdf");
       });
@@ -103,9 +109,6 @@ describe("DeviceTools module", function() {
       sinon
         .stub(deviceTools.fastboot, "getDeviceName")
         .returns(CancelablePromise.reject());
-      sinon
-        .stub(deviceTools.heimdall, "hasAccess")
-        .returns(CancelablePromise.resolve(false));
       deviceTools.getDeviceName().catch(e => {
         expectReject(e, "no device");
         done();

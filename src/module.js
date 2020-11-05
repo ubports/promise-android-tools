@@ -69,19 +69,17 @@ class DeviceTools extends EventEmitter {
   }
 
   /**
-   * Wait for a device
+   * Resolve device name
    * @returns {Promise<String>}
    */
   getDeviceName() {
-    return Promise.any([
-      this.adb.getDeviceName(),
-      this.fastboot.getDeviceName(),
-      this.heimdall.hasAccess().then(() => {
-        throw new Error(`Can't get name from heimdall`);
-      })
-    ]).catch(() => {
-      throw new Error("no device");
-    });
+    // TODO support heimdall
+    return this.adb
+      .getDeviceName()
+      .catch(() => this.fastboot.getDeviceName())
+      .catch(() => {
+        throw new Error("no device");
+      });
   }
 }
 
