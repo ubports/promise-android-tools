@@ -463,5 +463,44 @@ describe("Fastboot module", function() {
         });
       });
     });
+    describe("getvar()", function() {
+      it("should resolve bootloader var", function() {
+        stubExec(null, null, "product: FP2\nFinished. Total time: 0.000s");
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "hasAccess").resolves(true);
+        return fastboot.getvar("product").then(r => {
+          expect(r).to.eql("FP2");
+          expectArgs("getvar", "product");
+        });
+      });
+      it("should reject on no device", function(done) {
+        stubExec(1);
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "hasAccess").resolves(false);
+        fastboot.getvar("product").catch(e => {
+          expectReject(e, "no device");
+          done();
+        });
+      });
+      it("should reject on unexpected return", function(done) {
+        stubExec(null, null, "foo: bar\nFinished. Total time: 0.000s");
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "hasAccess").resolves(true);
+        fastboot.getvar("product").catch(e => {
+          expectReject(e, "Unexpected getvar return: foo");
+          expectArgs("getvar", "product");
+          done();
+        });
+      });
+    });
+    describe("getDeviceName()", function() {
+      it("should resolve bootloader var", function() {
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "getvar").resolves("FP2");
+        return fastboot.getDeviceName("product").then(r => {
+          expect(r).to.eql("FP2");
+        });
+      });
+    });
   });
 });

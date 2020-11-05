@@ -331,10 +331,42 @@ class Fastboot extends Tool {
 
   /**
    * Wait for a device
-   * @returns {CancelablePromise}
+   * @returns {CancelablePromise<String>}
    */
   wait() {
     return super.wait().then(() => "bootloader");
+  }
+
+  /**
+   * get bootloader var
+   * @param {String} variable variable to get
+   * @returns {Promise<String>} codename
+   */
+  getvar(variable) {
+    return this.hasAccess()
+      .then(access => {
+        if (access) {
+          return this.exec("getvar", variable);
+        } else {
+          throw new Error("no device");
+        }
+      })
+      .then(r => r.split("\n")[0].split(": "))
+      .then(([name, value]) => {
+        if (name !== variable) {
+          throw new Error(`Unexpected getvar return: ${name}`);
+        } else {
+          return value;
+        }
+      });
+  }
+
+  /**
+   * get device codename from product bootloader var
+   * @returns {Promise<String>} codename
+   */
+  getDeviceName() {
+    return this.getvar("product");
   }
 }
 

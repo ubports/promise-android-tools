@@ -66,14 +66,14 @@ class Tool extends EventEmitter {
             removeFalsy({
               cmd: [_this.tool, ..._this.extra, ...args],
               error,
-              stdout,
-              stderr
+              stdout: stdout?.trim(),
+              stderr: stderr?.trim()
             })
           );
           if (error) {
             reject(new Error(_this.handleError(error, stdout, stderr)));
           } else {
-            resolve(stdout?.trim());
+            resolve(stdout?.trim() || stderr?.trim());
             this.processes.splice(this.processes.indexOf(cp), 1);
           }
         }

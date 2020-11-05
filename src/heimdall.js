@@ -78,7 +78,7 @@ class Heimdall extends Tool {
 
   /**
    * Wait for a device
-   * @returns {CancelablePromise}
+   * @returns {CancelablePromise<String>}
    */
   wait() {
     return super.wait().then(() => "download");
