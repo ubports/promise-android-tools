@@ -12,33 +12,71 @@ Install the package by running `npm i promise-android-tools`.
 
 ### Quick-start example
 
+The default settings should cover most usecases.
+
+```javascript
+const { DeviceTools } = require("promise-android-tools");
+const dt = new DeviceTools();
+
+dt.wait() // wait for any device
+  .then(state =>
+    dt.getDeviceName().then(name => console.log(`detected ${name} in ${state} state`))
+  )
+```
+
+### Log execution events
+
+Events are available to log or introspect tool executions.
+
+```javascript
+const { DeviceTools } = require("promise-android-tools");
+const dt = new DeviceTools();
+
+dt.on("exec", r => console.log("exec", r))
+dt.on("spawn:start", r => console.log("spawn:start", r));
+dt.on("spawn:exit", r => console.log("spawn:exit", r));
+dt.on("spawn:error", r => console.log("spawn:error", r));
+
+dt.adb.shell("echo", "test")
+// will log a compact object (i.e. no falsy values) consisting of the command array cmd, the error object, and the stderr and stdout buffers. The path to the executable will be replaced with the tool name for brevity:
+// exec {
+//   cmd: [ 'adb', '-P', 5037, 'shell', 'echo test' ],
+//   error: {
+//     message: 'Command failed: adb -P 5037 shell echo test\n' +
+//       'adb: no devices/emulators found',
+//     code: 1
+//   },
+//   stderr: 'adb: no devices/emulators found'
+// }
+```
+
+### Complex example
+
 The library provides most features of the eponymous command-line utilities wrapped in the available classes. This example only serves as a demonstration, confer to the documenation to discover the full power of this library.
 
 ```javascript
-const { Adb, Fastboot, Heimdall } = require("promise-android-tools");
-const adb = new Adb();
-const fastboot = new Fastboot();
-const heimdall = new Heimdall();
+const { DeviceTools } = require("promise-android-tools");
+const dt = new DeviceTools();
 
-adb.wait() // wait for any device
-  .then(() => adb.ensureState("recovery")) // reboot to recovery if we have to
-  .then(() => adb.push(["./config.json"], "/tmp", progress)) // push a config file to the device
-  .then(() => adb.getDeviceName()) // read device codename
+db.adb.wait() // wait for any device over adb
+  .then(() => dt.adb.ensureState("recovery")) // reboot to recovery if we have to
+  .then(() => dt.adb.push(["./config.json"], "/tmp", progress)) // push a config file to the device
+  .then(() => dt.adb.getDeviceName()) // read device codename
   .then(name => {
     // samsung devices do not use fastbooot
     if (name.includes("samsung")) {
-      return adb.reboot("bootloader") // reboot to samsung's download mode
-        .then(() => heimdall.wait()) // wait for device to respond to heimdall
-        .then(() => heimdall.flash("boot", "boot.img")) // flash an image to a partition
-        .then(() => heimdall.reboot()) // reboot to system
+      return dt.adb.reboot("bootloader") // reboot to samsung's download mode
+        .then(() => dt.heimdall.wait()) // wait for device to respond to heimdall
+        .then(() => dt.heimdall.flash("boot", "boot.img")) // flash an image to a partition
+        .then(() => dt.heimdall.reboot()) // reboot to system
     } else {
-      return adb.reboot("bootloader") // reboot to bootloader (aka. fastboot mode)
-        .then(() => fastboot.wait()) // wait for device to respond to fastboot commands
-        .then(() => fastboot.flash("boot", "boot.img")) // flash an image
-        .then(() => fastboot.continue()) // auto-boot to system
+      return dt.adb.reboot("bootloader") // reboot to bootloader (aka. fastboot mode)
+        .then(() => dt.fastboot.wait()) // wait for device to respond to fastboot commands
+        .then(() => dt.fastboot.flash("boot", "boot.img")) // flash an image
+        .then(() => dt.fastboot.continue()) // auto-boot to system
     }
   })
-  .then(() => adb.wait("device")) // ignore devices in recovery or a different mode
+  .then(() => dt.adb.wait("device")) // ignore devices in recovery or a different mode
   .then(() => console.log("flashing complete, that was easy!")); // yay
 
 function progress(p) {
@@ -56,6 +94,7 @@ When using the library with modern editors like VScode/VScodium or Atom, you can
 
 Version 4.0.0 includes a major re-factoring effort that touched almost every function. The APIs of most functions remained intact, but in most cases you will have to make changes to your code. This has been done to correct some early design decisions.
 
+- A new convenience class `DeviceTools` has been implemented that provides instances of all tool classes as well as some generic convenience functions such as `deviceTools.wait()` (wait for any device to be visible with any adb, fastboot, or heimdall) and `deviceTools.getDeviceName()` (read the device name from fastboot or adb). In most cases you will no longer need to instantiate any of the tool classes directly.
 - In order to properly follow the object-oriented paradigm, all tool wrapper classes now inherit from a new `Tool` class that implements the `child_process` wrappers along with some common interfaces. The implications of this are:
   - Our [android-tools-bin](https://www.npmjs.com/package/android-tools-bin) package is now included as a dependency. If you require custom executables, you can use [environment variables](https://www.npmjs.com/package/android-tools-bin#requesting-native-tools-using-environment-variables).
   - Specifying a custom `exec` function in the constructor arguments is no longer supported.

@@ -65,7 +65,16 @@ class Tool extends EventEmitter {
             "exec",
             removeFalsy({
               cmd: [_this.tool, ..._this.extra, ...args],
-              error,
+              error: error
+                ? {
+                    message: error?.message
+                      ?.replace(new RegExp(this.executable, "g"), this.tool)
+                      .trim(),
+                    code: error?.code,
+                    signal: error?.signal,
+                    killed: error?.killed
+                  }
+                : null,
               stdout: stdout?.trim(),
               stderr: stderr?.trim()
             })
