@@ -101,7 +101,8 @@ class Fastboot extends Tool {
                 let stderr = "";
                 let offset = i / images.length;
                 let scale = 1 / images.length;
-                progress(offset);
+                let sparseCurr = 1;
+                let sparseTotal = 1;
                 const cp = _this.spawn(
                   image.raw ? "flash:raw" : "flash",
                   image.partition,
@@ -121,14 +122,27 @@ class Fastboot extends Tool {
                     .trim()
                     .split("\n")
                     .forEach(str => {
+                      // FIXME improve and simplify logic
                       if (!str.includes("OKAY")) {
                         if (str.includes("Sending")) {
-                          progress(offset + scale * 0.2);
+                          try {
+                            if (str.includes("sparse")) {
+                              sparseCurr = parseInt(
+                                str.split("/")[0].split("' ")[1]
+                              );
+                              sparseTotal = parseInt(
+                                str.split("/")[1].split(" ")[0]
+                              );
+                            }
+                          } catch {}
+                          progress(
+                            offset + scale * ((sparseCurr * 0.3) / sparseTotal)
+                          );
                         } else if (str.includes("Writing")) {
-                          progress(offset + scale * 0.6);
-                        } else if (str.includes("Finished")) {
-                          progress(offset + scale * 0.99);
-                        } else {
+                          progress(
+                            offset + scale * ((sparseCurr * 0.9) / sparseTotal)
+                          );
+                        } else if (!str.includes("Finished")) {
                           stderr += str;
                         }
                       }

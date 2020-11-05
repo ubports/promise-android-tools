@@ -73,6 +73,7 @@ describe("Fastboot module", function() {
     });
     describe("flash()", function() {
       it("should resolve if flashed successfully", function() {
+        let i = 0;
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 5)),
@@ -81,9 +82,20 @@ describe("Fastboot module", function() {
           },
           stderr: {
             on: sinon.fake((_, cb) => {
-              cb("Sending 'boot'");
-              setTimeout(() => cb("Writing 'boot'"), 1);
-              setTimeout(() => cb("Finished 'boot'"), 2);
+              if (i++ === 0) {
+                cb("Sending 'boot'");
+                setTimeout(() => cb("Writing 'boot'"), 1);
+                setTimeout(() => cb("Finished 'boot'"), 2);
+              } else {
+                cb("Sending sparse 'userdata' 1/2 (62568 KB)");
+                setTimeout(() => cb("Writing 'userdata'"), 1);
+                setTimeout(
+                  () => cb("Sending sparse 'userdata' 2/2 (62568 KB)"),
+                  2
+                );
+                setTimeout(() => cb("Writing 'userdata'"), 3);
+                setTimeout(() => cb("Finished 'userdata'"), 4);
+              }
             })
           }
         };
@@ -123,13 +135,12 @@ describe("Fastboot module", function() {
               "/path/to/recovery.img"
             ]);
             expect(progress).to.have.been.calledWith(0);
-            expect(progress).to.have.been.calledWith(0.1);
-            expect(progress).to.have.been.calledWith(0.3);
-            expect(progress).to.have.been.calledWith(0.495);
-            expect(progress).to.have.been.calledWith(0.5);
-            expect(progress).to.have.been.calledWith(0.6);
-            expect(progress).to.have.been.calledWith(0.8);
-            expect(progress).to.have.been.calledWith(0.995);
+            expect(progress).to.have.been.calledWith(0.15);
+            expect(progress).to.have.been.calledWith(0.45);
+            expect(progress).to.have.been.calledWith(0.575);
+            expect(progress).to.have.been.calledWith(0.725);
+            expect(progress).to.have.been.calledWith(0.65);
+            expect(progress).to.have.been.calledWith(0.95);
             expect(progress).to.have.been.calledWith(1);
           });
       });
@@ -145,7 +156,7 @@ describe("Fastboot module", function() {
           description: "should reject if flashing failed",
           exit: 1,
           stdout: "",
-          stderr: "everything exploded",
+          stderr: "Sending sparse\neverything exploded",
           expectedError:
             'Flashing failed: {"error":{"code":1},"stderr":"everything exploded"}'
         }
