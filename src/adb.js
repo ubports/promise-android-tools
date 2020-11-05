@@ -40,6 +40,13 @@ class Adb extends Tool {
   }
 
   /**
+   * Terminate all child processes with extreme prejudice.
+   */
+  kill() {
+    this.killServer().finally(() => super.kill());
+  }
+
+  /**
    * Generate processable error messages from child_process.exec() callbacks
    * @param {child_process.ExecException} error error returned by child_process.exec()
    * @param {String} stdout stdandard output
@@ -61,7 +68,9 @@ class Adb extends Tool {
       stdout?.includes("adb: error: failed to read copy response") ||
       stdout?.includes("couldn't read from device") ||
       stdout?.includes("remote Bad file number") ||
-      stdout?.includes("remote Broken pipe")
+      stdout?.includes("remote Broken pipe") ||
+      stderr?.includes("adb: sideload connection failed: closed") ||
+      stderr?.includes("adb: pre-KitKat sideload connection failed: closed")
     ) {
       return "no device";
     } else {
@@ -232,11 +241,60 @@ class Adb extends Tool {
   /**
    * sideload an ota package
    * @param {String} file - path to a file to sideload
-   * @returns {Promise}
+   * @returns {CancelablePromise}
    */
-  sideload(file) {
-    // TODO adopt child_process.spawn
-    return this.exec("sideload", common.quotepath(file));
+  sideload(file, progress = () => {}) {
+    progress(0);
+    const totalSize = fs.statSync(file)["size"];
+    let pushedSize = 0;
+    const _this = this;
+    return new CancelablePromise((resolve, reject, onCancel) => {
+      let stdout = "";
+      let stderr = "";
+      const cp = _this.spawn("sideload", file);
+      cp.once("exit", (code, signal) => {
+        if (code || signal) {
+          // truthy value (i.e. non-zero exit code) indicates error
+          if (
+            stdout.includes("adb: error: cannot stat") &&
+            stdout.includes("No such file or directory")
+          ) {
+            reject(new Error("file not found"));
+          } else {
+            reject(
+              new Error(_this.handleError({ code, signal }, stdout, stderr))
+            );
+          }
+        } else {
+          resolve();
+        }
+      });
+
+      cp.stdout.on("data", d => (stdout += d.toString()));
+      cp.stderr.on("data", d => {
+        d.toString()
+          .split("\n")
+          .filter(s => s)
+          .forEach(str => {
+            if (str.includes("cpp")) {
+              // logging from cpp files indicates debug output
+              if (str.includes("writex")) {
+                // writex namespace indicates external writing
+                pushedSize += parseInt(str.split("len=")[1].split(" ")[0]) || 0;
+                progress(Math.min(pushedSize / totalSize, 1));
+              }
+            } else {
+              stderr += str;
+            }
+          });
+      });
+
+      onCancel(() => {
+        if (!cp.kill("SIGTERM")) {
+          setTimeout(() => cp.kill("SIGKILL"), 25);
+        }
+      });
+    });
   }
 
   /**

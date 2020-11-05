@@ -44,6 +44,15 @@ class DeviceTools extends EventEmitter {
   }
 
   /**
+   * Terminate all child processes with extreme prejudice.
+   */
+  kill() {
+    ["adb", "fastboot", "heimdall"].forEach(tool => {
+      this[tool].kill();
+    });
+  }
+
+  /**
    * Wait for a device
    * @returns {CancelablePromise<String>}
    */

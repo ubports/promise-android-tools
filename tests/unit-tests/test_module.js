@@ -40,6 +40,15 @@ describe("DeviceTools module", function() {
       expect(deviceTools).to.exist;
     });
   });
+  describe("kill()", function() {
+    it("should kill child processes", function() {
+      const deviceTools = new DeviceTools();
+      sinon.stub(deviceTools.adb, "kill").returns();
+      sinon.stub(deviceTools.fastboot, "kill").returns();
+      sinon.stub(deviceTools.heimdall, "kill").returns();
+      expect(deviceTools.kill()).to.eql(undefined);
+    });
+  });
   describe("wait()", function() {
     it("should resolve mode", function() {
       const deviceTools = new DeviceTools();

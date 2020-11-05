@@ -63,6 +63,14 @@ describe("Adb module", function() {
   });
 
   describe("basic functions", function() {
+    describe("kill()", function() {
+      it("should kill child processes", function() {
+        stubExec();
+        const adb = new Adb();
+        return adb.kill();
+      });
+    });
+
     describe("handleError()", function() {
       adbErrors.forEach(e =>
         it(`should return ${e.expectedReturn}`, function() {
@@ -210,7 +218,7 @@ describe("Adb module", function() {
             })
           }
         };
-        sinon.stub(child_process, "spawn").callsFake(() => child);
+        sinon.stub(child_process, "spawn").returns(child);
         const adb = new Adb();
         const progress = sinon.fake();
         return adb
@@ -232,7 +240,7 @@ describe("Adb module", function() {
             on: sinon.fake((_, cb) => cb("b"))
           }
         };
-        sinon.stub(child_process, "spawn").callsFake(() => child);
+        sinon.stub(child_process, "spawn").returns(child);
         const adb = new Adb();
         const progress = sinon.fake();
         adb.push(["tests/test-data/test_file"], null, progress).catch(e => {
@@ -259,7 +267,7 @@ describe("Adb module", function() {
             on: sinon.fake((_, cb) => cb("b"))
           }
         };
-        sinon.stub(child_process, "spawn").callsFake(() => child);
+        sinon.stub(child_process, "spawn").returns(child);
         const adb = new Adb();
         const progress = sinon.fake();
         adb.push(["tests/test-data/test_file"], null, progress).catch(e => {
@@ -282,7 +290,7 @@ describe("Adb module", function() {
           },
           kill: sinon.fake()
         };
-        sinon.stub(child_process, "spawn").callsFake(() => child);
+        sinon.stub(child_process, "spawn").returns(child);
         const adb = new Adb();
         const cp = adb.push(["tests/test-data/test_file"]);
         cp.cancel();
@@ -325,15 +333,95 @@ describe("Adb module", function() {
     });
     describe("sideload()", function() {
       it("should sideload android ota package", function() {
-        stubExec();
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 10)),
+          stdout: {
+            on: sinon.fake((_, cb) => cb("something"))
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => {
+              cb("some.cpp writex len=1337");
+              cb("some.cpp writex len=NaN");
+            })
+          }
+        };
+        sinon.stub(child_process, "spawn").returns(child);
         const adb = new Adb();
         return adb.sideload("tests/test-data/test_file").then(() => {
-          expectArgs("sideload", common.quotepath("tests/test-data/test_file"));
+          expect(child_process.spawn).to.have.been.calledWith(adb.executable, [
+            ...adb.extra,
+            "sideload",
+            "tests/test-data/test_file"
+          ]);
         });
       });
-      it("should reject if no package specified");
-      it("should reject if package inaccessible");
-      it("should reject on error");
+      it("should be cancelable", function() {
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake(),
+          stdout: {
+            on: sinon.fake((_, cb) => cb("a"))
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => cb("b"))
+          },
+          kill: sinon.fake()
+        };
+        sinon.stub(child_process, "spawn").returns(child);
+        const adb = new Adb();
+        const cp = adb.sideload("tests/test-data/test_file");
+        cp.cancel();
+      });
+      it("should reject on inaccessible file", function(done) {
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(666, "SIGTERM"), 10)),
+          stdout: {
+            on: sinon.fake((_, cb) =>
+              cb("adb: error: cannot stat: 'file' No such file or directory")
+            )
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => cb("b"))
+          }
+        };
+        sinon.stub(child_process, "spawn").returns(child);
+        const adb = new Adb();
+        const progress = sinon.fake();
+        adb.sideload("tests/test-data/test_file", progress).catch(e => {
+          expect(child_process.spawn).to.not.have.been.calledTwice;
+          expect(progress).to.have.been.calledWith(0);
+          expect(progress).to.not.have.been.calledTwice;
+          expectReject(e, "file not found");
+          done();
+        });
+      });
+      it("should reject on error", function(done) {
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(666, "SIGTERM"), 10)),
+          stdout: {
+            on: sinon.fake((_, cb) => cb("a"))
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => cb("b"))
+          }
+        };
+        sinon.stub(child_process, "spawn").returns(child);
+        const adb = new Adb();
+        const progress = sinon.fake();
+        adb.sideload("tests/test-data/test_file", progress).catch(e => {
+          expect(child_process.spawn).to.not.have.been.calledTwice;
+          expect(progress).to.have.been.calledWith(0);
+          expect(progress).to.not.have.been.calledTwice;
+          expectReject(
+            e,
+            '{"error":{"code":666,"signal":"SIGTERM"},"stdout":"a","stderr":"b"}'
+          );
+          done();
+        });
+      });
     });
     describe("getState()", function() {
       it("should resolve state", function() {
@@ -712,7 +800,7 @@ describe("Adb module", function() {
             on: sinon.fake((_, cb) => cb("something"))
           }
         };
-        sinon.stub(child_process, "spawn").callsFake(() => child);
+        sinon.stub(child_process, "spawn").returns(child);
         const adb = new Adb();
         const stream = {
           close: sinon.spy()
@@ -734,7 +822,7 @@ describe("Adb module", function() {
             on: sinon.fake((_, cb) => cb("something"))
           }
         };
-        sinon.stub(child_process, "spawn").callsFake(() => child);
+        sinon.stub(child_process, "spawn").returns(child);
         const adb = new Adb();
         const stream = {
           close: sinon.spy()
