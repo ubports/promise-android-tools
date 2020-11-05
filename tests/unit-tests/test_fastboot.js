@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require("fs");
 const chai = require("chai");
 const sinon = require("sinon");
 const chaiAsPromised = require("chai-as-promised");
@@ -26,179 +25,193 @@ const expect = chai.expect;
 chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
+const child_process = require("child_process");
+
 const Fastboot = require("../../src/module.js").Fastboot;
 const common = require("../../src/common.js");
+const { getAndroidToolPath } = require("android-tools-bin");
+const { fastbootErrors } = require("../test-data/known_errors.js");
+
+function stubExec(error, stdout, stderr) {
+  sinon.stub(child_process, "execFile").yields(error, stdout, stderr);
+}
+
+function expectArgs(...args) {
+  expect(child_process.execFile).to.have.been.calledWith(
+    getAndroidToolPath("fastboot"),
+    args
+  );
+}
+
+function expectReject(error, message) {
+  expect(error).to.be.instanceOf(Error);
+  expect(error).to.haveOwnProperty("message", message);
+}
 
 describe("Fastboot module", function() {
   describe("constructor()", function() {
-    it("should create default fastboot when called without arguments", function() {
+    it("should construct fastboot", function() {
       const fastboot = new Fastboot();
-      expect(fastboot.exec).to.exist;
-      expect(fastboot.log).to.equal(console.log);
-    });
-    it("should create default fastboot when called with unrelated object", function() {
-      const fastboot = new Fastboot({});
-      expect(fastboot.exec).to.exist;
-      expect(fastboot.log).to.equal(console.log);
-    });
-    it("should create custom fastboot when called with valid options", function() {
-      const execStub = sinon.stub();
-      const logStub = sinon.stub();
-      const fastboot = new Fastboot({ exec: execStub, log: logStub });
-      expect(fastboot.exec).to.equal(execStub);
-      expect(fastboot.exec).to.not.equal(logStub);
-      expect(fastboot.log).to.equal(logStub);
-      expect(fastboot.log).to.not.equal(execStub);
-    });
-  });
-  describe("private functions", function() {
-    describe("exec()", function() {
-      it("should call the specified function", function() {
-        const execSpy = sinon.spy();
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execSpy, log: logSpy });
-        fastboot.exec("This is an argument");
-        expect(execSpy).to.have.been.calledWith("This is an argument");
-      });
-    });
-    describe("execCommand()", function() {
-      it("should call an executable with specified argument", function() {
-        const execFake = sinon.fake((args, callback) =>
-          callback(null, args.join(" "))
-        );
-        const logStub = sinon.stub();
-        const fastboot = new Fastboot({ exec: execFake, log: logStub });
-        return fastboot.execCommand(["some", "test arguments"]).then(r => {
-          expect(execFake).to.have.been.calledWith(["some", "test arguments"]);
-          expect(r).to.equal("some test arguments");
-        });
-      });
-      it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) =>
-          callback(
-            {
-              cmd: "fastboot " + args.join(" ")
-            },
-            "everything is on fire"
-          )
-        );
-        const logStub = sinon.stub();
-        const fastboot = new Fastboot({ exec: execFake, log: logStub });
-        return fastboot
-          .execCommand(["this", "will", "not", "work"])
-          .catch(e => {
-            expect(execFake).to.have.been.calledWith([
-              "this",
-              "will",
-              "not",
-              "work"
-            ]);
-            expect(e.message).to.equal(
-              '{"error":{"cmd":"fastboot this will not work"},"stdout":"everything is on fire"}'
-            );
-          });
-      });
+      expect(fastboot).to.exist;
+      expect(fastboot.tool).to.eql("fastboot");
+      expect(fastboot.executable).to.include("fastboot");
+      expect(fastboot.extra).to.eql([]);
+      expect(fastboot.execOptions).to.eql({});
     });
   });
   describe("basic functions", function() {
+    describe("handleError()", function() {
+      fastbootErrors.forEach(e =>
+        it(`should return ${e.expectedReturn}`, function() {
+          const fastboot = new Fastboot();
+          fastboot.executable = "/path/to/fastboot";
+          expect(fastboot.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
+            e.expectedReturn
+          );
+        })
+      );
+    });
     describe("flash()", function() {
       it("should resolve if flashed successfully", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return fastboot.flash("boot", "/path/to/image").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith([
-            "flash",
-            "boot",
-            common.quotepath("/path/to/image")
-          ]);
-        });
-      });
-      it("should reject if bootloader is locked", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "", "FAILED (remote: 'Bootloader is locked.')");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return expect(
-          fastboot.flash("boot", "/path/to/image")
-        ).to.have.been.rejectedWith(
-          "flashing failed: Error: bootloader is locked"
-        );
-      });
-      it("should reject if flashing failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return expect(
-          fastboot.flash("boot", "/path/to/image")
-        ).to.have.been.rejectedWith(
-          'flashing failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
-      });
-    });
-    describe("flashRaw()", function() {
-      it("should resolve if flashed raw image successfully", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return fastboot.flashRaw("boot", "/path/to/image").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith([
-            "flash:raw",
-            "boot",
-            common.quotepath("/path/to/image")
-          ]);
-        });
-      });
-      it("should resolve if force-flashed raw image successfully", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        let i = 0;
+        const child = {
+          on: sinon.fake(),
+          once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 5)),
+          stdout: {
+            on: sinon.fake((_, cb) => cb("a"))
+          },
+          stderr: {
+            on: sinon.fake((_, cb) => {
+              if (i++ === 0) {
+                cb("Sending 'boot'");
+                setTimeout(() => cb("Writing 'boot'"), 1);
+                setTimeout(() => cb("Finished 'boot'"), 2);
+              } else {
+                cb("Sending sparse 'userdata' 1/2 (62568 KB)");
+                setTimeout(() => cb("Writing 'userdata'"), 1);
+                setTimeout(
+                  () => cb("Sending sparse 'userdata' 2/2 (62568 KB)"),
+                  2
+                );
+                setTimeout(() => cb("Writing 'userdata'"), 3);
+                setTimeout(() => cb("Finished 'userdata'"), 4);
+              }
+            })
+          }
+        };
+        sinon.stub(child_process, "spawn").returns(child);
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "wait").resolves();
+        const progress = sinon.spy();
         return fastboot
-          .flashRaw("boot", "/path/to/image", "--force", "--disable-verity")
+          .flash(
+            [
+              { partition: "boot", file: "/path/to/boot.img" },
+              {
+                partition: "recovery",
+                file: "/path/to/recovery.img",
+                raw: true,
+                flags: ["--force", "--disable-verity"]
+              }
+            ],
+            progress
+          )
           .then(r => {
-            expect(execFake).to.have.been.called;
-            expect(execFake).to.have.been.calledWith([
-              "flash:raw",
+            expect(r).to.eql(undefined);
+            expect(
+              child_process.spawn
+            ).to.have.been.calledWith(fastboot.executable, [
+              "flash",
               "boot",
+              "/path/to/boot.img"
+            ]);
+            expect(
+              child_process.spawn
+            ).to.have.been.calledWith(fastboot.executable, [
+              "flash:raw",
+              "recovery",
               "--force",
               "--disable-verity",
-              common.quotepath("/path/to/image")
+              "/path/to/recovery.img"
             ]);
+            expect(progress).to.have.been.calledWith(0);
+            expect(progress).to.have.been.calledWith(0.15);
+            expect(progress).to.have.been.calledWith(0.45);
+            expect(progress).to.have.been.calledWith(0.575);
+            expect(progress).to.have.been.calledWith(0.725);
+            expect(progress).to.have.been.calledWith(0.65);
+            expect(progress).to.have.been.calledWith(0.95);
+            expect(progress).to.have.been.calledWith(1);
           });
+      });
+      [
+        {
+          description: "should reject if bootloader is locked",
+          exit: 1,
+          stdout: "",
+          stderr: "FAILED (remote: 'Bootloader is locked.')",
+          expectedError: "Flashing failed: bootloader locked"
+        },
+        {
+          description: "should reject if flashing failed",
+          exit: 1,
+          stdout: "",
+          stderr: "Sending sparse\neverything exploded",
+          expectedError:
+            'Flashing failed: {"error":{"code":1},"stderr":"everything exploded"}'
+        }
+      ].forEach(variation =>
+        it(variation.description, function(done) {
+          const child = {
+            on: sinon.fake(),
+            once: sinon.fake((_, cb) => setTimeout(() => cb(1, null), 5)),
+            stdout: {
+              on: sinon.fake((_, cb) => cb(variation.stdout))
+            },
+            stderr: {
+              on: sinon.fake((_, cb) => cb(variation.stderr))
+            }
+          };
+          sinon.stub(child_process, "spawn").returns(child);
+          const fastboot = new Fastboot();
+          sinon.stub(fastboot, "wait").resolves();
+          fastboot
+            .flash([{ partition: "boot", file: "/path/to/image" }])
+            .catch(error => {
+              expectReject(error, variation.expectedError);
+              expect(
+                child_process.spawn
+              ).to.have.been.calledWith(fastboot.executable, [
+                "flash",
+                "boot",
+                "/path/to/image"
+              ]);
+              done();
+            });
+        })
+      );
+      it("should reject if wait rejected", function(done) {
+        sinon.stub(child_process, "spawn");
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "wait").rejects("wait error");
+        fastboot.flash([]).catch(e => {
+          expectReject(e, "Flashing failed: wait error");
+          expect(child_process.spawn).to.not.have.been.called;
+          done();
+        });
       });
     });
     describe("boot()", function() {
       it("should resolve on boot", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.boot("/path/to/image").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith([
-            "boot",
-            common.quotepath("/path/to/image")
-          ]);
+          expectArgs("boot", common.quotepath("/path/to/image"));
         });
       });
       it("should reject if booting failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(
           fastboot.boot("/path/to/image")
         ).to.have.been.rejectedWith(
@@ -208,56 +221,29 @@ describe("Fastboot module", function() {
     });
     describe("update()", function() {
       it("should resolve if updating works", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.update("/path/to/image").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith([
-            "",
-            "update",
-            common.quotepath("/path/to/image")
-          ]);
+          expectArgs("", "update", common.quotepath("/path/to/image"));
         });
       });
       it("should not wipe if not specified", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.update("/path/to/image").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith([
-            "",
-            "update",
-            common.quotepath("/path/to/image")
-          ]);
+          expectArgs("", "update", common.quotepath("/path/to/image"));
         });
       });
       it("should wipe if specified", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.update("/path/to/image", true).then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith([
-            "-w",
-            "update",
-            common.quotepath("/path/to/image")
-          ]);
+          expectArgs("-w", "update", common.quotepath("/path/to/image"));
         });
       });
       it("should reject if updating fails", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(
           fastboot.update("/path/to/image")
         ).to.have.been.rejectedWith(
@@ -267,22 +253,15 @@ describe("Fastboot module", function() {
     });
     describe("rebootBootloader()", function() {
       it("should resolve on reboot", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.rebootBootloader().then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["reboot-bootloader"]);
+          expectArgs("reboot-bootloader");
         });
       });
       it("should reject if rebooting fails", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.rebootBootloader()).to.have.been.rejectedWith(
           'rebooting to bootloader failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
@@ -290,22 +269,15 @@ describe("Fastboot module", function() {
     });
     describe("reboot()", function() {
       it("should resolve on reboot", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.reboot().then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["reboot"]);
+          expectArgs("reboot");
         });
       });
       it("should reject if rebooting fails", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.reboot()).to.have.been.rejectedWith(
           'rebooting failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
@@ -313,22 +285,15 @@ describe("Fastboot module", function() {
     });
     describe("continue()", function() {
       it("should resolve when boot continues", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.continue().then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["continue"]);
+          expectArgs("continue");
         });
       });
       it("should reject if continuing boot fails", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.continue()).to.have.been.rejectedWith(
           'continuing boot failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
@@ -336,32 +301,22 @@ describe("Fastboot module", function() {
     });
     describe("format()", function() {
       it("should resolve after formatting", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.format("cache").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["format", "cache"]);
+          expectArgs("format", "cache");
         });
       });
       it("should reject if formatting failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.format("cache")).to.have.been.rejectedWith(
           'formatting failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
       });
       it("should reject if size was specified but not type", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(
           fastboot.format("cache", null, 69)
         ).to.have.been.rejectedWith(
@@ -369,46 +324,31 @@ describe("Fastboot module", function() {
         );
       });
       it("should resolve after formatting with type", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.format("cache", "ext4").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["format:ext4", "cache"]);
+          expectArgs("format:ext4", "cache");
         });
       });
       it("should resolve after formatting with type and size", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.format("cache", "ext4", 69).then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["format:ext4:69", "cache"]);
+          expectArgs("format:ext4:69", "cache");
         });
       });
     });
     describe("erase()", function() {
       it("should resolve after erasing", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.erase("cache").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["erase", "cache"]);
+          expectArgs("erase", "cache");
         });
       });
       it("should reject if erasing failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.erase("cache")).to.have.been.rejectedWith(
           'erasing failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
@@ -416,48 +356,33 @@ describe("Fastboot module", function() {
     });
     describe("oemUnlock()", function() {
       it("should resolve after unlocking", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.oemUnlock().then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["oem", "unlock"]);
+          expectArgs("oem", "unlock");
         });
       });
       it("should resolve if already unlocked", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "FAILED (remote: Already Unlocked)");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "FAILED (remote: Already Unlocked)");
+        const fastboot = new Fastboot();
         return fastboot.oemUnlock().then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["oem", "unlock"]);
+          expectArgs("oem", "unlock");
         });
       });
       it("should resolve if not necessary", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(
-            true,
-            "",
-            "FAILED (remote: 'Not necessary')\nfastboot: error: Command failed"
-          );
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(
+          true,
+          "",
+          "FAILED (remote: 'Not necessary')\nfastboot: error: Command failed"
+        );
+        const fastboot = new Fastboot();
         return fastboot.oemUnlock().then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["oem", "unlock"]);
+          expectArgs("oem", "unlock");
         });
       });
       it("should reject if unlocking failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.oemUnlock()).to.have.been.rejectedWith(
           'oem unlock failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
@@ -465,22 +390,15 @@ describe("Fastboot module", function() {
     });
     describe("oemLock()", function() {
       it("should resolve after locking", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.oemLock().then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["oem", "lock"]);
+          expectArgs("oem", "lock");
         });
       });
       it("should reject if locking failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.oemLock()).to.have.been.rejectedWith(
           'oem lock failed: Error: {"error":true,"stdout":"everything exploded"}'
         );
@@ -488,41 +406,32 @@ describe("Fastboot module", function() {
     });
     describe("setActive()", function() {
       it("should resolve after setting active slot", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.setActive("a").then(r => {
-          expect(execFake).to.have.been.called;
-          expect(execFake).to.have.been.calledWith(["--set-active=a"]);
+          expectArgs("--set-active=a");
         });
       });
       it("should reject if locking failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(
-            {
-              killed: false,
-              code: 1,
-              signal: null,
-              cmd: "fastboot --set-active=a"
-            },
-            "",
-            "error: Device does not support slots."
-          );
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(
+          {
+            killed: false,
+            code: 1,
+            signal: null,
+            cmd: "fastboot --set-active=a"
+          },
+          "",
+          "error: Device does not support slots."
+        );
+
+        const fastboot = new Fastboot();
         return expect(fastboot.setActive("a")).to.have.been.rejectedWith(
-          'failed to set active slot: Error: {"error":{"killed":false,"code":1,"signal":null,"cmd":"fastboot --set-active=a"},"stdout":"","stderr":"error: Device does not support slots."}'
+          'failed to set active slot: Error: {"error":{"code":1,"cmd":"fastboot --set-active=a"},"stderr":"error: Device does not support slots."}'
         );
       });
       it("should reject if locking failed with non-zero exit code", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, "error: everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(null, "error: everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.setActive("a")).to.have.been.rejectedWith(
           "failed to set active slot: Error: error: everything exploded"
         );
@@ -530,144 +439,77 @@ describe("Fastboot module", function() {
     });
   });
   describe("convenience functions", function() {
-    describe("flashArray()", function() {
-      it("should resolve if flashed successfully", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return fastboot
-          .flashArray([
-            { partition: "p1", file: "f1" },
-            { partition: "p2", file: "f2", raw: true },
-            { partition: "p3", file: "f3", raw: true, flags: ["--force"] },
-            {
-              partition: "p4",
-              file: "f4",
-              flags: ["--disable-verification", "--disable-verity"]
-            }
-          ])
-          .then(r => {
-            expect(execFake).to.have.been.calledWith([
-              "flash",
-              "p1",
-              common.quotepath("f1")
-            ]);
-            expect(execFake).to.have.been.calledWith([
-              "flash:raw",
-              "p2",
-              common.quotepath("f2")
-            ]);
-            expect(execFake).to.have.been.calledWith([
-              "flash:raw",
-              "p3",
-              "--force",
-              common.quotepath("f3")
-            ]);
-            expect(execFake).to.have.been.calledWith([
-              "flash",
-              "p4",
-              "--disable-verification",
-              "--disable-verity",
-              common.quotepath("f4")
-            ]);
-          });
-      });
-      it("should reject if flashing failed", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return expect(
-          fastboot.flashArray([
-            { partition: "p", file: "f" },
-            { partition: "p", file: "f" }
-          ])
-        ).to.have.been.rejectedWith("flashing failed");
-      });
-      it("should report progress");
-    });
     describe("hasAccess()", function() {
       it("should resolve true when a device is detected", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, "0123456789ABCDEF	fastboot");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(null, "0123456789ABCDEF	fastboot");
+        const fastboot = new Fastboot();
         return fastboot.hasAccess().then(r => {
           expect(r).to.eql(true);
-          expect(execFake).to.have.been.calledWith(["devices"]);
+          expectArgs("devices");
         });
       });
       it("should resolve false if no device is detected", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback();
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec();
+        const fastboot = new Fastboot();
         return fastboot.hasAccess().then(r => {
           expect(r).to.eql(false);
-          expect(execFake).to.have.been.calledWith(["devices"]);
+          expectArgs("devices");
         });
       });
       it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
         return expect(fastboot.hasAccess()).to.be.rejectedWith(
           "everything exploded"
         );
       });
     });
-    describe("waitForDevice()", function() {
-      it("should resolve when a device is detected", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, "0123456789ABCDEF	fastboot");
+    describe("wait()", function() {
+      it("should resolve mode as soon as device is detected", function() {
+        stubExec(null, "0123456789ABCDEF	fastboot");
+        const fastboot = new Fastboot();
+        return fastboot.wait().then(r => {
+          expect(r).to.eql("bootloader");
+          expectArgs("devices");
         });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return fastboot.waitForDevice(1).then(r => {
-          expect(execFake).to.have.been.calledWith(["devices"]);
-        });
-      });
-      it("should reject on error", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(true, "everything exploded");
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return expect(fastboot.waitForDevice(5, 10)).to.be.rejectedWith(
-          "everything exploded"
-        );
-      });
-      it("should reject on timeout", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null, null);
-        });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return expect(fastboot.waitForDevice(5, 10)).to.be.rejectedWith(
-          "no device: timeout"
-        );
       });
     });
-    describe("stopWaiting()", function() {
-      it("should cause waitForDevice() to reject", function() {
-        const execFake = sinon.fake((args, callback) => {
-          callback(null, null, null);
+    describe("getvar()", function() {
+      it("should resolve bootloader var", function() {
+        stubExec(null, null, "product: FP2\nFinished. Total time: 0.000s");
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "hasAccess").resolves(true);
+        return fastboot.getvar("product").then(r => {
+          expect(r).to.eql("FP2");
+          expectArgs("getvar", "product");
         });
-        const logSpy = sinon.spy();
-        const fastboot = new Fastboot({ exec: execFake, log: logSpy });
-        return new Promise(function(resolve, reject) {
-          const wait = fastboot.waitForDevice(5);
-          setTimeout(() => {
-            fastboot.stopWaiting();
-            resolve(expect(wait).to.be.rejectedWith("stopped waiting"));
-          }, 10);
+      });
+      it("should reject on no device", function(done) {
+        stubExec(1);
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "hasAccess").resolves(false);
+        fastboot.getvar("product").catch(e => {
+          expectReject(e, "no device");
+          done();
+        });
+      });
+      it("should reject on unexpected return", function(done) {
+        stubExec(null, null, "foo: bar\nFinished. Total time: 0.000s");
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "hasAccess").resolves(true);
+        fastboot.getvar("product").catch(e => {
+          expectReject(e, "Unexpected getvar return: foo");
+          expectArgs("getvar", "product");
+          done();
+        });
+      });
+    });
+    describe("getDeviceName()", function() {
+      it("should resolve bootloader var", function() {
+        const fastboot = new Fastboot();
+        sinon.stub(fastboot, "getvar").resolves("FP2");
+        return fastboot.getDeviceName("product").then(r => {
+          expect(r).to.eql("FP2");
         });
       });
     });

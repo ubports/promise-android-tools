@@ -17,55 +17,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const exec = require("child_process").exec;
-const events = require("events");
 const common = require("./common.js");
-
-class Event extends events {}
-
-const DEFAULT_EXEC = (args, callback) => {
-  exec(["heimdall"].concat(args).join(" "), undefined, callback);
-};
-const DEFAULT_LOG = console.log;
+const Tool = require("./tool.js");
+const { CancelablePromise } = require("cancelable-promise");
 
 /**
  * heimdall: flash firmware on samsung devices
  */
-class Heimdall {
+class Heimdall extends Tool {
   constructor(options) {
-    this.exec = DEFAULT_EXEC;
-    this.log = DEFAULT_LOG;
-    this.heimdallEvent = new Event();
-
-    if (options) {
-      if (options.exec) this.exec = options.exec;
-      if (options.log) this.log = options.log;
-    }
+    super({
+      tool: "heimdall",
+      ...options
+    });
   }
 
   /**
-   * Exec a command
-   * @param {Aarray} args - list of arguments
-   * @returns {Promise<String>} stdout
+   * Generate processable error messages from child_process.exec() callbacks
+   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {String} stdout stdandard output
+   * @param {String} stderr standard error
+   * @private
+   * @returns {String} error message
    */
-  execCommand(args) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.exec(args, (error, stdout, stderr) => {
-        if (error)
-          reject(
-            new Error(
-              common.handleError(
-                error,
-                stdout,
-                stderr ? stderr.trim() : undefined
-              )
-            )
-          );
-        else if (stdout) resolve(stdout.trim());
-        else resolve();
-      });
-    });
+  handleError(error, stdout, stderr) {
+    if (
+      stderr?.includes(
+        "ERROR: Failed to detect compatible download-mode device."
+      )
+    ) {
+      return "no device";
+    } else {
+      return super.handleError(error, stdout, stderr);
+    }
   }
 
   /**
@@ -81,16 +65,10 @@ class Heimdall {
    * @returns {Promise<Boolean>}
    */
   hasAccess() {
-    return this.execCommand(["detect"])
-      .then(() => {
-        return true;
-      })
+    return this.exec("detect")
+      .then(() => true)
       .catch(error => {
-        if (
-          error.message.includes(
-            "ERROR: Failed to detect compatible download-mode device."
-          )
-        ) {
+        if (error.message.includes("no device")) {
           return false;
         } else {
           throw error;
@@ -100,47 +78,10 @@ class Heimdall {
 
   /**
    * Wait for a device
-   * @param {Integer} interval how often to try
-   * @param {Integer} timeout how long to try
+   * @returns {CancelablePromise<String>}
    */
-  waitForDevice(interval, timeout) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      const accessInterval = setInterval(() => {
-        _this
-          .hasAccess()
-          .then(access => {
-            if (access) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              resolve();
-            }
-          })
-          .catch(error => {
-            if (error) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              reject(error);
-            }
-          });
-      }, interval || 2000);
-      const accessTimeout = setTimeout(() => {
-        clearInterval(accessInterval);
-        reject(new Error("no device: timeout"));
-      }, timeout || 60000);
-      _this.heimdallEvent.once("stop", () => {
-        clearInterval(accessInterval);
-        clearTimeout(accessTimeout);
-        reject(new Error("stopped waiting"));
-      });
-    });
-  }
-
-  /**
-   * Stop waiting for a device
-   */
-  stopWaiting() {
-    this.heimdallEvent.emit("stop");
+  wait() {
+    return super.wait().then(() => "download");
   }
 
   /**
@@ -149,10 +90,10 @@ class Heimdall {
    * @returns {Promise<String>}
    */
   printPit(file) {
-    return this.execCommand([
+    return this.exec(
       "print-pit",
       ...(file ? ["--file", common.quotepath(file)] : [])
-    ])
+    )
       .then(r =>
         r
           .split("\n\nEnding session...")[0]
@@ -184,29 +125,22 @@ class Heimdall {
   }
 
   /**
-   * Flashes a firmware file to a partition (name or identifier)
-   * @param {String} partition partition name
-   * @param {String} file image file
-   * @returns {Promise}
+   * @typedef HeimdallFlashImage
+   * @property {String} partition partition to flash
+   * @property {String} file path to an image file
    */
-  flash(partition, file) {
-    return this.flashArray([{ partition, file }]);
-  }
 
   /**
    * Flash firmware files to partitions (names or identifiers)
-   * @param {Array<Object>} images [ {partition, file} ]
+   * @param {Array<HeimdallFlashImage>} images Images to flash
    * @returns {Promise}
    */
-  flashArray(images) {
-    return this.execCommand([
+  flash(images) {
+    // TODO report progress similar to fastboot.flash()
+    return this.exec(
       "flash",
       ...images.map(i => `--${i.partition} ${common.quotepath(i.file)}`)
-    ])
-      .then(() => null)
-      .catch(error => {
-        throw error;
-      });
+    ).then(() => null);
   }
 }
 

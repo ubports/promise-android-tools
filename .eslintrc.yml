@@ -1,10 +1,13 @@
 env:
-  browser: true
   commonjs: true
   es6: true
+parser: babel-eslint # fixme remove as soon as eslint supports optional chaining https://github.com/eslint/eslint/pull/13416
 plugins:
   - prettier
 parserOptions:
   ecmaVersion: 2018
 rules:
   prettier/prettier: error
+  linebreak-style:
+    - error
+    - unix

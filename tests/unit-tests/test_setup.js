@@ -18,10 +18,8 @@
 const sinon = require("sinon");
 const chai = require("chai");
 
-beforeEach(function() {
-  this.sandbox = sinon.createSandbox();
-});
+beforeEach(function() {});
 
 afterEach(function() {
-  this.sandbox.restore();
+  sinon.restore();
 });

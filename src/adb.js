@@ -19,77 +19,63 @@
 
 const fs = require("fs-extra");
 const path = require("path");
-const exec = require("child_process").exec;
-const events = require("events");
 const common = require("./common.js");
+const Tool = require("./tool.js");
+const { CancelablePromise } = require("cancelable-promise");
 
-class Event extends events {}
-
-const DEFAULT_EXEC = (args, callback) => {
-  exec(
-    ["adb"].concat(args).join(" "),
-    { options: { maxBuffer: 1024 * 1024 * 2 } },
-    callback
-  );
-};
-
-const DEFAULT_LOG = console.log;
+const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;
 
 /**
  * Android Debug Bridge (ADB) module
  */
-class Adb {
+class Adb extends Tool {
   constructor(options) {
-    this.exec = DEFAULT_EXEC;
-    this.log = DEFAULT_LOG;
-    this.port = DEFAULT_PORT;
-    this.adbEvent = new Event();
-
-    // Accept options
-    if (options) {
-      if (options.exec) {
-        this.exec = options.exec;
-      }
-      if (options.log) {
-        this.log = options.log;
-      }
-      if (options.port) {
-        this.port = options.port;
-      }
-    }
+    super({
+      tool: "adb",
+      extra: ["-P", options?.port || DEFAULT_PORT],
+      ...options
+    });
+    this.port = options?.port || DEFAULT_PORT;
   }
 
   /**
-   * Exec a command with port argument
-   * @param {Aarray} args - list of arguments
-   * @returns {Promise<String>} stdout
+   * Terminate all child processes with extreme prejudice.
    */
-  execCommand(args) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.exec(["-P", _this.port].concat(args), (error, stdout, stderr) => {
-        if (error) {
-          reject(
-            new Error(
-              common.handleError(
-                error,
-                stdout,
-                stderr ? stderr.trim() : undefined
-              )
-            )
-          );
-        } else if (stdout) {
-          if (stdout.includes("no permissions")) {
-            reject(new Error("no permissions"));
-          } else {
-            resolve(stdout.trim());
-          }
-        } else {
-          resolve();
-        }
-      });
-    });
+  kill() {
+    this.killServer().finally(() => super.kill());
+  }
+
+  /**
+   * Generate processable error messages from child_process.exec() callbacks
+   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {String} stdout stdandard output
+   * @param {String} stderr standard error
+   * @private
+   * @returns {String} error message
+   */
+  handleError(error, stdout, stderr) {
+    if (
+      stderr?.includes("error: device unauthorized") ||
+      stderr?.includes("error: device still authorizing")
+    ) {
+      return "unauthorized";
+    } else if (stderr?.includes("error: device offline")) {
+      return "device offline";
+    } else if (
+      stderr?.includes("no devices/emulators found") ||
+      stdout?.includes("no devices/emulators found") ||
+      stdout?.includes("adb: error: failed to read copy response") ||
+      stdout?.includes("couldn't read from device") ||
+      stdout?.includes("remote Bad file number") ||
+      stdout?.includes("remote Broken pipe") ||
+      stderr?.includes("adb: sideload connection failed: closed") ||
+      stderr?.includes("adb: pre-KitKat sideload connection failed: closed")
+    ) {
+      return "no device";
+    } else {
+      return super.handleError(error, stdout, stderr);
+    }
   }
 
   /**
@@ -97,21 +83,8 @@ class Adb {
    * @returns {Promise}
    */
   startServer() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.stopWaiting();
-      _this
-        .killServer()
-        .then(() => {
-          _this.log("starting adb server on port " + _this.port);
-          _this
-            .execCommand("start-server")
-            .then(() => {
-              resolve();
-            })
-            .catch(reject);
-        })
-        .catch(reject);
+    return this.killServer().then(() => {
+      this.exec("start-server");
     });
   }
 
@@ -120,39 +93,27 @@ class Adb {
    * @returns {Promise}
    */
   killServer() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.stopWaiting();
-      _this.log("killing all running adb servers");
-      _this
-        .execCommand("kill-server")
-        .then(resolve)
-        .catch(reject);
-    });
+    return this.exec("kill-server");
   }
 
   /**
    * kick connection from host side to force reconnect
    * @param {String} [modifier] - "device" or "offline"
-   * @returns {Promise}
+   * @returns {Promise<String>} resolves device state
    */
   reconnect(modifier = "") {
-    this.stopWaiting();
-    return this.execCommand(["reconnect", modifier].filter(i => i)).then(
-      stdout => {
-        console.log("stdout", stdout);
-        if (stdout && stdout.includes("no devices/emulators found")) {
-          throw new Error("no device");
-        } else {
-          return this.waitForDevice();
-        }
+    return this.exec(...["reconnect", modifier].filter(i => i)).then(stdout => {
+      if (stdout?.includes("no devices/emulators found")) {
+        throw new Error("no device");
+      } else {
+        return this.wait();
       }
-    );
+    });
   }
 
   /**
    * kick connection from device side to force reconnect
-   * @returns {Promise}
+   * @returns {Promise<String>} resolves device state
    */
   reconnectDevice() {
     return this.reconnect("device");
@@ -160,7 +121,7 @@ class Adb {
 
   /**
    * reset offline/unauthorized devices to force reconnect
-   * @returns {Promise}
+   * @returns {Promise<String>} resolves device state
    */
   reconnectOffline() {
     return this.reconnect("offline");
@@ -171,38 +132,12 @@ class Adb {
    * @returns {Promise<String>} serial number
    */
   getSerialno() {
-    var _this = this;
-    var Exp = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
-    return new Promise(function(resolve, reject) {
-      _this
-        .execCommand("get-serialno")
-        .then(stdout => {
-          if (stdout && stdout.includes("unknown")) {
-            _this
-              .hasAccess()
-              .then(access => {
-                if (access) {
-                  reject(new Error("device accessible. Unkown error"));
-                } else {
-                  reject(new Error("no accessible device"));
-                }
-              })
-              .catch(error => {
-                if (error.message.includes("not found")) {
-                  reject(new Error("no device found"));
-                } else if (error.message.includes("insufficient permissions")) {
-                  reject(new Error("no permissions"));
-                } else {
-                  reject(error);
-                }
-              });
-          } else if (stdout && stdout.match(Exp)) {
-            resolve(stdout.replace("\n", ""));
-          } else {
-            reject(new Error("invalid device id"));
-          }
-        })
-        .catch(reject);
+    return this.exec("get-serialno").then(stdout => {
+      if (!stdout || stdout?.includes("unknown") || !SERIALNO.test(stdout)) {
+        throw new Error(`invalid serial number: ${stdout?.trim()}`);
+      } else {
+        return stdout.trim();
+      }
     });
   }
 
@@ -211,126 +146,155 @@ class Adb {
    * @param {Array} args - list of shell arguments
    * @returns {Promise<String>} stdout
    */
-  shell(args) {
-    return this.execCommand(["shell"].concat(args)).then(stdout => {
-      if (stdout) return stdout.replace("\n", "");
-      else return;
-    });
+  shell(...args) {
+    return this.exec("shell", args.join(" ")).then(stdout => stdout?.trim());
   }
 
   /**
    * copy local files/directories to device
-   * @param {String} file - path to file to push
-   * @param {String} dest - target path
-   * @param {Integer} interval - poll interval
-   * @returns {Promise}
+   * @param {Array<String>} files path to files
+   * @param {String} dest destination path on the device
+   * @param {Function} progress progress function
+   * @returns {CancelablePromise}
    */
-  push(file, dest, interval) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      // Make sure file exists first
-      try {
-        fs.statSync(file);
-      } catch (e) {
-        reject(new Error("Can't access file: " + e));
-      }
-      var fileSize = fs.statSync(file)["size"];
-      var lastSize = 0;
-      // FIXME use stream and parse stdout instead of polling with stat
-      var progressInterval = setInterval(() => {
-        _this
-          .shell([
-            "stat",
-            "-t",
-            common.quotepath(dest + "/" + path.basename(file))
-          ])
-          .then(stat => {
-            _this.adbEvent.emit(
-              "push:progress:size",
-              eval(stat.split(" ")[1]) - lastSize
-            );
-            lastSize = eval(stat.split(" ")[1]);
-          })
-          .catch(e => {
-            clearInterval(progressInterval);
-            _this.log("failed to stat: " + e);
-          });
-      }, interval || 1000);
-      _this
-        .execCommand([
-          "push",
-          common.quotepath(file),
-          dest,
-          common.stdoutFilter("%]")
-        ])
-        .then(stdout => {
-          clearInterval(progressInterval);
-          if (
-            stdout &&
-            (stdout.includes("no devices/emulators found") ||
-              stdout.includes("couldn't read from device") ||
-              stdout.includes("remote Bad file number"))
-          ) {
-            reject(new Error("connection lost"));
-          } else if (
-            stdout &&
-            stdout.includes("remote No space left on device")
-          ) {
-            reject(new Error("Push failed: out of space"));
-          } else if (stdout && stdout.includes("0 files pushed")) {
-            reject(new Error("Push failed: stdout: " + stdout));
+  push(files = [], dest, progress = () => {}) {
+    progress(0);
+    if (!files?.length) {
+      // if there are no files, report 100% and resolve
+      progress(1);
+      return Promise.resolve();
+    } else {
+      const totalSize = files.reduce(
+        (acc, file) => acc + fs.statSync(file)["size"],
+        0
+      );
+      let pushedSize = 0;
+      const _this = this;
+      return new CancelablePromise((resolve, reject, onCancel) => {
+        let stdout = "";
+        let stderr = "";
+        const cp = _this.spawn("push", ...files, dest);
+        cp.once("exit", (code, signal) => {
+          if (code || signal) {
+            // truthy value (i.e. non-zero exit code) indicates error
+            if (
+              stdout.includes("adb: error: cannot stat") &&
+              stdout.includes("No such file or directory")
+            ) {
+              reject(new Error("file not found"));
+            } else {
+              reject(
+                new Error(_this.handleError({ code, signal }, stdout, stderr))
+              );
+            }
           } else {
             resolve();
           }
-        })
-        .catch(e => {
-          clearInterval(progressInterval);
-          _this
-            .hasAccess()
-            .then(access => {
-              reject(access ? "Push failed: " + e : "connection lost");
-            })
-            .catch(() => {
-              reject(new Error("Push failed: " + e));
+        });
+
+        cp.stdout.on("data", d => (stdout += d.toString()));
+        cp.stderr.on("data", d => {
+          d.toString()
+            .split("\n")
+            .forEach(str => {
+              if (str.includes("cpp")) {
+                // logging from cpp files indicates debug output
+                if (str.includes("writex")) {
+                  // writex namespace indicates external writing
+                  pushedSize +=
+                    parseInt(str.split("len=")[1].split(" ")[0]) || 0;
+                  progress(Math.min(pushedSize / totalSize, 1));
+                }
+              } else {
+                stderr += str;
+              }
             });
         });
-    });
+
+        onCancel(() => {
+          if (!cp.kill("SIGTERM")) {
+            setTimeout(() => cp.kill("SIGKILL"), 25);
+          }
+        });
+      });
+    }
   }
 
   /**
    * Reboot to a state
    * @param {String} state - system, recovery, bootloader
+   * @async
    * @returns {Promise}
    */
-  reboot(state) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      if (["system", "recovery", "bootloader"].indexOf(state) == -1) {
-        reject(new Error("unknown state: " + state));
-      } else {
-        _this
-          .execCommand(["reboot", state])
-          .then(stdout => {
-            if (stdout && stdout.includes("failed"))
-              reject(new Error("reboot failed"));
-            else resolve();
-          })
-          .catch(e => reject(new Error("reboot failed: " + e)));
-      }
-    });
+  async reboot(state) {
+    if (!["system", "recovery", "bootloader"].includes(state)) {
+      throw new Error("unknown state: " + state);
+    } else {
+      return this.exec("reboot", state).then(stdout => {
+        if (stdout?.includes("failed"))
+          throw new Error(`reboot failed: ${stdout}`);
+        else return;
+      });
+    }
   }
 
   /**
    * sideload an ota package
    * @param {String} file - path to a file to sideload
-   * @returns {Promise}
+   * @returns {CancelablePromise}
    */
-  sideload(file) {
-    return this.execCommand([
-      "sideload",
-      common.quotepath(file),
-      common.stdoutFilter("%)")
-    ]);
+  sideload(file, progress = () => {}) {
+    progress(0);
+    const totalSize = fs.statSync(file)["size"];
+    let pushedSize = 0;
+    const _this = this;
+    return new CancelablePromise((resolve, reject, onCancel) => {
+      let stdout = "";
+      let stderr = "";
+      const cp = _this.spawn("sideload", file);
+      cp.once("exit", (code, signal) => {
+        if (code || signal) {
+          // truthy value (i.e. non-zero exit code) indicates error
+          if (
+            stdout.includes("adb: error: cannot stat") &&
+            stdout.includes("No such file or directory")
+          ) {
+            reject(new Error("file not found"));
+          } else {
+            reject(
+              new Error(_this.handleError({ code, signal }, stdout, stderr))
+            );
+          }
+        } else {
+          resolve();
+        }
+      });
+
+      cp.stdout.on("data", d => (stdout += d.toString()));
+      cp.stderr.on("data", d => {
+        d.toString()
+          .split("\n")
+          .filter(s => s)
+          .forEach(str => {
+            if (str.includes("cpp")) {
+              // logging from cpp files indicates debug output
+              if (str.includes("writex")) {
+                // writex namespace indicates external writing
+                pushedSize += parseInt(str.split("len=")[1].split(" ")[0]) || 0;
+                progress(Math.min(pushedSize / totalSize, 1));
+              }
+            } else {
+              stderr += str;
+            }
+          });
+      });
+
+      onCancel(() => {
+        if (!cp.kill("SIGTERM")) {
+          setTimeout(() => cp.kill("SIGKILL"), 25);
+        }
+      });
+    });
   }
 
   /**
@@ -338,7 +302,7 @@ class Adb {
    * @returns {Promise<String>} bootloader, recovery, device
    */
   getState() {
-    return this.execCommand(["get-state"]).then(stdout => stdout.trim());
+    return this.exec("get-state").then(stdout => stdout.trim());
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -355,59 +319,8 @@ class Adb {
       currentState === state ||
       (currentState === "device" && state === "system")
         ? Promise.resolve()
-        : this.reboot(state).then(() => this.waitForDevice())
+        : this.reboot(state).then(() => this.wait())
     );
-  }
-
-  /**
-   * Push an array of files and report progress
-   * @param {Array<{ src, dest }>} files file objects
-   * @param {Function} progress progress function
-   * @param {Integer} interval how often to call the progress function
-   * @returns {Promise}
-   */
-  pushArray(files = [], progress = () => {}, interval) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      if (files.length <= 0) {
-        progress(1);
-        resolve();
-      } else {
-        var totalSize = 0;
-        var pushedSize = 0;
-        files.forEach(file => {
-          try {
-            totalSize += fs.statSync(file.src)["size"];
-          } catch (e) {
-            reject(new Error("Can't access file: " + e));
-          }
-        });
-        function progressSize(s) {
-          pushedSize += s;
-          progress(pushedSize / totalSize);
-        }
-        function pushNext(i) {
-          _this
-            .push(files[i].src, files[i].dest, interval)
-            .then(() => {
-              if (i + 1 < files.length) {
-                pushNext(i + 1);
-              } else {
-                _this.adbEvent.removeListener(
-                  "push:progress:size",
-                  progressSize
-                );
-                resolve();
-              }
-            })
-            .catch(e =>
-              reject(new Error("Failed to push file " + i + ": " + e))
-            );
-        }
-        _this.adbEvent.on("push:progress:size", progressSize);
-        pushNext(0); // Begin pushing
-      }
-    });
   }
 
   /**
@@ -415,34 +328,26 @@ class Adb {
    * @returns {Promise<String>} codename
    */
   getDeviceName() {
-    var _this = this;
-    return _this
-      .shell(["getprop", "ro.product.device"])
-      .then(stdout => {
-        if (!stdout || stdout.includes("getprop: not found")) {
-          throw null;
-        } else {
-          return stdout.replace(/\W/g, "");
-        }
-      })
-      .catch(e => {
-        return _this
-          .shell(["cat", "default.prop"])
+    return this.shell("getprop", "ro.product.device").then(stdout => {
+      if (!stdout || stdout?.includes("getprop: not found")) {
+        return this.shell("cat", "default.prop")
           .catch(e => {
             throw new Error("getprop error: " + e);
           })
           .then(stdout => {
             if (stdout && stdout.includes("ro.product.device=")) {
               return stdout
-                .split("\n")
-                .filter(p => p.includes("ro.product.device="))[0]
-                .replace("ro.product.device=", "")
+                .split("ro.product.device=")[1]
+                .split("\n")[0]
                 .trim();
             } else {
               throw new Error("unknown getprop error");
             }
           });
-      });
+      } else {
+        return stdout.trim();
+      }
+    });
   }
 
   /**
@@ -450,7 +355,7 @@ class Adb {
    * @returns {Promise<String>} ubuntutouch, android
    */
   getOs() {
-    return this.shell(["cat", "/etc/system-image/channel.ini"]).then(stdout => {
+    return this.shell("cat", "/etc/system-image/channel.ini").then(stdout => {
       return stdout ? "ubuntutouch" : "android";
     });
   }
@@ -460,7 +365,7 @@ class Adb {
    * @returns {Promise<Boolean>} access?
    */
   hasAccess() {
-    return this.shell(["echo", "."])
+    return this.shell("echo", ".")
       .then(stdout => {
         if (stdout == ".") return true;
         else throw new Error("unexpected response: " + stdout);
@@ -475,48 +380,30 @@ class Adb {
   }
 
   /**
-   * Wait for a device
-   * @param {Integer} interval how often to poll
-   * @param {Integer} timeout when to time out
+   * wait for device to be in a given state
+   * @param {String} [state] any, device, recovery, rescue, sideload, bootloader, or disconnect
+   * @param {String} [transport] any, usb, local
+   * @returns {CancelablePromise<String>} resolves state (offline, bootloader, device)
    */
-  waitForDevice(interval, timeout) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      const accessInterval = setInterval(() => {
-        _this
-          .hasAccess()
-          .then(access => {
-            if (access) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              resolve();
-            }
-          })
-          .catch(error => {
-            if (error) {
-              clearInterval(accessInterval);
-              clearTimeout(accessTimeout);
-              reject(error);
-            }
-          });
-      }, interval || 2000);
-      const accessTimeout = setTimeout(() => {
-        clearInterval(accessInterval);
-        reject(new Error("no device: timeout"));
-      }, timeout || 60000);
-      _this.adbEvent.once("stop", () => {
-        clearInterval(accessInterval);
-        clearTimeout(accessTimeout);
-        reject(new Error("stopped waiting"));
-      });
-    });
-  }
-
-  /**
-   * Stop waiting for a device
-   */
-  stopWaiting() {
-    this.adbEvent.emit("stop");
+  wait(state = "any", transport = "any") {
+    if (
+      ![
+        "any",
+        "device",
+        "recovery",
+        "rescue",
+        "sideload",
+        "bootloader",
+        "disconnect"
+      ].includes(state)
+    ) {
+      return Promise.reject(new Error(`Invalid state: ${state}`));
+    } else if (!["any", "usb", "local"].includes(transport)) {
+      return Promise.reject(new Error(`Invalid transport: ${transport}`));
+    }
+    return this.exec(`wait-for-${transport}-${state}`).then(() =>
+      this.getState()
+    );
   }
 
   /**
@@ -525,40 +412,24 @@ class Adb {
    * @returns {Promise}
    */
   format(partition) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell(["cat", "/etc/recovery.fstab"])
-        .then(fstab => {
-          if (!fstab || typeof fstab !== "string") {
-            reject(new Error("unable to read recovery.fstab"));
-          } else {
-            const block = _this.findPartitionInFstab(partition, fstab);
-            _this.log("formatting " + block + " from recovery");
-            _this
-              .shell("umount /" + partition)
-              .then(() => {
-                _this
-                  .shell("make_ext4fs " + block)
-                  .then(() => {
-                    _this
-                      .shell("mount /" + partition)
-                      .then(error => {
-                        if (error)
-                          reject(new Error("failed to mount: " + error));
-                        else resolve();
-                      })
-                      .catch(reject);
-                  })
-                  .catch(reject);
-              })
-              .catch(reject);
-          }
-        })
-        .catch(error => {
-          reject(new Error("failed to format " + partition + ": " + error));
-        });
-    });
+    return this.shell("cat", "/etc/recovery.fstab")
+      .then(fstab => {
+        if (!fstab || typeof fstab !== "string") {
+          throw new Error("unable to read recovery.fstab");
+        } else {
+          const block = this.findPartitionInFstab(partition, fstab);
+          return this.shell("umount /" + partition)
+            .then(() => this.shell("make_ext4fs " + block))
+            .then(() => this.shell("mount /" + partition))
+            .then(error => {
+              if (error) throw new Error("failed to mount: " + error);
+              else return;
+            });
+        }
+      })
+      .catch(error => {
+        throw new Error("failed to format " + partition + ": " + error);
+      });
   }
 
   /**
@@ -566,20 +437,9 @@ class Adb {
    * @returns {Promise}
    */
   wipeCache() {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      // TODO: move to Promise.prototype.finally() instead as soon as nodejs 8 dies in january 2020
-      function rm() {
-        _this
-          .shell(["rm", "-rf", "/cache/*"])
-          .then(resolve)
-          .catch(e => reject(new Error("wiping cache failed: " + e)));
-      }
-      _this
-        .format("cache")
-        .then(rm)
-        .catch(rm);
-    });
+    return this.format("cache").finally(() =>
+      this.shell("rm", "-rf", "/cache/*")
+    );
   }
 
   /**
@@ -609,25 +469,16 @@ class Adb {
    * @returns {Promise<Boolean>} verified?
    */
   verifyPartitionType(partition, type) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this
-        .shell(["mount"])
-        .then(stdout => {
-          if (
-            !(stdout.includes(" on /") && stdout.includes(" type ")) ||
-            typeof stdout !== "string"
-          ) {
-            reject(new Error("unable to detect partitions"));
-          } else if (!stdout.includes("/" + partition)) {
-            reject(new Error("partition not found"));
-          } else {
-            resolve(stdout.includes(" on /" + partition + " type " + type));
-          }
-        })
-        .catch(error =>
-          reject(new Error("partition not found" + (error ? ": " + error : "")))
-        );
+    return this.shell("mount").then(stdout => {
+      if (
+        !(stdout.includes(" on /") && stdout.includes(" type ")) ||
+        typeof stdout !== "string" ||
+        !stdout.includes("/" + partition)
+      ) {
+        throw new Error("partition not found");
+      } else {
+        return stdout.includes(" on /" + partition + " type " + type);
+      }
     });
   }
 
@@ -685,72 +536,79 @@ class Adb {
   }
 
   /**
-   * Backup "srcfile" from the device to local tar "destfile"
-   * @param {String} srcfile file to back up
-   * @param {String} destfile target destination
-   * @param {Function} progress progress function
+   * [EXPERIMENTAL] Run a command via adb exec-out and pipe the result to a stream
+   * @param {steam.writable} writableStream e.g. fs.createWriteStream() to write to a file
+   * @param  {...any} args command to execute
    * @returns {Promise}
    */
-  createBackupTar(srcfile, destfile, progress) {
-    return Promise.all([
-      this.ensureState("recovery")
-        .then(() => this.shell("mkfifo /backup.pipe"))
-        .then(() => this.getFileSize(srcfile)),
-      fs.ensureFile(destfile)
-    ])
-      .then(([fileSize]) => {
-        progress(0);
-        // FIXME with gzip compression (the -z flag on tar), the progress estimate is way off. It's still beneficial to enable it, because it saves a lot of space.
-        const progressInterval = setInterval(() => {
-          const { size } = fs.statSync(destfile);
-          progress((size / 1024 / fileSize) * 100);
-        }, 1000);
-
-        // FIXME replace shell pipe to dd with node stream
-        return Promise.all([
-          this.execCommand([
-            "exec-out 'tar -cpz " +
-              "--exclude=*/var/cache " +
-              "--exclude=*/var/log " +
-              "--exclude=*/.cache/upstart " +
-              "--exclude=*/.cache/*.qmlc " +
-              "--exclude=*/.cache/*/qmlcache " +
-              "--exclude=*/.cache/*/qml_cache",
-            srcfile,
-            " 2>/backup.pipe' | dd of=" + destfile
-          ]),
-          this.shell("cat /backup.pipe")
-        ])
-          .then(() => {
-            clearInterval(progressInterval);
-            progress(100);
-          })
-          .catch(e => {
-            clearInterval(progressInterval);
-            throw new Error(e);
-          });
-      })
-      .then(() => this.shell("rm /backup.pipe"))
-      .catch(e => {
-        throw new Error(`Backup failed: ${e}`);
+  execOut(writableStream, ...args) {
+    const _this = this;
+    return new Promise(function(resolve, reject) {
+      let stderr = "";
+      const cp = _this.spawn("exec-out", `'${args.join(" ")}'`);
+      cp.stdout.pipe(writableStream);
+      cp.stderr.on("data", d => (stderr += d.toString()));
+      cp.once("exit", (code, signal) => {
+        writableStream.close();
+        if (code || signal)
+          reject(new Error(_this.handleError({ code, signal }, null, stderr)));
+        else resolve();
       });
+    });
   }
 
   /**
-   * Restore tar "srcfile"
-   * @param {String} srcfile file to restore
+   * [EXPERIMENTAL] Backup "srcfile" from the device to local tar "destfile"
+   * @param {String} srcfile file to back up
+   * @param {String} destfile target destination
+   * @param {Function} progress progress function
+   * @async
    * @returns {Promise}
    */
-  restoreBackupTar(srcfile) {
+  async createBackupTar(srcfile, destfile, progress) {
+    progress(0);
+    const stream = fs.createWriteStream(destfile);
+    const fileSize = await this.getFileSize(srcfile);
+    // FIXME with gzip compression (the -z flag on tar), the progress estimate is way off. It's still beneficial to enable it, because it saves a lot of space.
+    let timeout;
+    function poll() {
+      const { size } = fs.statSync(destfile);
+      progress(size / 1024 / fileSize);
+      timeout = setTimeout(poll, 1000);
+    }
+    poll();
+    return this.execOut(
+      stream,
+      "tar",
+      "-cpz",
+      "--exclude=*/var/cache ",
+      "--exclude=*/var/log ",
+      "--exclude=*/.cache/upstart ",
+      "--exclude=*/.cache/*.qmlc ",
+      "--exclude=*/.cache/*/qmlcache ",
+      "--exclude=*/.cache/*/qml_cache",
+      srcfile,
+      "2>/dev/null"
+    ).finally(() => clearTimeout(timeout));
+  }
+
+  /**
+   * [EXPERIMENTAL] Restore tar "srcfile"
+   * @param {String} srcfile file to restore
+   * @param {Function} progress progress callback
+   * @returns {Promise}
+   */
+  restoreBackupTar(srcfile, progress = () => {}) {
+    progress();
     return this.ensureState("recovery")
       .then(() => this.shell("mkfifo /restore.pipe"))
       .then(() =>
         Promise.all([
-          this.push(srcfile, "/restore.pipe"),
-          this.shell(["'cd /; cat /restore.pipe | tar -xvz'"])
+          this.push([srcfile], "/restore.pipe", progress),
+          this.shell("cd /;", "cat /restore.pipe | tar -xvz")
         ])
       )
-      .then(() => this.shell(["rm", "/restore.pipe"]))
+      .then(() => this.shell("rm", "/restore.pipe"))
       .catch(e => {
         throw new Error(`Restore failed: ${e}`);
       });
@@ -768,9 +626,9 @@ class Adb {
         Promise.all(
           backups.map(backup =>
             fs
-              .readFile(path.join(backupBaseDir, backup, "metadata.json"))
-              .then(metadataBuffer => ({
-                ...JSON.parse(metadataBuffer.toString()),
+              .readJSON(path.join(backupBaseDir, backup, "metadata.json"))
+              .then(metadata => ({
+                ...metadata,
                 dir: path.join(backupBaseDir, backup)
               }))
               .catch(() => null)
@@ -794,15 +652,16 @@ class Adb {
     dataPartition = "/data",
     progress = () => {}
   ) {
+    progress(0);
     const time = new Date();
     const dir = path.join(backupBaseDir, time.toISOString());
     return this.ensureState("recovery")
       .then(() => fs.ensureDir(dir))
       .then(() =>
         Promise.all([
-          this.shell(["stat", "/data/user-data"]),
-          this.shell(["stat", "/data/syste-mdata"])
-        ]).catch(() => this.shell(["mount", dataPartition, "/data"]))
+          this.shell("stat", "/data/user-data"),
+          this.shell("stat", "/data/syste-mdata")
+        ]).catch(() => this.shell("mount", dataPartition, "/data"))
       )
       .then(() =>
         this.createBackupTar(
@@ -847,9 +706,7 @@ class Adb {
    */
   async restoreUbuntuTouchBackup(dir, progress = () => {}) {
     progress(0); // FIXME report actual push progress
-    let metadata = JSON.parse(
-      await fs.readFile(path.join(dir, "metadata.json"))
-    );
+    let metadata = await fs.readJSON(path.join(dir, "metadata.json"));
     return this.ensureState("recovery")
       .then(async () => {
         metadata.restorations = metadata.restorations || [];

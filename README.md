@@ -1,26 +1,115 @@
-# promise-android-tools
+# promise-android-tools ![Continuous Integration](https://github.com/ubports/promise-android-tools/workflows/Continuous%20Integration/badge.svg) [![npm](https://img.shields.io/npm/v/promise-android-tools)](https://www.npmjs.com/package/promise-android-tools) [![codecov](https://codecov.io/gh/ubports/promise-android-tools/branch/master/graph/badge.svg?token=cEneFUUbgt)](https://codecov.io/gh/ubports/promise-android-tools/)
 
-[![Build Status](https://travis-ci.org/ubports/promise-android-tools.svg?branch=master)](https://travis-ci.org/ubports/promise-android-tools) [![Coverage Status](https://coveralls.io/repos/github/ubports/promise-android-tools/badge.svg?branch=master)](https://coveralls.io/github/ubports/promise-android-tools?branch=master) [![Build status](https://ci.appveyor.com/api/projects/status/wmjs1hijnnpknp9w?svg=true)](https://ci.appveyor.com/project/NeoTheThird/promise-android-tools)
+A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.
 
-A wrapper for adb and fastboot that returns convenient promises.
+## IMPORTANT NOTE
 
-## IMPORTANT NOTES
-
-- This package does not include any binaries. Check out [android-tools-bin](https://www.npmjs.com/package/android-tools-bin) for cross-platform pre-compiled binaries of adb, fastboot, and heimdall.
-- This is still a work in progress. Not all functions have been added and API stability is not guaranteed. The package was originally developed for use in the [UBports Installer](https://devices.ubuntu-touch.io/installer/).
+This is still a work in progress. Not all functions have been added and API stability is not guaranteed. The package was originally developed for use in the [UBports Installer](https://devices.ubuntu-touch.io/installer/).
 
 ## Usage
 
 Install the package by running `npm i promise-android-tools`.
 
+### Quick-start example
+
+The default settings should cover most usecases.
+
 ```javascript
-const { Adb, Fastboot, Heimdall } = require("promise-android-tools");
-const adb = new Adb();
-const fastboot = new Fastboot();
-const heimdall = new Heimdall();
+const { DeviceTools } = require("promise-android-tools");
+const dt = new DeviceTools();
+
+dt.wait() // wait for any device
+  .then(state =>
+    dt.getDeviceName().then(name => console.log(`detected ${name} in ${state} state`))
+  )
 ```
 
+### Log execution events
+
+Events are available to log or introspect tool executions.
+
+```javascript
+const { DeviceTools } = require("promise-android-tools");
+const dt = new DeviceTools();
+
+dt.on("exec", r => console.log("exec", r))
+dt.on("spawn:start", r => console.log("spawn:start", r));
+dt.on("spawn:exit", r => console.log("spawn:exit", r));
+dt.on("spawn:error", r => console.log("spawn:error", r));
+
+dt.adb.shell("echo", "test")
+// will log a compact object (i.e. no falsy values) consisting of the command array cmd, the error object, and the stderr and stdout buffers. The path to the executable will be replaced with the tool name for brevity:
+// exec {
+//   cmd: [ 'adb', '-P', 5037, 'shell', 'echo test' ],
+//   error: {
+//     message: 'Command failed: adb -P 5037 shell echo test\n' +
+//       'adb: no devices/emulators found',
+//     code: 1
+//   },
+//   stderr: 'adb: no devices/emulators found'
+// }
+```
+
+### Complex example
+
+The library provides most features of the eponymous command-line utilities wrapped in the available classes. This example only serves as a demonstration, confer to the documenation to discover the full power of this library.
+
+```javascript
+const { DeviceTools } = require("promise-android-tools");
+const dt = new DeviceTools();
+
+db.adb.wait() // wait for any device over adb
+  .then(() => dt.adb.ensureState("recovery")) // reboot to recovery if we have to
+  .then(() => dt.adb.push(["./config.json"], "/tmp", progress)) // push a config file to the device
+  .then(() => dt.adb.getDeviceName()) // read device codename
+  .then(name => {
+    // samsung devices do not use fastbooot
+    if (name.includes("samsung")) {
+      return dt.adb.reboot("bootloader") // reboot to samsung's download mode
+        .then(() => dt.heimdall.wait()) // wait for device to respond to heimdall
+        .then(() => dt.heimdall.flash("boot", "boot.img")) // flash an image to a partition
+        .then(() => dt.heimdall.reboot()) // reboot to system
+    } else {
+      return dt.adb.reboot("bootloader") // reboot to bootloader (aka. fastboot mode)
+        .then(() => dt.fastboot.wait()) // wait for device to respond to fastboot commands
+        .then(() => dt.fastboot.flash("boot", "boot.img")) // flash an image
+        .then(() => dt.fastboot.continue()) // auto-boot to system
+    }
+  })
+  .then(() => dt.adb.wait("device")) // ignore devices in recovery or a different mode
+  .then(() => console.log("flashing complete, that was easy!")); // yay
+
+function progress(p) {
+  console.log("operation", (p*100), "% complete");
+}
+```
+
+### Documentation
+
+When using the library with modern editors like VScode/VScodium or Atom, you can make use of IntelliSense. Run `npm run docs` to build html from JSdoc documentation for all API functions.
+
 ## API Changes, Deprecation Notices, Upgrade Guide
+
+### [WIP] Upgrading to 4.x
+
+Version 4.0.0 includes a major re-factoring effort that touched almost every function. The APIs of most functions remained intact, but in most cases you will have to make changes to your code. This has been done to correct some early design decisions.
+
+- A new convenience class `DeviceTools` has been implemented that provides instances of all tool classes as well as some generic convenience functions such as `deviceTools.wait()` (wait for any device to be visible with any adb, fastboot, or heimdall) and `deviceTools.getDeviceName()` (read the device name from fastboot or adb). In most cases you will no longer need to instantiate any of the tool classes directly.
+- In order to properly follow the object-oriented paradigm, all tool wrapper classes now inherit from a new `Tool` class that implements the `child_process` wrappers along with some common interfaces. The implications of this are:
+  - Our [android-tools-bin](https://www.npmjs.com/package/android-tools-bin) package is now included as a dependency. If you require custom executables, you can use [environment variables](https://www.npmjs.com/package/android-tools-bin#requesting-native-tools-using-environment-variables).
+  - Specifying a custom `exec` function in the constructor arguments is no longer supported.
+    - We no longer use `child_process.exec` to avoid spawining a shell. Confer with the [official documentation](https://nodejs.org/api/child_process.html) to learn what this entails in detail. Most short-lived commands now use `child_process.execFile`. Long-running commands use
+  - Specifying a custom `log` function in the constructor arguments is no longer supported. You can instead listen to the events `exec`, `spawn:start`, `spawn:exit`, and `spawn:error` on the tool object to implement your own logging or introspection logic.
+  - The `<tool>.<tool>Event` event emitter has been deprecated. Instead, the tool class now inherits from the event emitter class directly.
+- `<tool>.waitForDevice()` and `<tool>.stopWaiting()` have been deprecated in favor of `<tool>.wait()`.
+  - On `fastboot` and `heimdall`, `<tool>.wait()` will poll using `<tool>.hasAccess()` at a fixed interval. It does not take arguments.
+  - `adb.wait()` uses the `adb wait-for-[-TRANSPORT]-STATE` command instead. You can optionally specify the state or transport as arguments, eg `adb.wait("recovery", "usb")`.
+  - The `<tool>.wait()` function returns a [CancelablePromise](https://github.com/alkemics/CancelablePromise), which extends the native ES promise to support cancelling pending promises. Calling `const p = adb.wait(); setTimeout(() => p.cancel(), 5000);` will kill the waiting child-process and settle the pending promise.
+- `adb.pushArray()` has been deprecated and incorporated into the `adb.push()` API.
+  - Since the `adb push` command supports pushing multiple files to the same location and this is the most common usecase, the `adb.pushArray()` function has been deprecated. The `adb.push()` function now takes an array of source file paths, a target destination path on the device, and a progress callback.
+  - The progress is now reported on-the-fly and no longer requires polling via `adb shell stat <file>`. This results in faster and more accurate reporting.
+- Functions that are considered unstable or experimental have been makred as such in their documentation comments. If you're building a product around any of those, you're welcome to help us improve the library to ensure your needs will be accounted for in the future.
+
 
 ### Upgrading to 3.x
 
