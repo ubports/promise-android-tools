@@ -21,8 +21,7 @@ import child_process from "child_process";
 import { getAndroidToolPath } from "android-tools-bin";
 import EventEmitter from "events";
 import { removeFalsy } from "./common.js";
-import cp from "cancelable-promise";
-const { CancelablePromise } = cp;
+import { CancelablePromise } from "./cancelable-promise.js";
 
 /**
  * generic tool class

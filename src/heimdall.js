@@ -19,8 +19,7 @@
 
 import { quotepath } from "./common.js";
 import { Tool } from "./tool.js";
-import cp from "cancelable-promise";
-const { CancelablePromise } = cp;
+import { CancelablePromise } from "./cancelable-promise.js";
 
 /**
  * heimdall: flash firmware on samsung devices

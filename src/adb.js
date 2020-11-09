@@ -20,8 +20,7 @@
 import fs from "fs-extra";
 import path from "path";
 import { Tool } from "./tool.js";
-import cp from "cancelable-promise";
-const { CancelablePromise } = cp;
+import { CancelablePromise } from "./cancelable-promise.js";
 
 const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;

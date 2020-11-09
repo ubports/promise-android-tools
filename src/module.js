@@ -22,8 +22,7 @@ import { Fastboot } from "./fastboot.js";
 import { Heimdall } from "./heimdall.js";
 
 import EventEmitter from "events";
-import cp from "cancelable-promise";
-const { CancelablePromise } = cp;
+import { CancelablePromise } from "./cancelable-promise.js";
 
 /**
  * A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.
