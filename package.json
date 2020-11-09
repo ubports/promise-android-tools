@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "main": "./lib/module.cjs",
   "type": "module",
