@@ -17,18 +17,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const Adb = require("./adb.js");
-const Fastboot = require("./fastboot.js");
-const Heimdall = require("./heimdall.js");
-const Tool = require("./tool.js");
+import { Adb } from "./adb.js";
+import { Fastboot } from "./fastboot.js";
+import { Heimdall } from "./heimdall.js";
 
-const EventEmitter = require("events");
-const { CancelablePromise } = require("cancelable-promise");
+import EventEmitter from "events";
+import cp from "cancelable-promise";
+const { CancelablePromise } = cp;
 
 /**
  * A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.
  */
-class DeviceTools extends EventEmitter {
+export class DeviceTools extends EventEmitter {
   constructor() {
     super();
     this.adb = new Adb();
@@ -92,4 +92,7 @@ class DeviceTools extends EventEmitter {
   }
 }
 
-module.exports = { Adb, Fastboot, Heimdall, Tool, DeviceTools };
+export { Adb } from "./adb.js";
+export { Fastboot } from "./fastboot.js";
+export { Heimdall } from "./heimdall.js";
+export { Tool } from "./tool.js";

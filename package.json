@@ -2,7 +2,8 @@
   "name": "promise-android-tools",
   "version": "4.0.0",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
-  "main": "./src/module.js",
+  "main": "./lib/module.cjs",
+  "type": "module",
   "scripts": {
     "test": "npx coverage -r lcov -r html npm run test-nocover",
     "test-nocover": "npx mocha -- -R spec './tests/unit-tests/*.js'",
@@ -11,7 +12,7 @@
     "docs": "npx jsdoc -c jsdoc-config.json"
   },
   "files": [
-    "src/*.js",
+    "lib/*.js",
     "LICENSE",
     "README.md"
   ],
@@ -48,7 +49,7 @@
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.1.4",
     "jsdoc": "^3.6.6",
-    "mocha": "^6.2.3",
+    "mocha": "^7.2.0",
     "prettier": "^1.19.1",
     "sinon": "^7.5.0",
     "sinon-chai": "^3.5.0"

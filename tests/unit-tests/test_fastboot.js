@@ -17,20 +17,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const chai = require("chai");
-const sinon = require("sinon");
-const chaiAsPromised = require("chai-as-promised");
-const sinonChai = require("sinon-chai");
+import chai from "chai";
+import sinon from "sinon";
+import chaiAsPromised from "chai-as-promised";
+import sinonChai from "sinon-chai";
 const expect = chai.expect;
 chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
-const child_process = require("child_process");
+import child_process from "child_process";
 
-const Fastboot = require("../../src/module.js").Fastboot;
-const common = require("../../src/common.js");
-const { getAndroidToolPath } = require("android-tools-bin");
-const { fastbootErrors } = require("../test-data/known_errors.js");
+import { Fastboot } from "../../src/module.js";
+import * as common from "../../src/common.js";
+import { getAndroidToolPath } from "android-tools-bin";
+import { fastbootErrors } from "../test-data/known_errors.js";
 
 function stubExec(error, stdout, stderr) {
   sinon.stub(child_process, "execFile").yields(error, stdout, stderr);

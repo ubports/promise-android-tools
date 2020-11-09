@@ -1,4 +1,4 @@
-const genericErrors = tool => [
+export const genericErrors = tool => [
   {
     expectedReturn: "killed",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
@@ -24,7 +24,7 @@ const genericErrors = tool => [
   }
 ];
 
-const adbErrors = [
+export const adbErrors = [
   ...genericErrors("adb"),
   {
     expectedReturn: "no device",
@@ -59,7 +59,7 @@ const adbErrors = [
   }
 ];
 
-const fastbootErrors = [
+export const fastbootErrors = [
   ...genericErrors("fastboot"),
   {
     expectedReturn: "bootloader locked",
@@ -168,7 +168,7 @@ const fastbootErrors = [
   }
 ];
 
-const heimdallErrors = [
+export const heimdallErrors = [
   ...genericErrors("heimdall"),
   {
     expectedReturn: "no device",
@@ -177,5 +177,3 @@ const heimdallErrors = [
     stderr: "ERROR: Failed to detect compatible download-mode device."
   }
 ];
-
-module.exports = { genericErrors, adbErrors, fastbootErrors, heimdallErrors };
