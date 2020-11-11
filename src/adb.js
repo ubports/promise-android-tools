@@ -17,11 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const fs = require("fs-extra");
-const path = require("path");
-const common = require("./common.js");
-const Tool = require("./tool.js");
-const { CancelablePromise } = require("cancelable-promise");
+import fs from "fs-extra";
+import path from "path";
+import { Tool } from "./tool.js";
+import { CancelablePromise } from "./cancelable-promise.js";
 
 const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;
@@ -29,7 +28,7 @@ const DEFAULT_PORT = 5037;
 /**
  * Android Debug Bridge (ADB) module
  */
-class Adb extends Tool {
+export class Adb extends Tool {
   constructor(options) {
     super({
       tool: "adb",
@@ -730,5 +729,3 @@ class Adb extends Tool {
       });
   }
 }
-
-module.exports = Adb;

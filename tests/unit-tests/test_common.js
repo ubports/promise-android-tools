@@ -17,13 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const chai = require("chai");
-const sinon = require("sinon");
-const sinonChai = require("sinon-chai");
+import chai from "chai";
+import sinon from "sinon";
+import sinonChai from "sinon-chai";
 const expect = chai.expect;
 chai.use(sinonChai);
 
-const common = require("../../src/common.js");
+import * as common from "../../src/common.js";
 
 describe("Common module", function() {
   describe("quotepath()", function() {

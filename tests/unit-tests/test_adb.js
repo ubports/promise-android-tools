@@ -17,22 +17,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const chai = require("chai");
-const sinon = require("sinon");
-const chaiAsPromised = require("chai-as-promised");
-const sinonChai = require("sinon-chai");
+import chai from "chai";
+import sinon from "sinon";
+import chaiAsPromised from "chai-as-promised";
+import sinonChai from "sinon-chai";
 const expect = chai.expect;
 chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
-const child_process = require("child_process");
-const fs = require("fs-extra");
-const path = require("path");
+import child_process from "child_process";
+import fs from "fs-extra";
+import path from "path";
 
-const Adb = require("../../src/module.js").Adb;
-const common = require("../../src/common.js");
-const { getAndroidToolPath } = require("android-tools-bin");
-const { adbErrors } = require("../test-data/known_errors.js");
+import testrecoveryfstabs from "../test-data/testrecoveryfstabs.js";
+
+import { Adb } from "../../src/module.js";
+import { getAndroidToolPath } from "android-tools-bin";
+import { adbErrors } from "../test-data/known_errors.js";
 
 function stubExec(error, stdout, stderr) {
   sinon.stub(child_process, "execFile").yields(error, stdout, stderr);
@@ -679,7 +680,7 @@ describe("Adb module", function() {
     });
 
     describe("findPartitionInFstab()", function() {
-      require("../test-data/testrecoveryfstabs.json").forEach(device => {
+      testrecoveryfstabs.forEach(device => {
         device.partitions.forEach(partition => {
           it(
             "should find " + partition.mountpoint + " for " + device.device,

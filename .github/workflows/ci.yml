@@ -34,6 +34,8 @@ jobs:
       run: npm install
     - name: npm audit
       run: npm audit --production
+    - name: npm run build
+      run: npm run build
     - name: npm run lint
       run: npm run lint
     - name: npm run docs

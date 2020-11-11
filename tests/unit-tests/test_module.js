@@ -17,16 +17,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const chai = require("chai");
-const sinon = require("sinon");
-const chaiAsPromised = require("chai-as-promised");
-const sinonChai = require("sinon-chai");
+import chai from "chai";
+import sinon from "sinon";
+import chaiAsPromised from "chai-as-promised";
+import sinonChai from "sinon-chai";
 const expect = chai.expect;
 chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
-const DeviceTools = require("../../src/module.js").DeviceTools;
-const { CancelablePromise } = require("cancelable-promise");
+import { DeviceTools } from "../../src/module.js";
+import cp from "cancelable-promise";
+const { CancelablePromise } = cp;
 
 function expectReject(error, message) {
   expect(error).to.be.instanceOf(Error);

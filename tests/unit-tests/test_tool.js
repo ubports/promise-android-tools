@@ -17,19 +17,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const chai = require("chai");
-const sinon = require("sinon");
-const chaiAsPromised = require("chai-as-promised");
-const sinonChai = require("sinon-chai");
+import chai from "chai";
+import sinon from "sinon";
+import chaiAsPromised from "chai-as-promised";
+import sinonChai from "sinon-chai";
 const expect = chai.expect;
 chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
-const EventEmitter = require("events");
-const child_process = require("child_process");
+import EventEmitter from "events";
+import child_process from "child_process";
 
-const { Tool } = require("../../src/module.js");
-const { genericErrors } = require("../test-data/known_errors.js");
+import { Tool } from "../../src/module.js";
+import { genericErrors } from "../test-data/known_errors.js";
 
 const validOptions = [
   { tool: "adb" },

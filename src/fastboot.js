@@ -17,13 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const common = require("./common.js");
-const Tool = require("./tool.js");
+import * as common from "./common.js";
+import { Tool } from "./tool.js";
 
 /**
  * fastboot android flashing and booting utility
  */
-class Fastboot extends Tool {
+export class Fastboot extends Tool {
   constructor(options) {
     super({
       tool: "fastboot",
@@ -383,5 +383,3 @@ class Fastboot extends Tool {
     return this.getvar("product");
   }
 }
-
-module.exports = Fastboot;

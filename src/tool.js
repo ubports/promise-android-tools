@@ -17,11 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const child_process = require("child_process");
-const { getAndroidToolPath } = require("android-tools-bin");
-const EventEmitter = require("events");
-const { removeFalsy } = require("./common");
-const { CancelablePromise } = require("cancelable-promise");
+import child_process from "child_process";
+import { getAndroidToolPath } from "android-tools-bin";
+import EventEmitter from "events";
+import { removeFalsy } from "./common.js";
+import { CancelablePromise } from "./cancelable-promise.js";
 
 /**
  * generic tool class
@@ -30,7 +30,7 @@ const { CancelablePromise } = require("cancelable-promise");
  * @property {Array<String>} extra extra cli arguments
  * @property {Object} execOptions options for child_process.exec
  */
-class Tool extends EventEmitter {
+export class Tool extends EventEmitter {
   constructor(options = {}) {
     super();
     this.tool = options?.tool;
@@ -218,5 +218,3 @@ class Tool extends EventEmitter {
     });
   }
 }
-
-module.exports = Tool;

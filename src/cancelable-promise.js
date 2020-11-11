@@ -1,5 +1,7 @@
+"use strict";
+
 /*
- * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2020 UBports Foundation <info@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import sinon from "sinon";
-import chai from "chai";
-
-beforeEach(function() {});
-
-afterEach(function() {
-  sinon.restore();
-});
+// What is this, you ask? Think hexagonal arch pattern, but stupid. Since CommonJS
+// and ES6 modules handle default exports differently, we need to ensure the correct
+// object is exported if we want to run both natively and when transpiled with rollup.
+import cp from "cancelable-promise";
+export const CancelablePromise = cp?.CancelablePromise
+  ? cp.CancelablePromise
+  : cp;

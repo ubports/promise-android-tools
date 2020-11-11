@@ -17,14 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const common = require("./common.js");
-const Tool = require("./tool.js");
-const { CancelablePromise } = require("cancelable-promise");
+import { quotepath } from "./common.js";
+import { Tool } from "./tool.js";
+import { CancelablePromise } from "./cancelable-promise.js";
 
 /**
  * heimdall: flash firmware on samsung devices
  */
-class Heimdall extends Tool {
+export class Heimdall extends Tool {
   constructor(options) {
     super({
       tool: "heimdall",
@@ -90,10 +90,7 @@ class Heimdall extends Tool {
    * @returns {Promise<String>}
    */
   printPit(file) {
-    return this.exec(
-      "print-pit",
-      ...(file ? ["--file", common.quotepath(file)] : [])
-    )
+    return this.exec("print-pit", ...(file ? ["--file", quotepath(file)] : []))
       .then(r =>
         r
           .split("\n\nEnding session...")[0]
@@ -139,9 +136,7 @@ class Heimdall extends Tool {
     // TODO report progress similar to fastboot.flash()
     return this.exec(
       "flash",
-      ...images.map(i => `--${i.partition} ${common.quotepath(i.file)}`)
+      ...images.map(i => `--${i.partition} ${quotepath(i.file)}`)
     ).then(() => null);
   }
 }
-
-module.exports = Heimdall;

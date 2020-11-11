@@ -21,7 +21,7 @@
  * Remove falsy values
  * @param {Object} obj object to process
  */
-function removeFalsy(obj) {
+export function removeFalsy(obj) {
   if (typeof obj !== "object" || Array.isArray(obj)) return obj;
   for (var i in obj) {
     if (!obj[i]) {
@@ -41,11 +41,6 @@ function removeFalsy(obj) {
  * @param {String} file path to guard in quotes
  * @returns {String} guarded path
  */
-function quotepath(file) {
+export function quotepath(file) {
   return process.platform == "darwin" ? "'" + file + "'" : '"' + file + '"';
 }
-
-module.exports = {
-  quotepath,
-  removeFalsy
-};
