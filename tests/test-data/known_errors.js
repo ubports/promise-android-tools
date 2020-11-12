@@ -98,6 +98,12 @@ export const fastbootErrors = [
     stderr: "FAILED (remote: '\tDevice not unlocked cannot flash or erase')"
   },
   {
+    expectedReturn: "bootloader locked",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "FAILED (remote: 'Partition flashing is not allowed')"
+  },
+  {
     expectedReturn: "enable unlocking",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
