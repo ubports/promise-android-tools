@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "main": "./lib/module.cjs",
   "type": "module",
@@ -13,7 +13,7 @@
     "build": "npx rollup -c"
   },
   "files": [
-    "lib/*.js",
+    "lib/module.cjs",
     "LICENSE",
     "README.md"
   ],
