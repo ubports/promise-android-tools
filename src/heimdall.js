@@ -136,7 +136,7 @@ export class Heimdall extends Tool {
     // TODO report progress similar to fastboot.flash()
     return this.exec(
       "flash",
-      ...images.map(i => `--${i.partition} ${quotepath(i.file)}`)
+      ...images.map(i => [`--${i.partition}`, i.file]).flat()
     ).then(() => null);
   }
 }

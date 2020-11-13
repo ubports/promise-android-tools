@@ -214,8 +214,10 @@ describe("Heimdall module", function() {
             expect(r).to.eql(null);
             expectArgs(
               "flash",
-              `--BOOT ${common.quotepath("some.img")}`,
-              `--RECOVERY ${common.quotepath("other.img")}`
+              "--BOOT",
+              "some.img",
+              "--RECOVERY",
+              "other.img"
             );
           });
       });
