@@ -110,6 +110,11 @@ export const fastbootErrors = [
     stderr: "FAILED (remote: 'Command not allowed')"
   },
   {
+    expectedReturn: "bootloader locked",
+    error: { code: 1 },
+    stderr: "FAILED (remote: 'device is locked. Cannot flash images')"
+  },
+  {
     expectedReturn: "enable unlocking",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,

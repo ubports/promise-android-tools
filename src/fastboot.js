@@ -50,7 +50,8 @@ export class Fastboot extends Tool {
       stderr?.includes("not allowed in locked state") ||
       stderr?.includes("Device not unlocked cannot flash or erase") ||
       stderr?.includes("Partition flashing is not allowed") ||
-      stderr?.includes("Command not allowed")
+      stderr?.includes("Command not allowed") ||
+      stderr?.includes("device is locked. Cannot flash images")
     ) {
       return "bootloader locked";
     } else if (
