@@ -304,14 +304,11 @@ export class Fastboot extends Tool {
    */
   oemUnlock() {
     return this.exec("oem", "unlock")
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         if (
-          error &&
-          (error.message.includes("FAILED (remote: Already Unlocked)") ||
-            error.message.includes("FAILED (remote: 'Not necessary')"))
+          error?.message.includes("Already Unlocked") ||
+          error?.message.includes("Not necessary")
         )
           return;
         else throw new Error("oem unlock failed: " + error);
@@ -324,12 +321,52 @@ export class Fastboot extends Tool {
    */
   oemLock() {
     return this.exec("oem", "lock")
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("oem lock failed: " + error);
       });
+  }
+
+  /**
+   * lock partitions for flashing
+   * @returns {Promise}
+   */
+  flashingLock() {
+    return this.exec("flashing", "lock").then(() => null);
+  }
+
+  /**
+   * unlock partitions for flashing
+   * @returns {Promise}
+   */
+  flashingUnlock() {
+    return this.exec("flashing", "unlock").then(() => null);
+  }
+
+  /**
+   * lock 'critical' bootloader partitions
+   * @returns {Promise}
+   */
+  flashingLockCritical() {
+    return this.exec("flashing", "lock_critical").then(() => null);
+  }
+
+  /**
+   * unlock 'critical' bootloader partitions
+   * @returns {Promise}
+   */
+  flashingUnlockCritical() {
+    return this.exec("flashing", "unlock_critical").then(() => null);
+  }
+
+  /**
+   * Find out if a device can be flashing-unlocked
+   * @returns {Promise<Boolean>}
+   */
+  getUnlockAbility() {
+    return this.exec("flashing", "get_unlock_ability")
+      .then(stdout => stdout?.trim() === "1")
+      .catch(() => false);
   }
 
   /**
