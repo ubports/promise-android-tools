@@ -404,6 +404,47 @@ describe("Fastboot module", function() {
         );
       });
     });
+    [
+      { f: "flashingLock", args: ["flashing", "lock"] },
+      { f: "flashingUnlock", args: ["flashing", "unlock"] },
+      { f: "flashingLockCritical", args: ["flashing", "lock_critical"] },
+      { f: "flashingUnlockCritical", args: ["flashing", "unlock_critical"] }
+    ].forEach(f => {
+      it(`should run ${f.args}`, function() {
+        stubExec();
+        const fastboot = new Fastboot();
+        return fastboot[f.f]().then(r => {
+          expect(r).to.eql(null);
+          expectArgs(...f.args);
+        });
+      });
+    });
+    describe("getUnlockAbility()", function() {
+      it("should resolve true if unlockable", function() {
+        stubExec(null, "1");
+        const fastboot = new Fastboot();
+        return fastboot.getUnlockAbility().then(r => {
+          expect(r).to.eql(true);
+          expectArgs("flashing", "get_unlock_ability");
+        });
+      });
+      it("should resolve false if not unlockable", function() {
+        stubExec(null, "0");
+        const fastboot = new Fastboot();
+        return fastboot.getUnlockAbility().then(r => {
+          expect(r).to.eql(false);
+          expectArgs("flashing", "get_unlock_ability");
+        });
+      });
+      it("should resolve false on error", function() {
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
+        return fastboot.getUnlockAbility().then(r => {
+          expect(r).to.eql(false);
+          expectArgs("flashing", "get_unlock_ability");
+        });
+      });
+    });
     describe("setActive()", function() {
       it("should resolve after setting active slot", function() {
         stubExec();
