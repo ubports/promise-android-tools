@@ -362,6 +362,13 @@ describe("Fastboot module", function() {
           expectArgs("oem", "unlock");
         });
       });
+      it("should use code if specified", function() {
+        stubExec();
+        const fastboot = new Fastboot();
+        return fastboot.oemUnlock("0x0123456789ABCDEF").then(r => {
+          expectArgs("oem", "unlock", "0x0123456789ABCDEF");
+        });
+      });
       it("should resolve if already unlocked", function() {
         stubExec(true, "FAILED (remote: Already Unlocked)");
         const fastboot = new Fastboot();

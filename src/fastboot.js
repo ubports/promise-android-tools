@@ -300,10 +300,11 @@ export class Fastboot extends Tool {
 
   /**
    * Lift OEM lock
+   * @param {String} [code] optional unlock code (including 0x if necessary)
    * @returns {Promise}
    */
-  oemUnlock() {
-    return this.exec("oem", "unlock")
+  oemUnlock(code = "") {
+    return this.exec(...["oem", "unlock", code || []].flat())
       .then(() => null)
       .catch(error => {
         if (
