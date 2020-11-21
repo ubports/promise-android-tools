@@ -410,12 +410,23 @@ describe("Fastboot module", function() {
       { f: "flashingLockCritical", args: ["flashing", "lock_critical"] },
       { f: "flashingUnlockCritical", args: ["flashing", "unlock_critical"] }
     ].forEach(f => {
-      it(`should run ${f.args}`, function() {
-        stubExec();
-        const fastboot = new Fastboot();
-        return fastboot[f.f]().then(r => {
-          expect(r).to.eql(null);
-          expectArgs(...f.args);
+      describe(`${f.f}()`, function() {
+        it(`should resolve after ${f.args.join(" ")}`, function() {
+          stubExec();
+          const fastboot = new Fastboot();
+          return fastboot[f.f]().then(r => {
+            expect(r).to.eql(null);
+            expectArgs(...f.args);
+          });
+        });
+        it(`should reject if ${f.args.join(" ")} failed`, function(done) {
+          stubExec(true);
+          const fastboot = new Fastboot();
+          fastboot[f.f]().catch(r => {
+            expect(r.message).to.eql('{"error":true}');
+            expectArgs(...f.args);
+            done();
+          });
         });
       });
     });
