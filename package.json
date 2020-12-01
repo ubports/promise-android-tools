@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "npx coverage -x src/cancelable-promise.js -r lcov -r html npm run test-nocover",
-    "test-nocover": "npx mocha -- -R spec './tests/unit-tests/*.js'",
+    "test-nocover": "npx mocha -- -R spec './tests/unit-tests/*.js' './tests/*.js'",
     "lint": "npx eslint tests/**/*.js src/*.js",
     "lint-fix": "npm run lint -- --fix",
     "docs": "npx jsdoc -c jsdoc-config.json",

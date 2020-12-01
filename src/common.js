@@ -35,12 +35,3 @@ export function removeFalsy(obj) {
   }
   return Object.keys(obj).length ? obj : null;
 }
-
-/**
- * Add platform-specific quotes to path string (macos can't handle double quotes)
- * @param {String} file path to guard in quotes
- * @returns {String} guarded path
- */
-export function quotepath(file) {
-  return process.platform == "darwin" ? "'" + file + "'" : '"' + file + '"';
-}

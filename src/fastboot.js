@@ -168,7 +168,7 @@ export class Fastboot extends Tool {
    * @returns {Promise}
    */
   boot(image) {
-    return this.exec("boot", common.quotepath(image))
+    return this.exec("boot", image)
       .then(stdout => {
         return;
       })
@@ -184,7 +184,7 @@ export class Fastboot extends Tool {
    * @returns {Promise}
    */
   update(image, wipe) {
-    return this.exec(wipe ? "-w" : "", "update", common.quotepath(image))
+    return this.exec(wipe ? "-w" : "", "update", image)
       .then(stdout => {
         return;
       })

@@ -28,7 +28,6 @@ chai.use(chaiAsPromised);
 import child_process from "child_process";
 
 import { Fastboot } from "../../src/module.js";
-import * as common from "../../src/common.js";
 import { getAndroidToolPath } from "android-tools-bin";
 import { fastbootErrors } from "../test-data/known_errors.js";
 
@@ -206,7 +205,7 @@ describe("Fastboot module", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.boot("/path/to/image").then(r => {
-          expectArgs("boot", common.quotepath("/path/to/image"));
+          expectArgs("boot", "/path/to/image");
         });
       });
       it("should reject if booting failed", function() {
@@ -223,22 +222,22 @@ describe("Fastboot module", function() {
       it("should resolve if updating works", function() {
         stubExec();
         const fastboot = new Fastboot();
-        return fastboot.update("/path/to/image").then(r => {
-          expectArgs("", "update", common.quotepath("/path/to/image"));
+        return fastboot.update("/path/to an/image").then(r => {
+          expectArgs("", "update", "/path/to an/image");
         });
       });
       it("should not wipe if not specified", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.update("/path/to/image").then(r => {
-          expectArgs("", "update", common.quotepath("/path/to/image"));
+          expectArgs("", "update", "/path/to/image");
         });
       });
       it("should wipe if specified", function() {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.update("/path/to/image", true).then(r => {
-          expectArgs("-w", "update", common.quotepath("/path/to/image"));
+          expectArgs("-w", "update", "/path/to/image");
         });
       });
       it("should reject if updating fails", function() {
