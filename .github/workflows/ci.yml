@@ -68,7 +68,14 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
+    - name: test-nocover
+      run: |
+        npm install
+        npm run test-nocover
+
+    # only generate coverage on linux
     - name: test
+      if: contains(runner.os, 'Linux')
       run: |
         npm install
         npm run test
