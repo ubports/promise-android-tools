@@ -41,13 +41,20 @@ describe("platform", function() {
         { f: spawnPromise, n: "spawn" }
       ].forEach(({ f, n }) => {
         it(`${n} should access path without spaces`, function() {
-          return f(`tests/test-data/${e}.js`, ["tests/test-data/test_file"]);
+          return f("node", [
+            `tests/test-data/${e}.js`,
+            "tests/test-data/test_file"
+          ]);
         });
         it(`${n} should access path with spaces`, function() {
-          return f(`tests/test-data/${e}.js`, ["tests/test-data/test file"]);
+          return f("node", [
+            `tests/test-data/${e}.js`,
+            "tests/test-data/test file"
+          ]);
         });
         it(`${n} should throw on inaccessible path`, function(done) {
-          f(`tests/test-data/${e}.js`, [
+          f("node", [
+            `tests/test-data/${e}.js`,
             "tests/test-data/thisdoesntexist"
           ]).catch(error => {
             expect(error).to.haveOwnProperty("code", 1);
