@@ -201,7 +201,7 @@ export class Adb extends Tool {
                 if (str.includes("writex")) {
                   // writex namespace indicates external writing
                   pushedSize +=
-                    parseInt(str.split("len=")[1].split(" ")[0]) || 0;
+                    parseInt(str?.split("len=")[1]?.split(" ")[0]) || 0;
                   progress(Math.min(pushedSize / totalSize, 1));
                 }
               } else {
