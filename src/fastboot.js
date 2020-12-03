@@ -51,7 +51,9 @@ export class Fastboot extends Tool {
       stderr?.includes("Device not unlocked cannot flash or erase") ||
       stderr?.includes("Partition flashing is not allowed") ||
       stderr?.includes("Command not allowed") ||
-      stderr?.includes("device is locked. Cannot flash images")
+      stderr?.includes("not allowed when locked") ||
+      stderr?.includes("device is locked. Cannot flash images") ||
+      stderr?.match(/download for partition '[a-z]+' is not allowed/i)
     ) {
       return "bootloader locked";
     } else if (
@@ -167,7 +169,7 @@ export class Fastboot extends Tool {
    * @returns {Promise}
    */
   boot(image) {
-    return this.exec("boot", common.quotepath(image))
+    return this.exec("boot", image)
       .then(stdout => {
         return;
       })
@@ -183,7 +185,7 @@ export class Fastboot extends Tool {
    * @returns {Promise}
    */
   update(image, wipe) {
-    return this.exec(wipe ? "-w" : "", "update", common.quotepath(image))
+    return this.exec(wipe ? "-w" : "", "update", image)
       .then(stdout => {
         return;
       })

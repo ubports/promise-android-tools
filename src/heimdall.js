@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { quotepath } from "./common.js";
 import { Tool } from "./tool.js";
 import { CancelablePromise } from "./cancelable-promise.js";
 
@@ -90,7 +89,7 @@ export class Heimdall extends Tool {
    * @returns {Promise<String>}
    */
   printPit(file) {
-    return this.exec("print-pit", ...(file ? ["--file", quotepath(file)] : []))
+    return this.exec("print-pit", ...(file ? ["--file", file] : []))
       .then(r =>
         r
           .split("\n\nEnding session...")[0]

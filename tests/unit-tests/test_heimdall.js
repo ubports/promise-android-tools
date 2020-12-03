@@ -28,7 +28,6 @@ chai.use(chaiAsPromised);
 import child_process from "child_process";
 
 import { Heimdall } from "../../src/module.js";
-import * as common from "../../src/common.js";
 import { getAndroidToolPath } from "android-tools-bin";
 import { heimdallErrors } from "../test-data/known_errors.js";
 
@@ -178,11 +177,7 @@ describe("Heimdall module", function() {
         const heimdall = new Heimdall();
         return heimdall.printPit("/test/test-data/test_file").then(r => {
           expect(r.length).to.eql(3);
-          expectArgs(
-            "print-pit",
-            "--file",
-            common.quotepath("/test/test-data/test_file")
-          );
+          expectArgs("print-pit", "--file", "/test/test-data/test_file");
         });
       });
       it("should reject on error", function() {

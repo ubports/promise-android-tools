@@ -26,25 +26,6 @@ chai.use(sinonChai);
 import * as common from "../../src/common.js";
 
 describe("Common module", function() {
-  describe("quotepath()", function() {
-    it("should use correct quotes for the platform", function() {
-      expect(common.quotepath("some/path with/ spaces")).to.equal(
-        process.platform == "darwin"
-          ? "'some/path with/ spaces'"
-          : '"some/path with/ spaces"'
-      );
-    });
-    [
-      { platform: "darwin", q: "'" },
-      { platform: "linux", q: '"' },
-      { platform: "win32", q: '"' }
-    ].forEach(p =>
-      it(`should use ${p.q} on ${p.platform}`, function() {
-        sinon.stub(process, "platform").value(p.platform);
-        expect(common.quotepath("a")).to.eql(`${p.q}a${p.q}`);
-      })
-    );
-  });
   describe("removeFalsy()", function() {
     it("should remove falsy values from an object", function() {
       expect(
