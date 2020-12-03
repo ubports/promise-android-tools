@@ -34,7 +34,7 @@ const spawnPromise = (file, args) =>
 
 describe("platform", function() {
   this.timeout(20000);
-  ["fake_fileaccesser", "fake fileaccesser"].forEach(e => {
+  ["fake_fileaccessor", "fake fileaccessor"].forEach(e => {
     describe(e, function() {
       [
         { f: execFilePromise, n: "execFile" },
