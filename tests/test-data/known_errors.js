@@ -121,6 +121,11 @@ export const fastbootErrors = [
       "FAILED (remote: 'Fastboot command (set_active:) is not allowed when locked')"
   },
   {
+    expectedReturn: "bootloader locked",
+    error: { code: 1 },
+    stderr: "FAILED (remote: 'download for partition 'boot' is not allowed')"
+  },
+  {
     expectedReturn: "enable unlocking",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,

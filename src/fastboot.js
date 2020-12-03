@@ -52,7 +52,8 @@ export class Fastboot extends Tool {
       stderr?.includes("Partition flashing is not allowed") ||
       stderr?.includes("Command not allowed") ||
       stderr?.includes("not allowed when locked") ||
-      stderr?.includes("device is locked. Cannot flash images")
+      stderr?.includes("device is locked. Cannot flash images") ||
+      stderr?.match(/download for partition '[a-z]+' is not allowed/i)
     ) {
       return "bootloader locked";
     } else if (
