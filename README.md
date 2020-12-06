@@ -95,7 +95,7 @@ When using the library with modern editors like VScode/VScodium or Atom, you can
 
 ## API Changes, Deprecation Notices, Upgrade Guide
 
-### [WIP] Upgrading to 4.x
+### Upgrading to 4.x
 
 Version 4.0.0 includes a major re-factoring effort that touched almost every function. The APIs of most functions remained intact, but in most cases you will have to make changes to your code. This has been done to correct some early design decisions.
 
