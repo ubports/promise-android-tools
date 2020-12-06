@@ -57,7 +57,7 @@ export class DeviceTools extends EventEmitter {
    */
   wait() {
     const _this = this;
-    return new CancelablePromise(function(resolve, reject, onCancel) {
+    return new CancelablePromise(function (resolve, reject, onCancel) {
       const waitPromises = [
         _this.adb.wait(),
         _this.fastboot.wait(),

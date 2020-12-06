@@ -542,7 +542,7 @@ export class Adb extends Tool {
    */
   execOut(writableStream, ...args) {
     const _this = this;
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       let stderr = "";
       const cp = _this.spawn("exec-out", `'${args.join(" ")}'`);
       cp.stdout.pipe(writableStream);

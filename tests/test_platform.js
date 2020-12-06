@@ -32,27 +32,27 @@ const spawnPromise = (file, args) =>
     cp.on("exit", code => (code ? reject({ code }) : resolve()));
   });
 
-describe("platform", function() {
+describe("platform", function () {
   this.timeout(20000);
   ["fake_fileaccessor", "fake fileaccessor"].forEach(e => {
-    describe(e, function() {
+    describe(e, function () {
       [
         { f: execFilePromise, n: "execFile" },
         { f: spawnPromise, n: "spawn" }
       ].forEach(({ f, n }) => {
-        it(`${n} should access path without spaces`, function() {
+        it(`${n} should access path without spaces`, function () {
           return f("node", [
             `tests/test-data/${e}.js`,
             "tests/test-data/test_file"
           ]);
         });
-        it(`${n} should access path with spaces`, function() {
+        it(`${n} should access path with spaces`, function () {
           return f("node", [
             `tests/test-data/${e}.js`,
             "tests/test-data/test file"
           ]);
         });
-        it(`${n} should throw on inaccessible path`, function(done) {
+        it(`${n} should throw on inaccessible path`, function (done) {
           f("node", [
             `tests/test-data/${e}.js`,
             "tests/test-data/thisdoesntexist"

@@ -100,9 +100,9 @@ Ending session...
 Rebooting device...
 Releasing device interface...`;
 
-describe("Heimdall module", function() {
-  describe("constructor()", function() {
-    it("should construct heimdall", function() {
+describe("Heimdall module", function () {
+  describe("constructor()", function () {
+    it("should construct heimdall", function () {
       const heimdall = new Heimdall();
       expect(heimdall).to.exist;
       expect(heimdall.tool).to.eql("heimdall");
@@ -111,10 +111,10 @@ describe("Heimdall module", function() {
       expect(heimdall.execOptions).to.eql({});
     });
   });
-  describe("basic functions", function() {
-    describe("handleError()", function() {
+  describe("basic functions", function () {
+    describe("handleError()", function () {
       heimdallErrors.forEach(e =>
-        it(`should return ${e.expectedReturn}`, function() {
+        it(`should return ${e.expectedReturn}`, function () {
           const heimdall = new Heimdall();
           heimdall.executable = "/path/to/heimdall";
           expect(heimdall.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
@@ -124,8 +124,8 @@ describe("Heimdall module", function() {
       );
     });
 
-    describe("hasAccess()", function() {
-      it("should resolve true when a device is detected", function() {
+    describe("hasAccess()", function () {
+      it("should resolve true when a device is detected", function () {
         stubExec(null, "0123456789ABCDEF	heimdall");
         const heimdall = new Heimdall();
         return heimdall.hasAccess().then(r => {
@@ -133,7 +133,7 @@ describe("Heimdall module", function() {
           expectArgs("detect");
         });
       });
-      it("should resolve false if no device is detected", function() {
+      it("should resolve false if no device is detected", function () {
         stubExec(
           true,
           "",
@@ -145,7 +145,7 @@ describe("Heimdall module", function() {
           expectArgs("detect");
         });
       });
-      it("should reject on error", function() {
+      it("should reject on error", function () {
         stubExec(true, "everything exploded");
         const heimdall = new Heimdall();
         return expect(heimdall.hasAccess()).to.be.rejectedWith(
@@ -153,8 +153,8 @@ describe("Heimdall module", function() {
         );
       });
     });
-    describe("wait()", function() {
-      it("should resolve mode as soon as device is detected", function() {
+    describe("wait()", function () {
+      it("should resolve mode as soon as device is detected", function () {
         stubExec(null, "0123456789ABCDEF	heimdall");
         const heimdall = new Heimdall();
         return heimdall.wait().then(r => {
@@ -163,8 +163,8 @@ describe("Heimdall module", function() {
         });
       });
     });
-    describe("printPit()", function() {
-      it("should print pit from device", function() {
+    describe("printPit()", function () {
+      it("should print pit from device", function () {
         stubExec(null, printPitFromDevice);
         const heimdall = new Heimdall();
         return heimdall.printPit().then(r => {
@@ -172,7 +172,7 @@ describe("Heimdall module", function() {
           expectArgs("print-pit");
         });
       });
-      it("should print pit file", function() {
+      it("should print pit file", function () {
         stubExec(null, printPitFromDevice);
         const heimdall = new Heimdall();
         return heimdall.printPit("/test/test-data/test_file").then(r => {
@@ -180,7 +180,7 @@ describe("Heimdall module", function() {
           expectArgs("print-pit", "--file", "/test/test-data/test_file");
         });
       });
-      it("should reject on error", function() {
+      it("should reject on error", function () {
         stubExec(
           true,
           null,
@@ -190,8 +190,8 @@ describe("Heimdall module", function() {
         return expect(heimdall.printPit()).to.be.rejectedWith("no device");
       });
     });
-    describe("flash()", function() {
-      it("should flash partitions", function() {
+    describe("flash()", function () {
+      it("should flash partitions", function () {
         stubExec(null, "OK");
         const heimdall = new Heimdall();
         return heimdall
@@ -216,7 +216,7 @@ describe("Heimdall module", function() {
             );
           });
       });
-      it("should reject on error", function() {
+      it("should reject on error", function () {
         stubExec(
           true,
           null,
@@ -235,9 +235,9 @@ describe("Heimdall module", function() {
       });
     });
   });
-  describe("convenience functions", function() {
-    describe("getPartitions()", function() {
-      it("should get partitions from device pit", function() {
+  describe("convenience functions", function () {
+    describe("getPartitions()", function () {
+      it("should get partitions from device pit", function () {
         stubExec(null, printPitFromDevice);
         const heimdall = new Heimdall();
         return heimdall.getPartitions().then(r => {
@@ -246,8 +246,8 @@ describe("Heimdall module", function() {
         });
       });
     });
-    describe("detect()", function() {
-      it("shold call hasAccess()", function() {
+    describe("detect()", function () {
+      it("shold call hasAccess()", function () {
         const heimdall = new Heimdall();
         heimdall.hasAccess = sinon.spy();
         heimdall.detect();

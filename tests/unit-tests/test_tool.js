@@ -38,10 +38,10 @@ const validOptions = [
   { tool: "adb", execOptions: { a: "b" } }
 ];
 
-describe("Tool module", function() {
-  describe("constructor()", function() {
+describe("Tool module", function () {
+  describe("constructor()", function () {
     ["adb", "fastboot", "heimdall"].forEach(t => {
-      it(`should create generic ${t}`, function() {
+      it(`should create generic ${t}`, function () {
         const tool = new Tool({ tool: t });
         expect(tool).to.exist;
         expect(tool.tool).to.eql(t);
@@ -50,7 +50,7 @@ describe("Tool module", function() {
         expect(tool.execOptions).to.eql({});
       });
     });
-    it("should throw if invoked without valid tool", function(done) {
+    it("should throw if invoked without valid tool", function (done) {
       try {
         new Tool();
       } catch (e) {
@@ -61,8 +61,8 @@ describe("Tool module", function() {
     });
   });
 
-  describe("kill()", function() {
-    it("should kill childprocesses", function() {
+  describe("kill()", function () {
+    it("should kill childprocesses", function () {
       const tool = new Tool({ tool: "adb" });
       expect(tool.processes).to.eql([]);
       tool.processes = [{ kill: sinon.spy() }, { kill: sinon.spy() }];
@@ -70,18 +70,18 @@ describe("Tool module", function() {
       expect(tool.processes[0].kill).to.have.been.calledOnce;
       expect(tool.processes[1].kill).to.have.been.calledOnce;
     });
-    it("should do nothing if there's nothing to do", function() {
+    it("should do nothing if there's nothing to do", function () {
       const tool = new Tool({ tool: "adb" });
       expect(tool.processes).to.eql([]);
       expect(tool.kill()).to.eql(undefined);
     });
   });
 
-  describe("exec()", function() {
+  describe("exec()", function () {
     validOptions.forEach(options => {
       it(`should resolve stdout if constructed with ${JSON.stringify(
         options
-      )}`, function() {
+      )}`, function () {
         sinon.stub(child_process, "execFile").yields(undefined, "ok");
         const tool = new Tool(options);
         const args = ["these", "-are", "--all=valid", "./arguments"];
@@ -101,7 +101,7 @@ describe("Tool module", function() {
         });
       });
     });
-    it("should reject on error", function(done) {
+    it("should reject on error", function (done) {
       sinon
         .stub(child_process, "execFile")
         .yields({ killed: true }, "uh oh", "terrible things");
@@ -123,7 +123,7 @@ describe("Tool module", function() {
         done();
       });
     });
-    it("should allow cancelling", function(done) {
+    it("should allow cancelling", function (done) {
       const killFake = sinon.stub().returns(true);
       sinon.stub(child_process, "execFile").callsFake((...cpArgs) => ({
         kill(sig) {
@@ -142,7 +142,7 @@ describe("Tool module", function() {
       expect(tool.processes).to.have.lengthOf(1);
       setTimeout(() => job.cancel(), 1);
     });
-    it("should allow killing", function(done) {
+    it("should allow killing", function (done) {
       sinon.stub(child_process, "execFile").callsFake((...cpArgs) => ({
         kill() {
           cpArgs[3]();
@@ -158,7 +158,7 @@ describe("Tool module", function() {
     });
   });
 
-  describe("spawn()", function() {
+  describe("spawn()", function () {
     validOptions.forEach(options => {
       [
         { code: 0, signal: null },
@@ -166,7 +166,7 @@ describe("Tool module", function() {
       ].forEach(res => {
         it(`should spawn and handle ${JSON.stringify(
           res
-        )} if constructed with ${JSON.stringify(options)}`, function(done) {
+        )} if constructed with ${JSON.stringify(options)}`, function (done) {
           const spawnEvent = new EventEmitter();
           spawnEvent.stdout = new EventEmitter();
           const spawnStub = sinon
@@ -220,9 +220,9 @@ describe("Tool module", function() {
     });
   });
 
-  describe("handleError()", function() {
+  describe("handleError()", function () {
     genericErrors("adb").forEach(e =>
-      it(`should return ${e.expectedReturn}`, function() {
+      it(`should return ${e.expectedReturn}`, function () {
         const tool = new Tool({ tool: "adb" });
         tool.executable = "/path/to/adb";
         expect(tool.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
@@ -232,19 +232,19 @@ describe("Tool module", function() {
     );
   });
 
-  describe("wait()", function() {
-    it("should resolve when a device is detected", function() {
+  describe("wait()", function () {
+    it("should resolve when a device is detected", function () {
       const tool = new Tool({ tool: "adb" });
       sinon.stub(tool, "hasAccess").resolves(true);
       return tool.wait().then(r => {
         expect(r).to.eql(undefined);
       });
     });
-    it("should reject on error", function() {
+    it("should reject on error", function () {
       const tool = new Tool({ tool: "adb" });
       return expect(tool.wait()).to.be.rejectedWith("virtual");
     });
-    it("should be cancelable", function() {
+    it("should be cancelable", function () {
       const tool = new Tool({ tool: "adb" });
       sinon.stub(tool, "hasAccess").resolves(false);
       const cp = tool.wait().catch(() => {});

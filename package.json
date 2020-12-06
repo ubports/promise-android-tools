@@ -7,8 +7,7 @@
   "scripts": {
     "test": "npx coverage -x src/cancelable-promise.js -r lcov -r html npm run test-nocover",
     "test-nocover": "npx mocha -- -R spec './tests/unit-tests/*.js' './tests/*.js'",
-    "lint": "npx eslint tests/**/*.js src/*.js",
-    "lint-fix": "npm run lint -- --fix",
+    "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none -uw",
     "docs": "npx jsdoc -c jsdoc-config.json",
     "build": "npx rollup -c"
   },
@@ -42,16 +41,12 @@
     "fs-extra": "^9.0.1"
   },
   "devDependencies": {
-    "babel-eslint": "^10.1.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "coverage": "^0.4.1",
-    "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.15.0",
-    "eslint-plugin-prettier": "^3.1.4",
     "jsdoc": "^3.6.6",
     "mocha": "^7.2.0",
-    "prettier": "^1.19.1",
+    "prettier": "^2.2.0",
     "rollup": "^2.33.1",
     "sinon": "^7.5.0",
     "sinon-chai": "^3.5.0"

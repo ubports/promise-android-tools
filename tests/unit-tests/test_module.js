@@ -34,15 +34,15 @@ function expectReject(error, message) {
   expect(error).to.haveOwnProperty("message", message);
 }
 
-describe("DeviceTools module", function() {
-  describe("constructor()", function() {
-    it("should construct deviceTools", function() {
+describe("DeviceTools module", function () {
+  describe("constructor()", function () {
+    it("should construct deviceTools", function () {
       const deviceTools = new DeviceTools();
       expect(deviceTools).to.exist;
     });
   });
-  describe("kill()", function() {
-    it("should kill child processes", function() {
+  describe("kill()", function () {
+    it("should kill child processes", function () {
       const deviceTools = new DeviceTools();
       sinon.stub(deviceTools.adb, "kill").returns();
       sinon.stub(deviceTools.fastboot, "kill").returns();
@@ -50,8 +50,8 @@ describe("DeviceTools module", function() {
       expect(deviceTools.kill()).to.eql(undefined);
     });
   });
-  describe("wait()", function() {
-    it("should resolve mode", function() {
+  describe("wait()", function () {
+    it("should resolve mode", function () {
       const deviceTools = new DeviceTools();
       sinon
         .stub(deviceTools.adb, "wait")
@@ -66,7 +66,7 @@ describe("DeviceTools module", function() {
         expect(r).to.eql("device");
       });
     });
-    it("should reject if all wait functions rejected", function(done) {
+    it("should reject if all wait functions rejected", function (done) {
       const deviceTools = new DeviceTools();
       sinon.stub(deviceTools.adb, "wait").returns(CancelablePromise.reject());
       sinon
@@ -80,7 +80,7 @@ describe("DeviceTools module", function() {
         done();
       });
     });
-    it("should be cancellable", function() {
+    it("should be cancellable", function () {
       const deviceTools = new DeviceTools();
       sinon.stub(deviceTools.adb, "wait").returns(new CancelablePromise());
       sinon.stub(deviceTools.fastboot, "wait").returns(new CancelablePromise());
@@ -89,8 +89,8 @@ describe("DeviceTools module", function() {
       cp.cancel();
     });
   });
-  describe("getDeviceName()", function() {
-    it("should resolve device name from adb", function() {
+  describe("getDeviceName()", function () {
+    it("should resolve device name from adb", function () {
       const deviceTools = new DeviceTools();
       sinon
         .stub(deviceTools.adb, "getDeviceName")
@@ -99,7 +99,7 @@ describe("DeviceTools module", function() {
         expect(r).to.eql("asdf");
       });
     });
-    it("should resolve device name from fastboot", function() {
+    it("should resolve device name from fastboot", function () {
       const deviceTools = new DeviceTools();
       sinon
         .stub(deviceTools.adb, "getDeviceName")
@@ -111,7 +111,7 @@ describe("DeviceTools module", function() {
         expect(r).to.eql("asdf");
       });
     });
-    it("should reject on error", function(done) {
+    it("should reject on error", function (done) {
       const deviceTools = new DeviceTools();
       sinon
         .stub(deviceTools.adb, "getDeviceName")

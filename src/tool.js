@@ -184,7 +184,7 @@ export class Tool extends EventEmitter {
    */
   wait() {
     var _this = this;
-    return new CancelablePromise(function(resolve, reject, onCancel) {
+    return new CancelablePromise(function (resolve, reject, onCancel) {
       let timeout;
       let stop;
       function poll() {

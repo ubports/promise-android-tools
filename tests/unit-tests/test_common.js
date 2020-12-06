@@ -25,9 +25,9 @@ chai.use(sinonChai);
 
 import * as common from "../../src/common.js";
 
-describe("Common module", function() {
-  describe("removeFalsy()", function() {
-    it("should remove falsy values from an object", function() {
+describe("Common module", function () {
+  describe("removeFalsy()", function () {
+    it("should remove falsy values from an object", function () {
       expect(
         common.removeFalsy({
           a: "a",

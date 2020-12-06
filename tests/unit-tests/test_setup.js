@@ -18,8 +18,8 @@
 import sinon from "sinon";
 import chai from "chai";
 
-beforeEach(function() {});
+beforeEach(function () {});
 
-afterEach(function() {
+afterEach(function () {
   sinon.restore();
 });

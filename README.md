@@ -20,8 +20,10 @@ const dt = new DeviceTools();
 
 dt.wait() // wait for any device
   .then(state =>
-    dt.getDeviceName().then(name => console.log(`detected ${name} in ${state} state`))
-  )
+    dt
+      .getDeviceName()
+      .then(name => console.log(`detected ${name} in ${state} state`))
+  );
 ```
 
 ### Log execution events
@@ -32,12 +34,12 @@ Events are available to log or introspect tool executions.
 const { DeviceTools } = require("promise-android-tools");
 const dt = new DeviceTools();
 
-dt.on("exec", r => console.log("exec", r))
+dt.on("exec", r => console.log("exec", r));
 dt.on("spawn:start", r => console.log("spawn:start", r));
 dt.on("spawn:exit", r => console.log("spawn:exit", r));
 dt.on("spawn:error", r => console.log("spawn:error", r));
 
-dt.adb.shell("echo", "test")
+dt.adb.shell("echo", "test");
 // will log a compact object (i.e. no falsy values) consisting of the command array cmd, the error object, and the stderr and stdout buffers. The path to the executable will be replaced with the tool name for brevity:
 // exec {
 //   cmd: [ 'adb', '-P', 5037, 'shell', 'echo test' ],
@@ -58,29 +60,32 @@ The library provides most features of the eponymous command-line utilities wrapp
 const { DeviceTools } = require("promise-android-tools");
 const dt = new DeviceTools();
 
-db.adb.wait() // wait for any device over adb
+db.adb
+  .wait() // wait for any device over adb
   .then(() => dt.adb.ensureState("recovery")) // reboot to recovery if we have to
   .then(() => dt.adb.push(["./config.json"], "/tmp", progress)) // push a config file to the device
   .then(() => dt.adb.getDeviceName()) // read device codename
   .then(name => {
     // samsung devices do not use fastbooot
     if (name.includes("samsung")) {
-      return dt.adb.reboot("bootloader") // reboot to samsung's download mode
+      return dt.adb
+        .reboot("bootloader") // reboot to samsung's download mode
         .then(() => dt.heimdall.wait()) // wait for device to respond to heimdall
         .then(() => dt.heimdall.flash("boot", "boot.img")) // flash an image to a partition
-        .then(() => dt.heimdall.reboot()) // reboot to system
+        .then(() => dt.heimdall.reboot()); // reboot to system
     } else {
-      return dt.adb.reboot("bootloader") // reboot to bootloader (aka. fastboot mode)
+      return dt.adb
+        .reboot("bootloader") // reboot to bootloader (aka. fastboot mode)
         .then(() => dt.fastboot.wait()) // wait for device to respond to fastboot commands
         .then(() => dt.fastboot.flash("boot", "boot.img")) // flash an image
-        .then(() => dt.fastboot.continue()) // auto-boot to system
+        .then(() => dt.fastboot.continue()); // auto-boot to system
     }
   })
   .then(() => dt.adb.wait("device")) // ignore devices in recovery or a different mode
   .then(() => console.log("flashing complete, that was easy!")); // yay
 
 function progress(p) {
-  console.log("operation", (p*100), "% complete");
+  console.log("operation", p * 100, "% complete");
 }
 ```
 
@@ -110,7 +115,6 @@ Version 4.0.0 includes a major re-factoring effort that touched almost every fun
   - The progress is now reported on-the-fly and no longer requires polling via `adb shell stat <file>`. This results in faster and more accurate reporting.
 - Functions that are considered unstable or experimental have been makred as such in their documentation comments. If you're building a product around any of those, you're welcome to help us improve the library to ensure your needs will be accounted for in the future.
 
-
 ### Upgrading to 3.x
 
 - Version 3.0.0 introduced a breaking API change in `fastboot.flash()` and `fastboot.flashRaw()`. Pervious the third and fourth arguments of `fastboot.flash()` were boolean arguments for indicating force and raw flashing. Similarly `fastboot.flashRaw()` is a convenience function that forwarded the third argument as a boolean flag for the force option. The new API of `fastboot.flash()` accepts a boolean value for raw flashing as the third argument, followed by any number of string arguments for additional flags. The `fastboot.flashRaw()` function similarly accepts any number of arguments for additional flags starting at the third argument. The `fastboot.flashArray()` function now takes an array like `[ {partition, file, raw, flags}, ... ]` as an argument. We believe that this change is more in line with the latest developments in the fastboot cli and provides better access to options like `--force`, `--disable-verity`, and `--disable-verification`.
@@ -128,6 +132,6 @@ Original development by [Jan Sprinz](https://spri.nz) and [Marius Gripsgård](ht
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.

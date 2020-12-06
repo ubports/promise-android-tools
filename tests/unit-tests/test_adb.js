@@ -51,9 +51,9 @@ function expectReject(error, message) {
   expect(error).to.haveOwnProperty("message", message);
 }
 
-describe("Adb module", function() {
-  describe("constructor()", function() {
-    it("should construct adb", function() {
+describe("Adb module", function () {
+  describe("constructor()", function () {
+    it("should construct adb", function () {
       const adb = new Adb();
       expect(adb).to.exist;
       expect(adb.tool).to.eql("adb");
@@ -63,18 +63,18 @@ describe("Adb module", function() {
     });
   });
 
-  describe("basic functions", function() {
-    describe("kill()", function() {
-      it("should kill child processes", function() {
+  describe("basic functions", function () {
+    describe("kill()", function () {
+      it("should kill child processes", function () {
         stubExec();
         const adb = new Adb();
         return adb.kill();
       });
     });
 
-    describe("handleError()", function() {
+    describe("handleError()", function () {
       adbErrors.forEach(e =>
-        it(`should return ${e.expectedReturn}`, function() {
+        it(`should return ${e.expectedReturn}`, function () {
           const adb = new Adb();
           adb.executable = "/path/to/adb";
           expect(adb.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
@@ -84,8 +84,8 @@ describe("Adb module", function() {
       );
     });
 
-    describe("startServer()", function() {
-      it("should kill all servers and start a new one", function() {
+    describe("startServer()", function () {
+      it("should kill all servers and start a new one", function () {
         stubExec();
         const adb = new Adb();
         return adb.startServer().then(r => {
@@ -97,8 +97,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("killServer()", function() {
-      it("should kill all servers", function() {
+    describe("killServer()", function () {
+      it("should kill all servers", function () {
         stubExec();
         const adb = new Adb();
         return adb.killServer().then(r => {
@@ -108,8 +108,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("reconnect()", function() {
-      it("should reconnect", function() {
+    describe("reconnect()", function () {
+      it("should reconnect", function () {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
@@ -121,7 +121,7 @@ describe("Adb module", function() {
           expectArgs("reconnect");
         });
       });
-      it("should reject on no device", function(done) {
+      it("should reject on no device", function (done) {
         stubExec(null, "no devices/emulators found");
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
@@ -133,8 +133,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("reconnectDevice()", function() {
-      it("should reconnect from device side", function() {
+    describe("reconnectDevice()", function () {
+      it("should reconnect from device side", function () {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
@@ -148,8 +148,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("reconnectOffline()", function() {
-      it("should reconnect offline devices", function() {
+    describe("reconnectOffline()", function () {
+      it("should reconnect offline devices", function () {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "killServer").returns();
@@ -163,8 +163,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("getSerialno()", function() {
-      it("should return serialnumber", function() {
+    describe("getSerialno()", function () {
+      it("should return serialnumber", function () {
         stubExec(false, "1234567890ABCDEF\n");
         const adb = new Adb();
         return adb.getSerialno().then(r => {
@@ -173,7 +173,7 @@ describe("Adb module", function() {
           expectArgs("get-serialno");
         });
       });
-      it("should throw on invalid stdout", function() {
+      it("should throw on invalid stdout", function () {
         stubExec(false, "This is an invalid string");
         const adb = new Adb();
         return expect(adb.getSerialno()).to.be.rejectedWith(
@@ -182,8 +182,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("shell()", function() {
-      it("should run command on device", function() {
+    describe("shell()", function () {
+      it("should run command on device", function () {
         stubExec(null, "This string is returned over stdout");
         const adb = new Adb();
         return adb.shell(["one", "two", "three"]).then(r => {
@@ -193,8 +193,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("push()", function() {
-      it("should resolve if called with empty files array", function() {
+    describe("push()", function () {
+      it("should resolve if called with empty files array", function () {
         sinon.stub(child_process, "spawn");
         const adb = new Adb();
         const progress = sinon.fake();
@@ -205,7 +205,7 @@ describe("Adb module", function() {
           expect(progress).to.not.have.been.calledThrice;
         });
       });
-      it("should push files and resolve", function() {
+      it("should push files and resolve", function () {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 10)),
@@ -230,7 +230,7 @@ describe("Adb module", function() {
             expect(progress).to.have.been.calledWith(1);
           });
       });
-      it("should reject on error", function(done) {
+      it("should reject on error", function (done) {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(666, "SIGTERM"), 10)),
@@ -255,7 +255,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject on inaccessible file", function(done) {
+      it("should reject on inaccessible file", function (done) {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(666, "SIGTERM"), 10)),
@@ -279,7 +279,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should be cancelable", function() {
+      it("should be cancelable", function () {
         const child = {
           on: sinon.fake(),
           once: sinon.fake(),
@@ -298,9 +298,9 @@ describe("Adb module", function() {
       });
     });
 
-    describe("reboot()", function() {
+    describe("reboot()", function () {
       ["system", "recovery", "bootloader"].forEach(state => {
-        it("should reboot to " + state, function() {
+        it("should reboot to " + state, function () {
           stubExec();
           const adb = new Adb();
           return adb.reboot(state).then(() => {
@@ -308,7 +308,7 @@ describe("Adb module", function() {
           });
         });
       });
-      it("should reject on failure in stdout", function(done) {
+      it("should reject on failure in stdout", function (done) {
         stubExec(null, "failed");
         const adb = new Adb();
         adb.reboot("bootloader").catch(() => {
@@ -316,7 +316,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject on error", function(done) {
+      it("should reject on error", function (done) {
         stubExec(666, "everything exploded", "what!?");
         const adb = new Adb();
         adb.reboot("bootloader").catch(() => {
@@ -324,7 +324,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject on invalid state", function() {
+      it("should reject on invalid state", function () {
         stubExec();
         const adb = new Adb();
         return expect(adb.reboot("someinvalidstate")).to.have.been.rejectedWith(
@@ -332,8 +332,8 @@ describe("Adb module", function() {
         );
       });
     });
-    describe("sideload()", function() {
-      it("should sideload android ota package", function() {
+    describe("sideload()", function () {
+      it("should sideload android ota package", function () {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 10)),
@@ -357,7 +357,7 @@ describe("Adb module", function() {
           ]);
         });
       });
-      it("should be cancelable", function() {
+      it("should be cancelable", function () {
         const child = {
           on: sinon.fake(),
           once: sinon.fake(),
@@ -374,7 +374,7 @@ describe("Adb module", function() {
         const cp = adb.sideload("tests/test-data/test_file");
         cp.cancel();
       });
-      it("should reject on inaccessible file", function(done) {
+      it("should reject on inaccessible file", function (done) {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(666, "SIGTERM"), 10)),
@@ -398,7 +398,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject on error", function(done) {
+      it("should reject on error", function (done) {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(666, "SIGTERM"), 10)),
@@ -424,8 +424,8 @@ describe("Adb module", function() {
         });
       });
     });
-    describe("getState()", function() {
-      it("should resolve state", function() {
+    describe("getState()", function () {
+      it("should resolve state", function () {
         stubExec(null, "recovery");
         const adb = new Adb();
         return adb.getState().then(() => {
@@ -435,23 +435,23 @@ describe("Adb module", function() {
     });
   });
 
-  describe("convenience functions", function() {
-    describe("ensureState()", function() {
-      it("should resolve if already in requested state", function() {
+  describe("convenience functions", function () {
+    describe("ensureState()", function () {
+      it("should resolve if already in requested state", function () {
         stubExec(null, "recovery");
         const adb = new Adb();
         return adb.ensureState("recovery").then(() => {
           expectArgs("get-state");
         });
       });
-      it("should properly handle device state", function() {
+      it("should properly handle device state", function () {
         stubExec(null, "device");
         const adb = new Adb();
         return adb.ensureState("system").then(() => {
           expectArgs("get-state");
         });
       });
-      it("should reboot to correct state", function() {
+      it("should reboot to correct state", function () {
         stubExec(null, "recovery");
         const adb = new Adb();
         sinon.stub(adb, "reboot").resolves();
@@ -462,8 +462,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("getDeviceName()", function() {
-      it("should get device name from getprop", function() {
+    describe("getDeviceName()", function () {
+      it("should get device name from getprop", function () {
         stubExec(null, "thisisadevicecodename");
         const adb = new Adb();
         return adb.getDeviceName().then(r => {
@@ -472,7 +472,7 @@ describe("Adb module", function() {
         });
       });
       ["getprop: not found", null].forEach(response => {
-        it("should cat default.prop on " + (response || "empty"), function() {
+        it("should cat default.prop on " + (response || "empty"), function () {
           sinon
             .stub(child_process, "execFile")
             .callsFake((executable, args, options, callback) => {
@@ -497,14 +497,14 @@ describe("Adb module", function() {
           });
         });
       });
-      it("should reject if prop not found", function() {
+      it("should reject if prop not found", function () {
         stubExec();
         const adb = new Adb();
         return adb.getDeviceName().catch(e => {
           expect(e.message).to.equal("unknown getprop error");
         });
       });
-      it("should reject on error", function() {
+      it("should reject on error", function () {
         sinon
           .stub(child_process, "execFile")
           .callsFake((executable, args, options, callback) => {
@@ -521,7 +521,7 @@ describe("Adb module", function() {
           expectArgs("shell", "cat default.prop");
         });
       });
-      it("should reject if default.prop didn't include ro.product.device", function() {
+      it("should reject if default.prop didn't include ro.product.device", function () {
         sinon
           .stub(child_process, "execFile")
           .callsFake((executable, args, options, callback) => {
@@ -541,8 +541,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("getOs()", function() {
-      it('should resolve "ubuntutouch"', function() {
+    describe("getOs()", function () {
+      it('should resolve "ubuntutouch"', function () {
         stubExec(null, "Contents of the system-image file go here");
         const adb = new Adb();
         return adb.getOs().then(r => {
@@ -550,7 +550,7 @@ describe("Adb module", function() {
           expectArgs("shell", "cat /etc/system-image/channel.ini");
         });
       });
-      it('should resolve "android"', function() {
+      it('should resolve "android"', function () {
         stubExec();
         const adb = new Adb();
         return adb.getOs().then(r => {
@@ -560,8 +560,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("hasAccess()", function() {
-      it("should resolve true", function() {
+    describe("hasAccess()", function () {
+      it("should resolve true", function () {
         stubExec(null, ".");
         const adb = new Adb();
         return adb.hasAccess().then(r => {
@@ -569,7 +569,7 @@ describe("Adb module", function() {
           expectArgs("shell", "echo .");
         });
       });
-      it("should resolve false", function() {
+      it("should resolve false", function () {
         stubExec(true, null, "error: no devices/emulators found");
         const adb = new Adb();
         return adb.hasAccess().then(r => {
@@ -577,7 +577,7 @@ describe("Adb module", function() {
           expectArgs("shell", "echo .");
         });
       });
-      it("should reject", function() {
+      it("should reject", function () {
         stubExec(null, "This is an unexpected reply");
         const adb = new Adb();
         return expect(adb.hasAccess()).to.have.been.rejectedWith(
@@ -586,8 +586,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("wait()", function() {
-      it("should resolve when a device is detected", function() {
+    describe("wait()", function () {
+      it("should resolve when a device is detected", function () {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "getState").resolves("device");
@@ -597,7 +597,7 @@ describe("Adb module", function() {
           expectArgs("wait-for-any-any");
         });
       });
-      it("should reject on invalid state", function(done) {
+      it("should reject on invalid state", function (done) {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "getState").resolves("device");
@@ -607,7 +607,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject on invalid transport", function(done) {
+      it("should reject on invalid transport", function (done) {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "getState").resolves("device");
@@ -619,8 +619,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("format()", function() {
-      it("should format partition", function() {
+    describe("format()", function () {
+      it("should format partition", function () {
         sinon
           .stub(child_process, "execFile")
           .callsFake((executable, args, options, callback) => {
@@ -643,21 +643,21 @@ describe("Adb module", function() {
           expectArgs("shell", "mount /cache");
         });
       });
-      it("should be rejected if fstab can't be read", function() {
+      it("should be rejected if fstab can't be read", function () {
         stubExec();
         const adb = new Adb();
         return expect(adb.format("cache")).to.be.rejectedWith(
           "unable to read recovery.fstab"
         );
       });
-      it("should be rejected if partition can't be read", function() {
+      it("should be rejected if partition can't be read", function () {
         stubExec(null, "some invalid fstab");
         const adb = new Adb();
         return expect(adb.format("cache")).to.be.rejectedWith(
           "failed to format cache: Error: failed to parse fstab"
         );
       });
-      it("should be rejected if mount failed", function() {
+      it("should be rejected if mount failed", function () {
         stubExec(null, "some invalid fstab");
         const adb = new Adb();
         sinon.stub(adb, "findPartitionInFstab").returns("cache");
@@ -668,8 +668,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("wipeCache()", function() {
-      it("should resolve if cache was wiped", function() {
+    describe("wipeCache()", function () {
+      it("should resolve if cache was wiped", function () {
         stubExec();
         const adb = new Adb();
         sinon.stub(adb, "format").resolves();
@@ -679,12 +679,12 @@ describe("Adb module", function() {
       });
     });
 
-    describe("findPartitionInFstab()", function() {
+    describe("findPartitionInFstab()", function () {
       testrecoveryfstabs.forEach(device => {
         device.partitions.forEach(partition => {
           it(
             "should find " + partition.mountpoint + " for " + device.device,
-            function() {
+            function () {
               stubExec();
               const adb = new Adb();
               return expect(
@@ -696,8 +696,8 @@ describe("Adb module", function() {
       });
     });
 
-    describe("verifyPartitionType()", function() {
-      it("should verify parition type", function() {
+    describe("verifyPartitionType()", function () {
+      it("should verify parition type", function () {
         stubExec(null, "/dev/userdata on /data type ext4 (rw)");
         const adb = new Adb();
         return Promise.all([
@@ -708,7 +708,7 @@ describe("Adb module", function() {
           expect(r[1]).to.eql(false);
         });
       });
-      it("should reject if partition not found", function() {
+      it("should reject if partition not found", function () {
         stubExec(null, "/dev/something on /something type ext4 (rw)");
         const adb = new Adb();
         return adb.verifyPartitionType("data", "ext4").catch(r => {
@@ -716,8 +716,8 @@ describe("Adb module", function() {
         });
       });
     });
-    describe("getFileSize()", function() {
-      it("should resolve file size", function() {
+    describe("getFileSize()", function () {
+      it("should resolve file size", function () {
         stubExec(null, "1337", null);
         const adb = new Adb();
         return adb.getFileSize("/wtf").then(size => {
@@ -725,7 +725,7 @@ describe("Adb module", function() {
           expectArgs("shell", "du -shk /wtf");
         });
       });
-      it("should reject on invalid response file size", function(done) {
+      it("should reject on invalid response file size", function (done) {
         stubExec(null, "invalid response :)");
         const adb = new Adb();
         adb.getFileSize().catch(() => {
@@ -734,8 +734,8 @@ describe("Adb module", function() {
         });
       });
     });
-    describe("getAvailablePartitionSize()", function() {
-      it("should resolve available partition size", function() {
+    describe("getAvailablePartitionSize()", function () {
+      it("should resolve available partition size", function () {
         stubExec(null, "a\n/wtf 1337 a b");
         const adb = new Adb();
         return adb.getAvailablePartitionSize("/wtf").then(size => {
@@ -743,7 +743,7 @@ describe("Adb module", function() {
           expectArgs("shell", "df -k -P /wtf");
         });
       });
-      it("should reject on invalid response", function(done) {
+      it("should reject on invalid response", function (done) {
         stubExec(null, "invalid response :)");
         const adb = new Adb();
         adb.getAvailablePartitionSize("/wtf").catch(() => {
@@ -751,7 +751,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject on error", function(done) {
+      it("should reject on error", function (done) {
         stubExec(69, "invalid response :)");
         const adb = new Adb();
         adb.getAvailablePartitionSize().catch(() => {
@@ -760,8 +760,8 @@ describe("Adb module", function() {
         });
       });
     });
-    describe("getTotalPartitionSize()", function() {
-      it("should resolve available partition size", function() {
+    describe("getTotalPartitionSize()", function () {
+      it("should resolve available partition size", function () {
         stubExec(null, "a\n/wtf 1337 a b c d");
         const adb = new Adb();
         return adb.getTotalPartitionSize("/wtf").then(size => {
@@ -769,7 +769,7 @@ describe("Adb module", function() {
           expectArgs("shell", "df -k -P /wtf");
         });
       });
-      it("should reject on invalid response", function(done) {
+      it("should reject on invalid response", function (done) {
         stubExec(null, "invalid response :)");
         const adb = new Adb();
         adb.getTotalPartitionSize("/wtf").catch(() => {
@@ -777,7 +777,7 @@ describe("Adb module", function() {
           done();
         });
       });
-      it("should reject on error", function(done) {
+      it("should reject on error", function (done) {
         stubExec(69, "invalid response :)");
         const adb = new Adb();
         adb.getTotalPartitionSize().catch(() => {
@@ -788,9 +788,9 @@ describe("Adb module", function() {
     });
   });
 
-  describe("backup and restore", function() {
-    describe("execOut()", function() {
-      it("should pipe to stream and resolve", function() {
+  describe("backup and restore", function () {
+    describe("execOut()", function () {
+      it("should pipe to stream and resolve", function () {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 10)),
@@ -812,7 +812,7 @@ describe("Adb module", function() {
           expect(child.stdout.pipe).to.have.been.calledWith(stream);
         });
       });
-      it("should reject on error", function(done) {
+      it("should reject on error", function (done) {
         const child = {
           on: sinon.fake(),
           once: sinon.fake((_, cb) => setTimeout(() => cb(1, null), 10)),
@@ -836,8 +836,8 @@ describe("Adb module", function() {
         });
       });
     });
-    describe("createBackupTar()", function() {
-      it("should create backup tar image", function() {
+    describe("createBackupTar()", function () {
+      it("should create backup tar image", function () {
         const adb = new Adb();
         sinon.stub(adb, "getFileSize").resolves(50);
         sinon.stub(fs, "statSync").returns(25);
@@ -849,8 +849,8 @@ describe("Adb module", function() {
         });
       });
     });
-    describe("restoreBackupTar()", function() {
-      it("should restore backup tar image", function() {
+    describe("restoreBackupTar()", function () {
+      it("should restore backup tar image", function () {
         const adb = new Adb();
         sinon.stub(adb, "ensureState").resolves("recovery");
         sinon.stub(adb, "shell").resolves();
@@ -860,7 +860,7 @@ describe("Adb module", function() {
           expect(r).to.eql(undefined);
         });
       });
-      it("should reject on error", function(done) {
+      it("should reject on error", function (done) {
         const adb = new Adb();
         sinon.stub(adb, "ensureState").rejects(new Error("oh no!"));
         adb.restoreBackupTar("src").catch(e => {
@@ -870,8 +870,8 @@ describe("Adb module", function() {
         });
       });
     });
-    describe("listUbuntuBackups()", function() {
-      it("should list backups", function() {
+    describe("listUbuntuBackups()", function () {
+      it("should list backups", function () {
         sinon.stub(fs, "readdir").resolves(["a", "b"]);
         sinon.stub(fs, "readJSON").resolves({ a: "b" });
         const adb = new Adb();
@@ -882,15 +882,15 @@ describe("Adb module", function() {
           ])
         );
       });
-      it("should resolve empty list if necessary", function() {
+      it("should resolve empty list if necessary", function () {
         sinon.stub(fs, "readdir").resolves([]);
         const adb = new Adb();
         adb.listUbuntuBackups().then(r => expect(r).to.eql([]));
       });
     });
   });
-  describe("createUbuntuTouchBackup()", function() {
-    it("should create backup", function() {
+  describe("createUbuntuTouchBackup()", function () {
+    it("should create backup", function () {
       stubExec(1, "should not be called");
       sinon.stub(fs, "ensureDir").resolves();
       sinon.useFakeTimers({});
@@ -914,7 +914,7 @@ describe("Adb module", function() {
         });
       });
     });
-    it("should reject if backup failed", function(done) {
+    it("should reject if backup failed", function (done) {
       stubExec(1, "should not be called");
       sinon.stub(fs, "ensureDir").resolves();
       const adb = new Adb();
@@ -931,7 +931,7 @@ describe("Adb module", function() {
         done();
       });
     });
-    it("should reject on invalid args", function(done) {
+    it("should reject on invalid args", function (done) {
       stubExec(1, "should not be called");
       const adb = new Adb();
       adb.createUbuntuTouchBackup().catch(r => {
@@ -939,8 +939,8 @@ describe("Adb module", function() {
       });
     });
   });
-  describe("restoreUbuntuTouchBackup()", function() {
-    it("should restore full backup", function() {
+  describe("restoreUbuntuTouchBackup()", function () {
+    it("should restore full backup", function () {
       stubExec(1, "should not be called");
       sinon.useFakeTimers({});
       sinon.stub(fs, "readJSON").returns({
@@ -979,7 +979,7 @@ describe("Adb module", function() {
           });
         });
     });
-    it("should reject on error", function(done) {
+    it("should reject on error", function (done) {
       stubExec(1, "something went wrong");
       sinon.stub(fs, "readJSON").resolves({ a: "b" });
       const adb = new Adb();
