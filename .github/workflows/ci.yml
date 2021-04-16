@@ -30,8 +30,8 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: npm install
-        run: npm install
+      - name: npm ci
+        run: npm ci
       - name: npm audit
         run: npm audit --production
       - name: npm run build
@@ -70,14 +70,14 @@ jobs:
 
       - name: test-nocover
         run: |
-          npm install
+          npm ci
           npm run test-nocover
 
       # only generate coverage on linux
       - name: test
         if: contains(runner.os, 'Linux')
         run: |
-          npm install
+          npm ci
           npm run test
 
       - name: codecov.io

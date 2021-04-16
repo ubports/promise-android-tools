@@ -82,9 +82,7 @@ export class Adb extends Tool {
    * @returns {Promise}
    */
   startServer() {
-    return this.killServer().then(() => {
-      this.exec("start-server");
-    });
+    return this.killServer().then(() => this.exec("start-server"));
   }
 
   /**
