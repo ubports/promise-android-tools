@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * Copyright (C) 2019 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2019-2021 UBports Foundation <info@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,34 +17,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import chai from "chai";
-import sinon from "sinon";
-import chaiAsPromised from "chai-as-promised";
-import sinonChai from "sinon-chai";
-const expect = chai.expect;
-chai.use(sinonChai);
-chai.use(chaiAsPromised);
+import { jest, expect } from "@jest/globals";
+jest.useFakeTimers();
 
 import child_process from "child_process";
 
-import { Heimdall } from "../../src/module.js";
+import { Heimdall } from "./module.js";
 import { getAndroidToolPath } from "android-tools-bin";
-import { heimdallErrors } from "../test-data/known_errors.js";
+import { heimdallErrors } from "../tests/test-data/known_errors.js";
 
 function stubExec(error, stdout, stderr) {
-  sinon.stub(child_process, "execFile").yields(error, stdout, stderr);
+  child_process.execFile = jest.fn((file, args, opts, cb) =>
+    cb(error, stdout, stderr)
+  );
 }
 
 function expectArgs(...args) {
-  expect(child_process.execFile).to.have.been.calledWith(
+  expect(child_process.execFile).toHaveBeenCalledWith(
     getAndroidToolPath("heimdall"),
-    args
+    args,
+    expect.any(Object),
+    expect.any(Function)
   );
 }
 
 function expectReject(error, message) {
-  expect(error).to.be.instanceOf(Error);
-  expect(error).to.haveOwnProperty("message", message);
+  expect(error).toBeInstanceOf(Error);
+  expect(error).toHaveProperty("message", message);
 }
 
 const printPitFromDevice = `Heimdall v1.4.0
@@ -104,11 +103,11 @@ describe("Heimdall module", function () {
   describe("constructor()", function () {
     it("should construct heimdall", function () {
       const heimdall = new Heimdall();
-      expect(heimdall).to.exist;
-      expect(heimdall.tool).to.eql("heimdall");
-      expect(heimdall.executable).to.include("heimdall");
-      expect(heimdall.extra).to.eql([]);
-      expect(heimdall.execOptions).to.eql({});
+      expect(heimdall).toExist;
+      expect(heimdall.tool).toEqual("heimdall");
+      expect(heimdall.executable).toMatch("heimdall");
+      expect(heimdall.extra).toEqual([]);
+      expect(heimdall.execOptions).toEqual({});
     });
   });
   describe("basic functions", function () {
@@ -117,7 +116,7 @@ describe("Heimdall module", function () {
         it(`should return ${e.expectedReturn}`, function () {
           const heimdall = new Heimdall();
           heimdall.executable = "/path/to/heimdall";
-          expect(heimdall.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
+          expect(heimdall.handleError(e.error, e.stdout, e.stderr)).toBe(
             e.expectedReturn
           );
         })
@@ -129,7 +128,7 @@ describe("Heimdall module", function () {
         stubExec(null, "0123456789ABCDEF	heimdall");
         const heimdall = new Heimdall();
         return heimdall.hasAccess().then(r => {
-          expect(r).to.eql(true);
+          expect(r).toEqual(true);
           expectArgs("detect");
         });
       });
@@ -141,16 +140,17 @@ describe("Heimdall module", function () {
         );
         const heimdall = new Heimdall();
         return heimdall.hasAccess().then(r => {
-          expect(r).to.eql(false);
+          expect(r).toEqual(false);
           expectArgs("detect");
         });
       });
-      it("should reject on error", function () {
+      it("should reject on error", function (done) {
         stubExec(true, "everything exploded");
         const heimdall = new Heimdall();
-        return expect(heimdall.hasAccess()).to.be.rejectedWith(
-          "everything exploded"
-        );
+        heimdall.hasAccess().catch(error => {
+          expectReject(error, '{"error":true,"stdout":"everything exploded"}');
+          done();
+        });
       });
     });
     describe("wait()", function () {
@@ -158,7 +158,7 @@ describe("Heimdall module", function () {
         stubExec(null, "0123456789ABCDEF	heimdall");
         const heimdall = new Heimdall();
         return heimdall.wait().then(r => {
-          expect(r).to.eql("download");
+          expect(r).toEqual("download");
           expectArgs("detect");
         });
       });
@@ -168,7 +168,7 @@ describe("Heimdall module", function () {
         stubExec(null, printPitFromDevice);
         const heimdall = new Heimdall();
         return heimdall.printPit().then(r => {
-          expect(r.length).to.eql(3);
+          expect(r.length).toEqual(3);
           expectArgs("print-pit");
         });
       });
@@ -176,18 +176,21 @@ describe("Heimdall module", function () {
         stubExec(null, printPitFromDevice);
         const heimdall = new Heimdall();
         return heimdall.printPit("/test/test-data/test_file").then(r => {
-          expect(r.length).to.eql(3);
+          expect(r.length).toEqual(3);
           expectArgs("print-pit", "--file", "/test/test-data/test_file");
         });
       });
-      it("should reject on error", function () {
+      it("should reject on error", function (done) {
         stubExec(
           true,
           null,
           "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
         );
         const heimdall = new Heimdall();
-        return expect(heimdall.printPit()).to.be.rejectedWith("no device");
+        heimdall.printPit().catch(error => {
+          expectReject(error, "no device");
+          done();
+        });
       });
     });
     describe("flash()", function () {
@@ -206,7 +209,7 @@ describe("Heimdall module", function () {
             }
           ])
           .then(r => {
-            expect(r).to.eql(null);
+            expect(r).toEqual(null);
             expectArgs(
               "flash",
               "--BOOT",
@@ -216,22 +219,24 @@ describe("Heimdall module", function () {
             );
           });
       });
-      it("should reject on error", function () {
+      it("should reject on error", function (done) {
         stubExec(
           true,
           null,
           "Initialising connection...\nDetecting device...\nERROR: Failed to detect compatible download-mode device."
         );
-
         const heimdall = new Heimdall();
-        return expect(
-          heimdall.flash([
+        heimdall
+          .flash([
             {
               partition: "BOOT",
               file: "some.img"
             }
           ])
-        ).to.be.rejectedWith("no device");
+          .catch(error => {
+            expectReject(error, "no device");
+            done();
+          });
       });
     });
   });
@@ -241,7 +246,7 @@ describe("Heimdall module", function () {
         stubExec(null, printPitFromDevice);
         const heimdall = new Heimdall();
         return heimdall.getPartitions().then(r => {
-          expect(r.length).to.eql(3);
+          expect(r.length).toEqual(3);
           expectArgs("print-pit");
         });
       });
@@ -249,9 +254,9 @@ describe("Heimdall module", function () {
     describe("detect()", function () {
       it("shold call hasAccess()", function () {
         const heimdall = new Heimdall();
-        heimdall.hasAccess = sinon.spy();
+        heimdall.hasAccess = jest.fn();
         heimdall.detect();
-        expect(heimdall.hasAccess).to.have.been.called;
+        expect(heimdall.hasAccess).toHaveBeenCalled;
       });
     });
   });

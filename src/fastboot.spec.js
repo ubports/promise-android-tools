@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * Copyright (C) 2017-2019 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2017-2021 UBports Foundation <info@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,45 +17,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import chai from "chai";
-import sinon from "sinon";
-import chaiAsPromised from "chai-as-promised";
-import sinonChai from "sinon-chai";
-const expect = chai.expect;
-chai.use(sinonChai);
-chai.use(chaiAsPromised);
+import { jest, expect } from "@jest/globals";
 
 import child_process from "child_process";
 
-import { Fastboot } from "../../src/module.js";
+import { Fastboot } from "./module.js";
 import { getAndroidToolPath } from "android-tools-bin";
-import { fastbootErrors } from "../test-data/known_errors.js";
+import { fastbootErrors } from "../tests/test-data/known_errors.js";
 
 function stubExec(error, stdout, stderr) {
-  sinon.stub(child_process, "execFile").yields(error, stdout, stderr);
+  child_process.execFile = jest.fn((file, args, opts, cb) =>
+    cb(error, stdout, stderr)
+  );
 }
 
 function expectArgs(...args) {
-  expect(child_process.execFile).to.have.been.calledWith(
+  expect(child_process.execFile).toHaveBeenCalledWith(
     getAndroidToolPath("fastboot"),
-    args
+    args,
+    expect.any(Object),
+    expect.any(Function)
   );
 }
 
 function expectReject(error, message) {
-  expect(error).to.be.instanceOf(Error);
-  expect(error).to.haveOwnProperty("message", message);
+  expect(error).toBeInstanceOf(Error);
+  expect(error).toHaveProperty("message", message);
 }
 
 describe("Fastboot module", function () {
   describe("constructor()", function () {
     it("should construct fastboot", function () {
       const fastboot = new Fastboot();
-      expect(fastboot).to.exist;
-      expect(fastboot.tool).to.eql("fastboot");
-      expect(fastboot.executable).to.include("fastboot");
-      expect(fastboot.extra).to.eql([]);
-      expect(fastboot.execOptions).to.eql({});
+      expect(fastboot).toExist;
+      expect(fastboot.tool).toEqual("fastboot");
+      expect(fastboot.executable).toMatch("fastboot");
+      expect(fastboot.extra).toEqual([]);
+      expect(fastboot.execOptions).toEqual({});
     });
   });
   describe("basic functions", function () {
@@ -64,7 +62,7 @@ describe("Fastboot module", function () {
         it(`should return ${e.expectedReturn}`, function () {
           const fastboot = new Fastboot();
           fastboot.executable = "/path/to/fastboot";
-          expect(fastboot.handleError(e.error, e.stdout, e.stderr)).to.deep.eql(
+          expect(fastboot.handleError(e.error, e.stdout, e.stderr)).toBe(
             e.expectedReturn
           );
         })
@@ -74,13 +72,13 @@ describe("Fastboot module", function () {
       it("should resolve if flashed successfully", function () {
         let i = 0;
         const child = {
-          on: sinon.fake(),
-          once: sinon.fake((_, cb) => setTimeout(() => cb(0, null), 5)),
+          on: jest.fn(),
+          once: jest.fn((_, cb) => setTimeout(() => cb(0, null), 5)),
           stdout: {
-            on: sinon.fake((_, cb) => cb("a"))
+            on: jest.fn((_, cb) => cb("a"))
           },
           stderr: {
-            on: sinon.fake((_, cb) => {
+            on: jest.fn((_, cb) => {
               if (i++ === 0) {
                 cb("Sending 'boot'");
                 setTimeout(() => cb("Writing 'boot'"), 1);
@@ -98,10 +96,10 @@ describe("Fastboot module", function () {
             })
           }
         };
-        sinon.stub(child_process, "spawn").returns(child);
+        child_process.spawn = jest.fn().mockReturnValue(child);
         const fastboot = new Fastboot();
-        sinon.stub(fastboot, "wait").resolves();
-        const progress = sinon.spy();
+        fastboot.wait = jest.fn().mockResolvedValue();
+        const progress = jest.fn();
         return fastboot
           .flash(
             [
@@ -116,12 +114,13 @@ describe("Fastboot module", function () {
             progress
           )
           .then(r => {
-            expect(r).to.eql(undefined);
-            expect(child_process.spawn).to.have.been.calledWith(
+            expect(r).toEqual(undefined);
+            expect(child_process.spawn).toHaveBeenCalledWith(
               fastboot.executable,
-              ["flash", "boot", "/path/to/boot.img"]
+              ["flash", "boot", "/path/to/boot.img"],
+              { env: { ADB_TRACE: "rwx" } }
             );
-            expect(child_process.spawn).to.have.been.calledWith(
+            expect(child_process.spawn).toHaveBeenCalledWith(
               fastboot.executable,
               [
                 "flash:raw",
@@ -129,16 +128,17 @@ describe("Fastboot module", function () {
                 "--force",
                 "--disable-verity",
                 "/path/to/recovery.img"
-              ]
+              ],
+              { env: { ADB_TRACE: "rwx" } }
             );
-            expect(progress).to.have.been.calledWith(0);
-            expect(progress).to.have.been.calledWith(0.15);
-            expect(progress).to.have.been.calledWith(0.45);
-            expect(progress).to.have.been.calledWith(0.575);
-            expect(progress).to.have.been.calledWith(0.725);
-            expect(progress).to.have.been.calledWith(0.65);
-            expect(progress).to.have.been.calledWith(0.95);
-            expect(progress).to.have.been.calledWith(1);
+            expect(progress).toHaveBeenCalledWith(0);
+            expect(progress).toHaveBeenCalledWith(0.15);
+            expect(progress).toHaveBeenCalledWith(0.45);
+            expect(progress).toHaveBeenCalledWith(0.575);
+            expect(progress).toHaveBeenCalledWith(0.725);
+            expect(progress).toHaveBeenCalledWith(0.65);
+            expect(progress).toHaveBeenCalledWith(0.95);
+            expect(progress).toHaveBeenCalledWith(1);
           });
       });
       [
@@ -160,37 +160,38 @@ describe("Fastboot module", function () {
       ].forEach(variation =>
         it(variation.description, function (done) {
           const child = {
-            on: sinon.fake(),
-            once: sinon.fake((_, cb) => setTimeout(() => cb(1, null), 5)),
+            on: jest.fn(),
+            once: jest.fn((_, cb) => setTimeout(() => cb(1, null), 5)),
             stdout: {
-              on: sinon.fake((_, cb) => cb(variation.stdout))
+              on: jest.fn((_, cb) => cb(variation.stdout))
             },
             stderr: {
-              on: sinon.fake((_, cb) => cb(variation.stderr))
+              on: jest.fn((_, cb) => cb(variation.stderr))
             }
           };
-          sinon.stub(child_process, "spawn").returns(child);
+          child_process.spawn = jest.fn().mockReturnValue(child);
           const fastboot = new Fastboot();
-          sinon.stub(fastboot, "wait").resolves();
+          fastboot.wait = jest.fn().mockResolvedValue();
           fastboot
             .flash([{ partition: "boot", file: "/path/to/image" }])
             .catch(error => {
               expectReject(error, variation.expectedError);
-              expect(child_process.spawn).to.have.been.calledWith(
+              expect(child_process.spawn).toHaveBeenCalledWith(
                 fastboot.executable,
-                ["flash", "boot", "/path/to/image"]
+                ["flash", "boot", "/path/to/image"],
+                { env: { ADB_TRACE: "rwx" } }
               );
               done();
             });
         })
       );
       it("should reject if wait rejected", function (done) {
-        sinon.stub(child_process, "spawn");
+        child_process.spawn = jest.fn();
         const fastboot = new Fastboot();
-        sinon.stub(fastboot, "wait").rejects("wait error");
+        fastboot.wait = jest.fn().mockRejectedValue("wait error");
         fastboot.flash([]).catch(e => {
           expectReject(e, "Flashing failed: wait error");
-          expect(child_process.spawn).to.not.have.been.called;
+          expect(child_process.spawn).not.toHaveBeenCalled;
           done();
         });
       });
@@ -203,14 +204,16 @@ describe("Fastboot module", function () {
           expectArgs("boot", "/path/to/image");
         });
       });
-      it("should reject if booting failed", function () {
+      it("should reject if booting failed", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(
-          fastboot.boot("/path/to/image")
-        ).to.have.been.rejectedWith(
-          'booting failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.boot("/path/to/image").catch(error => {
+          expectReject(
+            error,
+            'booting failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     describe("update()", function () {
@@ -235,14 +238,16 @@ describe("Fastboot module", function () {
           expectArgs("-w", "update", "/path/to/image");
         });
       });
-      it("should reject if updating fails", function () {
+      it("should reject if updating fails", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(
-          fastboot.update("/path/to/image")
-        ).to.have.been.rejectedWith(
-          'update failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.update("/path/to/image").catch(error => {
+          expectReject(
+            error,
+            'update failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     describe("rebootBootloader()", function () {
@@ -253,12 +258,16 @@ describe("Fastboot module", function () {
           expectArgs("reboot-bootloader");
         });
       });
-      it("should reject if rebooting fails", function () {
+      it("should reject if rebooting fails", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.rebootBootloader()).to.have.been.rejectedWith(
-          'rebooting to bootloader failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.rebootBootloader().catch(error => {
+          expectReject(
+            error,
+            'rebooting to bootloader failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     describe("reboot()", function () {
@@ -269,12 +278,16 @@ describe("Fastboot module", function () {
           expectArgs("reboot");
         });
       });
-      it("should reject if rebooting fails", function () {
+      it("should reject if rebooting fails", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.reboot()).to.have.been.rejectedWith(
-          'rebooting failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.reboot().catch(error => {
+          expectReject(
+            error,
+            'rebooting failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     describe("continue()", function () {
@@ -285,12 +298,16 @@ describe("Fastboot module", function () {
           expectArgs("continue");
         });
       });
-      it("should reject if continuing boot fails", function () {
+      it("should reject if continuing boot fails", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.continue()).to.have.been.rejectedWith(
-          'continuing boot failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.continue().catch(error => {
+          expectReject(
+            error,
+            'continuing boot failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     describe("format()", function () {
@@ -301,21 +318,27 @@ describe("Fastboot module", function () {
           expectArgs("format", "cache");
         });
       });
-      it("should reject if formatting failed", function () {
+      it("should reject if formatting failed", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.format("cache")).to.have.been.rejectedWith(
-          'formatting failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.format("cache").catch(error => {
+          expectReject(
+            error,
+            'formatting failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
-      it("should reject if size was specified but not type", function () {
+      it("should reject if size was specified but not type", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(
-          fastboot.format("cache", null, 69)
-        ).to.have.been.rejectedWith(
-          "formatting failed: size specification requires type to be specified as well"
-        );
+        fastboot.format("cache", null, 69).catch(error => {
+          expectReject(
+            error,
+            "formatting failed: size specification requires type to be specified as well"
+          );
+          done();
+        });
       });
       it("should resolve after formatting with type", function () {
         stubExec();
@@ -340,12 +363,16 @@ describe("Fastboot module", function () {
           expectArgs("erase", "cache");
         });
       });
-      it("should reject if erasing failed", function () {
+      it("should reject if erasing failed", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.erase("cache")).to.have.been.rejectedWith(
-          'erasing failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.erase("cache").catch(error => {
+          expectReject(
+            error,
+            'erasing failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     describe("oemUnlock()", function () {
@@ -381,12 +408,16 @@ describe("Fastboot module", function () {
           expectArgs("oem", "unlock");
         });
       });
-      it("should reject if unlocking failed", function () {
+      it("should reject if unlocking failed", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.oemUnlock()).to.have.been.rejectedWith(
-          'oem unlock failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.oemUnlock().catch(error => {
+          expectReject(
+            error,
+            'oem unlock failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     describe("oemLock()", function () {
@@ -397,12 +428,16 @@ describe("Fastboot module", function () {
           expectArgs("oem", "lock");
         });
       });
-      it("should reject if locking failed", function () {
+      it("should reject if locking failed", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.oemLock()).to.have.been.rejectedWith(
-          'oem lock failed: Error: {"error":true,"stdout":"everything exploded"}'
-        );
+        fastboot.oemLock().catch(error => {
+          expectReject(
+            error,
+            'oem lock failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
       });
     });
     [
@@ -416,7 +451,7 @@ describe("Fastboot module", function () {
           stubExec();
           const fastboot = new Fastboot();
           return fastboot[f.f]().then(r => {
-            expect(r).to.eql(null);
+            expect(r).toEqual(null);
             expectArgs(...f.args);
           });
         });
@@ -424,7 +459,7 @@ describe("Fastboot module", function () {
           stubExec(true);
           const fastboot = new Fastboot();
           fastboot[f.f]().catch(r => {
-            expect(r.message).to.eql('{"error":true}');
+            expect(r.message).toEqual('{"error":true}');
             expectArgs(...f.args);
             done();
           });
@@ -436,7 +471,7 @@ describe("Fastboot module", function () {
         stubExec(null, "1");
         const fastboot = new Fastboot();
         return fastboot.getUnlockAbility().then(r => {
-          expect(r).to.eql(true);
+          expect(r).toEqual(true);
           expectArgs("flashing", "get_unlock_ability");
         });
       });
@@ -444,7 +479,7 @@ describe("Fastboot module", function () {
         stubExec(null, "0");
         const fastboot = new Fastboot();
         return fastboot.getUnlockAbility().then(r => {
-          expect(r).to.eql(false);
+          expect(r).toEqual(false);
           expectArgs("flashing", "get_unlock_ability");
         });
       });
@@ -452,7 +487,7 @@ describe("Fastboot module", function () {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
         return fastboot.getUnlockAbility().then(r => {
-          expect(r).to.eql(false);
+          expect(r).toEqual(false);
           expectArgs("flashing", "get_unlock_ability");
         });
       });
@@ -465,7 +500,7 @@ describe("Fastboot module", function () {
           expectArgs("--set-active=a");
         });
       });
-      it("should reject if locking failed", function () {
+      it("should reject if locking failed", function (done) {
         stubExec(
           {
             killed: false,
@@ -476,18 +511,25 @@ describe("Fastboot module", function () {
           "",
           "error: Device does not support slots."
         );
-
         const fastboot = new Fastboot();
-        return expect(fastboot.setActive("a")).to.have.been.rejectedWith(
-          'failed to set active slot: Error: {"error":{"code":1,"cmd":"fastboot --set-active=a"},"stderr":"error: Device does not support slots."}'
-        );
+        fastboot.setActive("a").catch(error => {
+          expectReject(
+            error,
+            'failed to set active slot: Error: {"error":{"code":1,"cmd":"fastboot --set-active=a"},"stderr":"error: Device does not support slots."}'
+          );
+          done();
+        });
       });
-      it("should reject if locking failed with non-zero exit code", function () {
+      it("should reject if locking failed with non-zero exit code", function (done) {
         stubExec(null, "error: everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.setActive("a")).to.have.been.rejectedWith(
-          "failed to set active slot: Error: error: everything exploded"
-        );
+        fastboot.setActive("a").catch(error => {
+          expectReject(
+            error,
+            "failed to set active slot: Error: error: everything exploded"
+          );
+          done();
+        });
       });
     });
   });
@@ -497,7 +539,7 @@ describe("Fastboot module", function () {
         stubExec(null, "0123456789ABCDEF	fastboot");
         const fastboot = new Fastboot();
         return fastboot.hasAccess().then(r => {
-          expect(r).to.eql(true);
+          expect(r).toEqual(true);
           expectArgs("devices");
         });
       });
@@ -505,16 +547,17 @@ describe("Fastboot module", function () {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.hasAccess().then(r => {
-          expect(r).to.eql(false);
+          expect(r).toEqual(false);
           expectArgs("devices");
         });
       });
-      it("should reject on error", function () {
+      it("should reject on error", function (done) {
         stubExec(true, "everything exploded");
         const fastboot = new Fastboot();
-        return expect(fastboot.hasAccess()).to.be.rejectedWith(
-          "everything exploded"
-        );
+        fastboot.hasAccess().catch(error => {
+          expectReject(error, '{"error":true,"stdout":"everything exploded"}');
+          done();
+        });
       });
     });
     describe("wait()", function () {
@@ -522,7 +565,7 @@ describe("Fastboot module", function () {
         stubExec(null, "0123456789ABCDEF	fastboot");
         const fastboot = new Fastboot();
         return fastboot.wait().then(r => {
-          expect(r).to.eql("bootloader");
+          expect(r).toEqual("bootloader");
           expectArgs("devices");
         });
       });
@@ -531,16 +574,16 @@ describe("Fastboot module", function () {
       it("should resolve bootloader var", function () {
         stubExec(null, null, "product: FP2\nFinished. Total time: 0.000s");
         const fastboot = new Fastboot();
-        sinon.stub(fastboot, "hasAccess").resolves(true);
+        fastboot.hasAccess = jest.fn().mockResolvedValue(true);
         return fastboot.getvar("product").then(r => {
-          expect(r).to.eql("FP2");
+          expect(r).toEqual("FP2");
           expectArgs("getvar", "product");
         });
       });
       it("should reject on no device", function (done) {
         stubExec(1);
         const fastboot = new Fastboot();
-        sinon.stub(fastboot, "hasAccess").resolves(false);
+        fastboot.hasAccess = jest.fn().mockResolvedValue(false);
         fastboot.getvar("product").catch(e => {
           expectReject(e, "no device");
           done();
@@ -549,7 +592,7 @@ describe("Fastboot module", function () {
       it("should reject on unexpected return", function (done) {
         stubExec(null, null, "foo: bar\nFinished. Total time: 0.000s");
         const fastboot = new Fastboot();
-        sinon.stub(fastboot, "hasAccess").resolves(true);
+        fastboot.hasAccess = jest.fn().mockResolvedValue(true);
         fastboot.getvar("product").catch(e => {
           expectReject(e, "Unexpected getvar return: foo");
           expectArgs("getvar", "product");
@@ -560,9 +603,9 @@ describe("Fastboot module", function () {
     describe("getDeviceName()", function () {
       it("should resolve bootloader var", function () {
         const fastboot = new Fastboot();
-        sinon.stub(fastboot, "getvar").resolves("FP2");
+        fastboot.getvar = jest.fn().mockResolvedValue("FP2");
         return fastboot.getDeviceName("product").then(r => {
-          expect(r).to.eql("FP2");
+          expect(r).toEqual("FP2");
         });
       });
     });
