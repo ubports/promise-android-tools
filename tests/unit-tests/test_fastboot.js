@@ -117,22 +117,20 @@ describe("Fastboot module", function () {
           )
           .then(r => {
             expect(r).to.eql(undefined);
-            expect(
-              child_process.spawn
-            ).to.have.been.calledWith(fastboot.executable, [
-              "flash",
-              "boot",
-              "/path/to/boot.img"
-            ]);
-            expect(
-              child_process.spawn
-            ).to.have.been.calledWith(fastboot.executable, [
-              "flash:raw",
-              "recovery",
-              "--force",
-              "--disable-verity",
-              "/path/to/recovery.img"
-            ]);
+            expect(child_process.spawn).to.have.been.calledWith(
+              fastboot.executable,
+              ["flash", "boot", "/path/to/boot.img"]
+            );
+            expect(child_process.spawn).to.have.been.calledWith(
+              fastboot.executable,
+              [
+                "flash:raw",
+                "recovery",
+                "--force",
+                "--disable-verity",
+                "/path/to/recovery.img"
+              ]
+            );
             expect(progress).to.have.been.calledWith(0);
             expect(progress).to.have.been.calledWith(0.15);
             expect(progress).to.have.been.calledWith(0.45);
@@ -178,13 +176,10 @@ describe("Fastboot module", function () {
             .flash([{ partition: "boot", file: "/path/to/image" }])
             .catch(error => {
               expectReject(error, variation.expectedError);
-              expect(
-                child_process.spawn
-              ).to.have.been.calledWith(fastboot.executable, [
-                "flash",
-                "boot",
-                "/path/to/image"
-              ]);
+              expect(child_process.spawn).to.have.been.calledWith(
+                fastboot.executable,
+                ["flash", "boot", "/path/to/image"]
+              );
               done();
             });
         })

@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "4.0.6",
+  "version": "4.0.7",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "main": "./lib/module.cjs",
   "type": "module",
@@ -38,17 +38,17 @@
   "dependencies": {
     "android-tools-bin": "^1.0.5",
     "cancelable-promise": "^3.2.3",
-    "fs-extra": "^9.1.0"
+    "fs-extra": "^10.0.0"
   },
   "devDependencies": {
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "coverage": "^0.4.1",
-    "jsdoc": "^3.6.6",
-    "mocha": "^7.2.0",
-    "prettier": "^2.2.0",
-    "rollup": "^2.45.2",
-    "sinon": "^7.5.0",
-    "sinon-chai": "^3.6.0"
+    "jsdoc": "^3.6.7",
+    "mocha": "^9.1.2",
+    "prettier": "^2.4.1",
+    "rollup": "^2.58.0",
+    "sinon": "^11.1.2",
+    "sinon-chai": "^3.7.0"
   }
 }
