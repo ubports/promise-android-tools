@@ -83,6 +83,12 @@ export const fastbootErrors = [
     expectedReturn: "bootloader locked",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: undefined,
+    stderr: "FAILED (remote: 'Flashing is not allowed in Lock State')"
+  },
+  {
+    expectedReturn: "bootloader locked",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
     stderr: "FAILED (remote: 'not allowed in locked state')"
   },
   {
