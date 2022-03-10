@@ -128,7 +128,7 @@ Version 4.0.0 includes a major re-factoring effort that touched almost every fun
 
 ## License
 
-Original development by [J. Sprinz](https://spri.nz) and [Marius Gripsgård](http://mariogrip.com/). Copyright (C) 2017-2021 [UBports Foundation](https://ubports.com).
+Original development by [Johannah Sprinz](https://spri.nz) and [Marius Gripsgård](http://mariogrip.com/). Copyright (C) 2017-2022 [UBports Foundation](https://ubports.com).
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 

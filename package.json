@@ -19,7 +19,7 @@
     "type": "git",
     "url": "git+https://github.com/ubports/promise-android-tools.git"
   },
-  "author": "Jan Sprinz <jan@ubports.com>",
+  "author": "Johannah Sprinz <neo@neothethird.de>",
   "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/ubports/promise-android-tools/issues"
