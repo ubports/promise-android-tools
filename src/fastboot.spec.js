@@ -275,7 +275,7 @@ describe("Fastboot module", function () {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.rebootFastboot().then(r => {
-          expectArgs("reboot fastboot");
+          expectArgs("reboot-fastboot");
         });
       });
       it("should reject if rebooting fails", function (done) {
@@ -295,7 +295,7 @@ describe("Fastboot module", function () {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.rebootRecovery().then(r => {
-          expectArgs("reboot recovery");
+          expectArgs("reboot-recovery");
         });
       });
       it("should reject if rebooting fails", function (done) {

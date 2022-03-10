@@ -215,7 +215,7 @@ export class Fastboot extends Tool {
    * @returns {Promise}
    */
   rebootFastboot() {
-    return this.exec("reboot fastboot")
+    return this.exec("reboot-fastboot")
       .then(() => {
         return;
       })
@@ -229,7 +229,7 @@ export class Fastboot extends Tool {
    * @returns {Promise}
    */
   rebootRecovery() {
-    return this.exec("reboot recovery")
+    return this.exec("reboot-recovery")
       .then(() => {
         return;
       })
