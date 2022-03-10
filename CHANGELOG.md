@@ -6,6 +6,17 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [Unreleased]
 
+### New
+
+- Fastboot: add command to wipe super ([#58](https://github.com/ubports/promise-android-tools/pull/58))
+- Fastboot: add reboot commands for fastbootd and recovery mode ([#57](https://github.com/ubports/promise-android-tools/pull/57))
+
+## [4.0.7] - 2021-10-02
+
+### Changed
+
+- Update dependencies ([fae268b54af6ab941a2129e670a6e582b0e48815](https://github.com/ubports/promise-android-tools/commit/fae268b54af6ab941a2129e670a6e582b0e48815))
+
 ## [4.0.6] - 2021-04-16
 
 ### Fixed
