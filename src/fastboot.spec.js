@@ -533,6 +533,26 @@ describe("Fastboot module", function () {
       });
     });
   });
+  describe("wipeSuper()", function () {
+    it("should resolve after wiping super", function () {
+      stubExec();
+      const fastboot = new Fastboot();
+      return fastboot.wipeSuper("/path/to/image").then(r => {
+        expectArgs("wipe-super", "/path/to/image");
+      });
+    });
+    it("should reject if wiping super failed", function (done) {
+      stubExec(true, "everything exploded");
+      const fastboot = new Fastboot();
+      fastboot.wipeSuper("/path/to/image").catch(error => {
+        expectReject(
+          error,
+          'wiping super failed: Error: {"error":true,"stdout":"everything exploded"}'
+        );
+        done();
+      });
+    });
+  });
   describe("convenience functions", function () {
     describe("hasAccess()", function () {
       it("should resolve true when a device is detected", function () {

@@ -297,6 +297,21 @@ export class Fastboot extends Tool {
       });
   }
 
+  /**
+   * Wipe the super partition and reset the partition layout
+   * @param {String} image - super image containing the new partition layout
+   * @returns {Promise}
+   */
+  wipeSuper(image) {
+    return this.exec("wipe-super", image)
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("wiping super failed: " + error);
+      });
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
