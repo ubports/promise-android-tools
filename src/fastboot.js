@@ -210,6 +210,35 @@ export class Fastboot extends Tool {
   }
 
   /**
+   * Reboot device into userspace fastboot (fastbootd) mode
+   * Note: this only works on devices which support dynamic partitions.
+   * @returns {Promise}
+   */
+  rebootFastboot() {
+    return this.exec("reboot fastboot")
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("rebooting to fastboot failed: " + error);
+      });
+  }
+
+  /**
+   * Reboot device into recovery
+   * @returns {Promise}
+   */
+  rebootRecovery() {
+    return this.exec("reboot recovery")
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("rebooting to recovery failed: " + error);
+      });
+  }
+
+  /**
    * Reboot device
    * @returns {Promise}
    */

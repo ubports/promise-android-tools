@@ -270,6 +270,46 @@ describe("Fastboot module", function () {
         });
       });
     });
+    describe("rebootFastboot()", function () {
+      it("should resolve on reboot", function () {
+        stubExec();
+        const fastboot = new Fastboot();
+        return fastboot.rebootFastboot().then(r => {
+          expectArgs("reboot fastboot");
+        });
+      });
+      it("should reject if rebooting fails", function (done) {
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
+        fastboot.rebootFastboot().catch(error => {
+          expectReject(
+            error,
+            'rebooting to fastboot failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
+      });
+    });
+    describe("rebootRecovery()", function () {
+      it("should resolve on reboot", function () {
+        stubExec();
+        const fastboot = new Fastboot();
+        return fastboot.rebootRecovery().then(r => {
+          expectArgs("reboot recovery");
+        });
+      });
+      it("should reject if rebooting fails", function (done) {
+        stubExec(true, "everything exploded");
+        const fastboot = new Fastboot();
+        fastboot.rebootRecovery().catch(error => {
+          expectReject(
+            error,
+            'rebooting to recovery failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
+      });
+    });
     describe("reboot()", function () {
       it("should resolve on reboot", function () {
         stubExec();
