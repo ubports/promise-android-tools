@@ -462,45 +462,50 @@ describe("Adb module", function () {
       });
     });
 
-    describe("getDeviceName()", function () {
+    describe("getprop()", function () {
       it("should get device name from getprop", function () {
         stubExec(null, "thisisadevicecodename");
         const adb = new Adb();
-        return adb.getDeviceName().then(r => {
+        return adb.getprop("ro.product.device").then(r => {
           expect(r).toEqual("thisisadevicecodename");
           expectArgs("shell", "getprop ro.product.device");
         });
       });
-      ["getprop: not found", null].forEach(response => {
-        it("should cat default.prop on " + (response || "empty"), function () {
-          child_process.execFile = jest.fn(
-            (executable, args, options, callback) => {
-              if (args.includes("getprop ro.product.device")) {
-                callback(null, response);
-              } else {
-                callback(
-                  null,
-                  "asdf=wasd\r\n" +
-                    "1=234\r\n" +
-                    "ro.product.device=thisisadevicecodename\r\n" +
-                    "something=somethingelse\r\n"
-                );
-              }
+      ["getprop: command not found", "getprop: not found", null].forEach(
+        response => {
+          it(
+            "should cat default.prop on " + (response || "empty"),
+            function () {
+              child_process.execFile = jest.fn(
+                (executable, args, options, callback) => {
+                  if (args.includes("getprop ro.product.device")) {
+                    callback(null, response);
+                  } else {
+                    callback(
+                      null,
+                      "asdf=wasd\r\n" +
+                        "1=234\r\n" +
+                        "ro.product.device=thisisadevicecodename\r\n" +
+                        "something=somethingelse\r\n"
+                    );
+                  }
+                }
+              );
+
+              const adb = new Adb();
+              return adb.getprop("ro.product.device").then(r => {
+                expect(r).toEqual("thisisadevicecodename");
+                expectArgs("shell", "getprop ro.product.device");
+                expectArgs("shell", "cat default.prop");
+              });
             }
           );
-
-          const adb = new Adb();
-          return adb.getDeviceName().then(r => {
-            expect(r).toEqual("thisisadevicecodename");
-            expectArgs("shell", "getprop ro.product.device");
-            expectArgs("shell", "cat default.prop");
-          });
-        });
-      });
+        }
+      );
       it("should reject if prop not found", function () {
         stubExec();
         const adb = new Adb();
-        return adb.getDeviceName().catch(e => {
+        return adb.getprop("ro.product.device").catch(e => {
           expect(e.message).toEqual("unknown getprop error");
         });
       });
@@ -513,7 +518,7 @@ describe("Adb module", function () {
         );
 
         const adb = new Adb();
-        return adb.getDeviceName().catch(e => {
+        return adb.getprop("ro.product.device").catch(e => {
           expect(e.message).toEqual(
             'getprop error: Error: {"error":{"error":"something broke"}}'
           );
@@ -533,10 +538,64 @@ describe("Adb module", function () {
         );
 
         const adb = new Adb();
-        return adb.getDeviceName().catch(e => {
+        return adb.getprop("ro.product.device").catch(e => {
           expect(e.message).toEqual("unknown getprop error");
           expectArgs("shell", "getprop ro.product.device");
           expectArgs("shell", "cat default.prop");
+        });
+      });
+    });
+
+    describe("getDeviceName()", function () {
+      it("should use getprop method", function () {
+        const adb = new Adb();
+        adb.getprop = jest.fn().mockResolvedValueOnce("bacon");
+        return adb.getDeviceName().then(r => {
+          expect(r).toEqual("bacon");
+          expect(adb.getprop).toHaveBeenCalledTimes(1);
+          expect(adb.getprop).toHaveBeenCalledWith("ro.product.device");
+        });
+      });
+    });
+
+    describe("getSystemImageCapability()", function () {
+      it("should resolve true if capable", function () {
+        const adb = new Adb();
+        adb.getprop = jest.fn().mockResolvedValueOnce("true");
+        return adb.getSystemImageCapability().then(r => {
+          expect(r).toEqual(true);
+          expect(adb.getprop).toHaveBeenCalledTimes(1);
+          expect(adb.getprop).toHaveBeenCalledWith("ro.ubuntu.recovery");
+        });
+      });
+      it("should resolve false if not capable", function () {
+        const adb = new Adb();
+        adb.getprop = jest.fn().mockResolvedValueOnce("");
+        return adb.getSystemImageCapability().then(r => {
+          expect(r).toEqual(false);
+          expect(adb.getprop).toHaveBeenCalledTimes(1);
+          expect(adb.getprop).toHaveBeenCalledWith("ro.ubuntu.recovery");
+        });
+      });
+      it("should resolve false if prop not set", function () {
+        const adb = new Adb();
+        adb.getprop = jest
+          .fn()
+          .mockRejectedValueOnce(new Error("unknown getprop error"));
+        return adb.getSystemImageCapability().then(r => {
+          expect(r).toEqual(false);
+          expect(adb.getprop).toHaveBeenCalledTimes(1);
+          expect(adb.getprop).toHaveBeenCalledWith("ro.ubuntu.recovery");
+        });
+      });
+      it("should reject on error", function (done) {
+        const adb = new Adb();
+        adb.getprop = jest.fn().mockRejectedValueOnce(new Error("no device"));
+        adb.getSystemImageCapability().catch(e => {
+          expect(e.message).toEqual("no device");
+          expect(adb.getprop).toHaveBeenCalledTimes(1);
+          expect(adb.getprop).toHaveBeenCalledWith("ro.ubuntu.recovery");
+          done();
         });
       });
     });
