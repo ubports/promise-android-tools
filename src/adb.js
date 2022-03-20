@@ -321,22 +321,20 @@ export class Adb extends Tool {
   }
 
   /**
-   * get device codename from getprop or by reading the default.prop file
-   * @returns {Promise<String>} codename
+   * read property from getprop or, failing that, the default.prop file
+   * @param {String} prop property name
+   * @returns {Promise<String>}
    */
-  getDeviceName() {
-    return this.shell("getprop", "ro.product.device").then(stdout => {
-      if (!stdout || stdout?.includes("getprop: not found")) {
+  getprop(prop) {
+    return this.shell("getprop", prop).then(stdout => {
+      if (!stdout || stdout?.includes("not found")) {
         return this.shell("cat", "default.prop")
           .catch(e => {
             throw new Error("getprop error: " + e);
           })
           .then(stdout => {
-            if (stdout && stdout.includes("ro.product.device=")) {
-              return stdout
-                .split("ro.product.device=")[1]
-                .split("\n")[0]
-                .trim();
+            if (stdout && stdout.includes(`${prop}=`)) {
+              return stdout.split(`${prop}=`)[1].split("\n")[0].trim();
             } else {
               throw new Error("unknown getprop error");
             }
@@ -345,6 +343,30 @@ export class Adb extends Tool {
         return stdout.trim();
       }
     });
+  }
+
+  /**
+   * get device codename from getprop or by reading the default.prop file
+   * @returns {Promise<String>} codename
+   */
+  getDeviceName() {
+    return this.getprop("ro.product.device");
+  }
+
+  /**
+   * returns true if recovery is system-image capable, false otherwise
+   * @returns {Promise<String>}
+   */
+  getSystemImageCapability() {
+    return this.getprop("ro.ubuntu.recovery")
+      .then(r => Boolean(r))
+      .catch(e => {
+        if (e.message === "unknown getprop error") {
+          return false;
+        } else {
+          throw e;
+        }
+      });
   }
 
   /**
