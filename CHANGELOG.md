@@ -11,6 +11,9 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 ### New
 
 - Adb: add getprop() and getSystemImageCapability() ([#61](https://github.com/ubports/promise-android-tools/pull/61))
+
+### Changed
+
 - Update dependencies ([6d47250c40bdf9dc1a24d748e72b13f8d50ae36d](https://github.com/ubports/promise-android-tools/commit/6d47250c40bdf9dc1a24d748e72b13f8d50ae36d))
 
 ## [4.0.8] - 2022-03-10
