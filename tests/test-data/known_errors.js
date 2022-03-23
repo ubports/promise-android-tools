@@ -56,6 +56,15 @@ export const adbErrors = [
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: "",
     stderr: "error: error: device offline\n"
+  },
+  {
+    expectedReturn: "device offline",
+    error: {
+      message:
+        "Command failed: adb.exe -P 5037 shell getprop ro.product.device\nerror: protocol fault (couldn't read status): connection reset",
+      code: 1
+    },
+    stderr: "error: protocol fault (couldn't read status): connection reset"
   }
 ];
 
