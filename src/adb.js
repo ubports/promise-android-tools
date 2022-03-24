@@ -59,7 +59,11 @@ export class Adb extends Tool {
       stderr?.includes("error: device still authorizing")
     ) {
       return "unauthorized";
-    } else if (stderr?.includes("error: device offline")) {
+    } else if (
+      stderr?.includes("error: device offline") ||
+      stderr?.includes("error: protocol fault") ||
+      stderr?.includes("connection reset")
+    ) {
       return "device offline";
     } else if (
       stderr?.includes("no devices/emulators found") ||
