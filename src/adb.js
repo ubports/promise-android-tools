@@ -151,13 +151,29 @@ export class Adb extends Tool {
   }
 
   /**
+   * Specifically connect to a device (tcp)
+   * @param {string} address
+   * @returns {Promise}
+   */
+  connect(address = "") {
+    return this.exec('connect', address).then(stdout => {
+      if (stdout?.includes("no devices/emulators found") ||
+          stdout?.includes("Name or service not known")) {
+        throw new Error("no device at address");
+      } else {
+        return this.wait();
+      }
+    });
+  }
+
+  /**
    * kick connection from host side to force reconnect
    * @param {String} [modifier] - "device" or "offline"
    * @returns {Promise<String>} resolves device state
    */
   reconnect(modifier = "") {
     return this.exec(...["reconnect", modifier].filter(i => i)).then(stdout => {
-      if (stdout?.includes("no devices/emulators found")) {
+      if (stdout?.includes("No route to host")) {
         throw new Error("no device");
       } else {
         return this.wait();

@@ -44,6 +44,20 @@ export class DeviceTools extends EventEmitter {
   }
 
   /**
+   * Specifically connect to a device (tcp)
+   * @param {string} address
+   * @returns {Promise<String>}
+   */
+  connect(address="") {
+    const _this = this;
+    return new Promise(function (resolve) {
+      _this.adb.connect(address).then(state => {
+        resolve(state)
+      })
+    });
+  }
+
+  /**
    * Terminate all child processes with extreme prejudice.
    */
   kill() {
