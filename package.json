@@ -5,6 +5,7 @@
   "main": "./lib/module.cjs",
   "type": "module",
   "scripts": {
+    "prepare": "npm run build",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --coverage",
     "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none -uw",
     "docs": "npx jsdoc -c jsdoc-config.json",
