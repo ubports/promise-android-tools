@@ -32,10 +32,15 @@ export class Adb extends Tool {
   constructor(options) {
     super({
       tool: "adb",
-      extra: ["-P", options?.port || DEFAULT_PORT],
+      extra: [
+        "-P", options?.port || DEFAULT_PORT,
+        options?.serial && "-s", options?.serial && options?.serial
+      ].filter((val) => val),
       ...options
     });
+
     this.port = options?.port || DEFAULT_PORT;
+    this.serial = options?.serial;
   }
 
   /**
@@ -76,6 +81,10 @@ export class Adb extends Tool {
       stderr?.includes("adb: pre-KitKat sideload connection failed: closed")
     ) {
       return "no device";
+    } else if (
+      stderr.err?.includes("error: more than one device/emulator")
+    ) {
+      return "multiple devices connect and no serial provided"
     } else {
       return super.handleError(error, stdout, stderr);
     }
