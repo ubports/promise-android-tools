@@ -117,7 +117,8 @@ export class Tool extends EventEmitter {
       {
         env: {
           ADB_TRACE: "rwx"
-        }
+        },
+        stdio: process.platform === 'win32' ? 'ignore' : 'inherit'
       }
     );
     this.processes.push(cp);

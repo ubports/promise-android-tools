@@ -33,7 +33,6 @@ export class Adb extends Tool {
     super({
       tool: "adb",
       extra: [
-        "-P", options?.port || DEFAULT_PORT,
         options?.serial && "-s", options?.serial && options?.serial
       ].filter((val) => val),
       ...options
@@ -214,28 +213,31 @@ export class Adb extends Tool {
               );
             }
           } else {
+            progress(1);
             resolve();
           }
         });
 
-        cp.stdout.on("data", d => (stdout += d.toString()));
-        cp.stderr.on("data", d => {
-          d.toString()
-            .split("\n")
-            .forEach(str => {
-              if (str.includes("cpp")) {
-                // logging from cpp files indicates debug output
-                if (str.includes("writex")) {
-                  // writex namespace indicates external writing
-                  pushedSize +=
-                    parseInt(str?.split("len=")[1]?.split(" ")[0]) || 0;
-                  progress(Math.min(pushedSize / totalSize, 1));
+        if (cp.stdout && cp.stderr) {
+          cp.stdout.on("data", d => (stdout += d.toString()));
+          cp.stderr.on("data", d => {
+            d.toString()
+              .split("\n")
+              .forEach(str => {
+                if (str.includes("cpp")) {
+                  // logging from cpp files indicates debug output
+                  if (str.includes("writex")) {
+                    // writex namespace indicates external writing
+                    pushedSize +=
+                      parseInt(str?.split("len=")[1]?.split(" ")[0]) || 0;
+                    progress(Math.min(pushedSize / totalSize, 1));
+                  }
+                } else {
+                  stderr += str;
                 }
-              } else {
-                stderr += str;
-              }
-            });
-        });
+              });
+          });
+        };
 
         onCancel(() => {
           if (!cp.kill("SIGTERM")) {
