@@ -31,7 +31,7 @@ const DEFAULT_PORT = 5037;
 export class Adb extends Tool {
   constructor(options) {
     super({
-      tool: "adb",
+      tool: options?.tool || "adb",
       extra: [
         options?.serial && "-s", options?.serial && options?.serial
       ].filter((val) => val),
