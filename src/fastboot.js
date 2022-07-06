@@ -327,11 +327,60 @@ export class Fastboot extends Tool {
   }
 
   /**
+   * Creates a logical partition with the given name and size. 
+   * The name must not already exist as a logical partition.
+   * @param {String} partition - partition to create
+   * @param {String} size - partition size
+   * @returns {Promise}
+   */
+   createLogicalPartition (partition, size) {
+    return this.exec("create-logical-partition", partition, size)
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("creating logical partition failed: " + error);
+      });
+  }
+
+  /**
+   * Deletes the given logical partition (effectively wipes the partition).
+   * @param {String} partition - partition to delete
+   * @returns {Promise}
+   */
+   deleteLogicalPartition (partition) {
+    return this.exec("delete-logical-partition", partition)
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("deleting logical partition failed: " + error);
+      });
+  }
+
+  /**
+   * Resizes the logical partition to the new size without changing its contents.
+   * Fails if there isn't enough space available to perform the resize.
+   * @param {String} partition - partition to resize
+   * @param {String} size - new partition size
+   * @returns {Promise}
+   */
+   resizeLogicalPartition (partition, size) {
+    return this.exec("resize-logical-partition", partition, size)
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("resizing logical partition failed: " + error);
+      });
+  }
+
+  /**
    * Wipe the super partition and reset the partition layout
    * @param {String} image - super image containing the new partition layout
    * @returns {Promise}
    */
-  wipeSuper(image) {
+   wipeSuper(image) {
     return this.exec("wipe-super", image)
       .then(() => {
         return;
