@@ -573,6 +573,74 @@ describe("Fastboot module", function () {
       });
     });
   });
+  describe("createLogicalPartition()", function () {
+    it("should resolve after creating logical partition", function () {
+      stubExec();
+      const fastboot = new Fastboot();
+      return fastboot
+        .createLogicalPartition("partition_name", 3221225472)
+        .then(r => {
+          expectArgs("create-logical-partition", "partition_name", 3221225472);
+        });
+    });
+    it("should reject if creating logical partition failed", function (done) {
+      stubExec(true, "everything exploded");
+      const fastboot = new Fastboot();
+      fastboot
+        .createLogicalPartition("partition_name", 3221225472)
+        .catch(error => {
+          expectReject(
+            error,
+            'creating logical partition failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
+    });
+  });
+  describe("deleteLogicalPartition()", function () {
+    it("should resolve after deleting logical partition", function () {
+      stubExec();
+      const fastboot = new Fastboot();
+      return fastboot.deleteLogicalPartition("partition_name").then(r => {
+        expectArgs("delete-logical-partition", "partition_name");
+      });
+    });
+    it("should reject if deleting logical partition failed", function (done) {
+      stubExec(true, "everything exploded");
+      const fastboot = new Fastboot();
+      fastboot.deleteLogicalPartition("partition_name").catch(error => {
+        expectReject(
+          error,
+          'deleting logical partition failed: Error: {"error":true,"stdout":"everything exploded"}'
+        );
+        done();
+      });
+    });
+  });
+  describe("resizeLogicalPartition()", function () {
+    it("should resolve after resizing logical partition", function () {
+      stubExec();
+      const fastboot = new Fastboot();
+      return fastboot
+        .resizeLogicalPartition("partition_name", 3221225472)
+        .then(r => {
+          expectArgs("resize-logical-partition", "partition_name", 3221225472);
+        });
+    });
+    it("should reject if resizing logical partition failed", function (done) {
+      stubExec(true, "everything exploded");
+      const fastboot = new Fastboot();
+      fastboot
+        .resizeLogicalPartition("partition_name", 3221225472)
+        .catch(error => {
+          expectReject(
+            error,
+            'resizing logical partition failed: Error: {"error":true,"stdout":"everything exploded"}'
+          );
+          done();
+        });
+    });
+  });
   describe("wipeSuper()", function () {
     it("should resolve after wiping super", function () {
       stubExec();
