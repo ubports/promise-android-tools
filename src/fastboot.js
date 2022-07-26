@@ -327,6 +327,53 @@ export class Fastboot extends Tool {
   }
 
   /**
+   * Create a logical partition with the given name and size, in the super partition.
+   * @param {String} partition - name of partition
+   * @param {String} size - size in bytes
+   * @returns {Promise}
+   */
+  createLogicalPartition(partition, size) {
+    return this.exec("create-logical-partition", partition, size)
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("creating logical partition failed: " + error);
+      });
+  }
+
+  /**
+   * Delete a logical partition with the given name.
+   * @param {String} partition - name of partition
+   * @returns {Promise}
+   */
+  deleteLogicalPartition(partition) {
+    return this.exec("delete-logical-partition", partition)
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("deleting logical partition failed: " + error);
+      });
+  }
+
+  /**
+   * Resize a logical partition with the given name and final size, in the super partition.
+   * @param {String} partition - name of partition
+   * @param {String} size - size in bytes
+   * @returns {Promise}
+   */
+  resizeLogicalPartition(partition, size) {
+    return this.exec("resize-logical-partition", partition, size)
+      .then(() => {
+        return;
+      })
+      .catch(error => {
+        throw new Error("resizing logical partition failed: " + error);
+      });
+  }
+
+  /**
    * Wipe the super partition and reset the partition layout
    * @param {String} image - super image containing the new partition layout
    * @returns {Promise}
