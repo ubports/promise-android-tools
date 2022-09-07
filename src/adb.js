@@ -223,12 +223,12 @@ export class Adb extends Tool {
 
   /**
    * Reboot to a state
-   * @param {String} state - system, recovery, bootloader
+   * @param {String} state - system, recovery, bootloader, download
    * @async
    * @returns {Promise}
    */
   async reboot(state) {
-    if (!["system", "recovery", "bootloader"].includes(state)) {
+    if (!["system", "recovery", "bootloader", "download"].includes(state)) {
       throw new Error("unknown state: " + state);
     } else {
       return this.exec("reboot", state).then(stdout => {
