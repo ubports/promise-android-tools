@@ -6,6 +6,12 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [Unreleased]
 
+## [4.0.13] - 2022-09-07
+
+### Changed
+
+- Bump version to fix broken packaging
+
 ## [4.0.12] - 2022-09-07
 
 ### Added
@@ -13,13 +19,13 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 - adb: allow rebooting to download mode ([7a1846b3c2e799b675b1e63cb5066f16fd1804f6](https://github.com/ubports/promise-android-tools/commit/7a1846b3c2e799b675b1e63cb5066f16fd1804f6))
 - adb: allow rebooting to edl mode ([323bb7dc36880d35473062616fc08fd511bf4db9](https://github.com/ubports/promise-android-tools/commit/323bb7dc36880d35473062616fc08fd511bf4db9))
 
-### Fixed
-
-- Fix CRLF handling in fastboot getvar ([53f16e9322d399a69efdd02f2ff8fa575a9e71e3](https://github.com/ubports/promise-android-tools/commit/53f16e9322d399a69efdd02f2ff8fa575a9e71e3))
-
 ### Changed
 
 - Update dependencies ([63cbfb09f21987de0f22e58ef6f77c965d232e58](https://github.com/ubports/promise-android-tools/commit/63cbfb09f21987de0f22e58ef6f77c965d232e58))
+
+### Fixed
+
+- Fix CRLF handling in fastboot getvar ([53f16e9322d399a69efdd02f2ff8fa575a9e71e3](https://github.com/ubports/promise-android-tools/commit/53f16e9322d399a69efdd02f2ff8fa575a9e71e3))
 
 ## [4.0.11] - 2022-07-26
 
