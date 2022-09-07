@@ -492,13 +492,13 @@ export class Fastboot extends Tool {
    * @returns {Promise<String>} codename
    */
   async getvar(variable) {
-    if (!await this.hasAccess()) {
+    if (!(await this.hasAccess())) {
       throw new Error("no device");
     }
 
     const result = await this.exec("getvar", variable);
-    const [ name, value ] = result
-      .replace(/\r\n/g, '\n')
+    const [name, value] = result
+      .replace(/\r\n/g, "\n")
       .split("\n")[0]
       .split(": ");
 
