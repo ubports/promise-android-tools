@@ -6,6 +6,12 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [Unreleased]
 
+## [4.0.11] - 2022-07-26
+
+### Added
+
+- Fastboot: add commands for interacting with logical partitions ([bd2d690c522705100a5f5535360c0b6ac4d661f7](https://github.com/ubports/promise-android-tools/commit/bd2d690c522705100a5f5535360c0b6ac4d661f7))
+
 ## [4.0.10] - 2022-03-24
 
 ### Fixed
