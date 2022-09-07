@@ -491,23 +491,22 @@ export class Fastboot extends Tool {
    * @param {String} variable variable to get
    * @returns {Promise<String>} codename
    */
-  getvar(variable) {
-    return this.hasAccess()
-      .then(access => {
-        if (access) {
-          return this.exec("getvar", variable);
-        } else {
-          throw new Error("no device");
-        }
-      })
-      .then(r => r.split("\n")[0].split(": "))
-      .then(([name, value]) => {
-        if (name !== variable) {
-          throw new Error(`Unexpected getvar return: ${name}`);
-        } else {
-          return value;
-        }
-      });
+  async getvar(variable) {
+    if (!await this.hasAccess()) {
+      throw new Error("no device");
+    }
+
+    const result = await this.exec("getvar", variable);
+    const [ name, value ] = result
+      .replace(/\r\n/g, '\n')
+      .split("\n")[0]
+      .split(": ");
+
+    if (name !== variable) {
+      throw new Error(`Unexpected getvar return: ${name}`);
+    }
+
+    return value;
   }
 
   /**

@@ -727,6 +727,15 @@ describe("Fastboot module", function () {
           done();
         });
       });
+      it("should handle CRLF", function () {
+        stubExec(null, null, "product: FP2\r\nFinished. Total time: 0.000s");
+        const fastboot = new Fastboot();
+        fastboot.hasAccess = jest.fn().mockResolvedValue(true);
+        return fastboot.getvar("product").then(r => {
+          expect(r).toEqual("FP2");
+          expectArgs("getvar", "product");
+        });
+      });
     });
     describe("getDeviceName()", function () {
       it("should resolve bootloader var", function () {
