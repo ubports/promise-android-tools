@@ -298,7 +298,7 @@ describe("Adb module", function () {
     });
 
     describe("reboot()", function () {
-      ["system", "recovery", "bootloader", "download"].forEach(state => {
+      ["system", "recovery", "bootloader", "download", "edl"].forEach(state => {
         it("should reboot to " + state, function () {
           stubExec();
           const adb = new Adb();
