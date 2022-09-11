@@ -19,7 +19,7 @@
  */
 
 import child_process from "child_process";
-import { getAndroidToolPath } from "android-tools-bin";
+import { getAndroidToolPath, getAndroidToolBaseDir } from "android-tools-bin";
 import EventEmitter from "events";
 import { removeFalsy } from "./common.js";
 import { CancelablePromise } from "./cancelable-promise.js";
@@ -39,6 +39,12 @@ export class Tool extends EventEmitter {
     this.extra = options?.extra || [];
     this.execOptions = options?.execOptions || {};
     this.processes = [];
+    if (
+      options.setPath &&
+      process.env.PATH &&
+      !process.env.PATH.includes(getAndroidToolBaseDir())
+    )
+      process.env.PATH = `${getAndroidToolBaseDir()}:${process.env.PATH}`;
   }
 
   /**
@@ -117,6 +123,7 @@ export class Tool extends EventEmitter {
       [...this.extra, ...args].flat(),
       {
         env: {
+          ...process.env,
           ADB_TRACE: "rwx"
         }
       }

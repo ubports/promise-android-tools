@@ -354,7 +354,7 @@ describe("Adb module", function () {
           expect(child_process.spawn).toHaveBeenCalledWith(
             adb.executable,
             [...adb.extra, "sideload", "tests/test-data/test_file"],
-            { env: { ADB_TRACE: "rwx" } }
+            { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
           );
         });
       });
@@ -1018,6 +1018,7 @@ describe("Adb module", function () {
     it("should restore full backup", function () {
       stubExec(1, "should not be called");
       jest.useFakeTimers();
+      jest.setSystemTime();
       fs.readJSON = jest.fn().mockReturnValue({
         codename: "codename",
         comment: "Ubuntu Touch backup created on 1970-01-01T00:00:00.000Z",
