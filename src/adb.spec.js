@@ -39,7 +39,7 @@ function stubExec(error, stdout, stderr) {
 function expectArgs(...args) {
   expect(child_process.execFile).toHaveBeenCalledWith(
     getAndroidToolPath("adb"),
-    ["-P", 5037, ...args],
+    args,
     expect.any(Object),
     expect.any(Function)
   );
@@ -57,7 +57,26 @@ describe("Adb module", function () {
       expect(adb).toExist;
       expect(adb.tool).toEqual("adb");
       expect(adb.executable).toMatch("adb");
-      expect(adb.extra).toEqual(["-P", 5037]);
+      expect(adb.extra).toEqual([]);
+      expect(adb.execOptions).toEqual({});
+    });
+    it("should construct adb with network options", function () {
+      const adb = new Adb({
+        port: 5038,
+        host: "somewhere",
+        socket: "udp:somewhere:5038"
+      });
+      expect(adb).toExist;
+      expect(adb.tool).toEqual("adb");
+      expect(adb.executable).toMatch("adb");
+      expect(adb.extra).toEqual([
+        "-H",
+        "somewhere",
+        "-P",
+        5038,
+        "-L",
+        "udp:somewhere:5038"
+      ]);
       expect(adb.execOptions).toEqual({});
     });
   });
