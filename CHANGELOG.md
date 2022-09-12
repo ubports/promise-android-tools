@@ -6,6 +6,10 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [Unreleased]
 
+### Added
+
+- Introduce a setPath option for tools ([#72](https://github.com/ubports/promise-android-tools/pull/72))
+
 ## [4.0.13] - 2022-09-07
 
 ### Changed

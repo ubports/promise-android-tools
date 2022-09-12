@@ -1,7 +1,8 @@
 "use strict";
 
 /*
- * Copyright (C) 2019-2021 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2019-2022 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2019-2022 Johannah Sprinz <hannah@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +41,7 @@ describe("Tool module", function () {
   describe("constructor()", function () {
     ["adb", "fastboot", "heimdall"].forEach(t => {
       it(`should create generic ${t}`, function () {
-        const tool = new Tool({ tool: t });
+        const tool = new Tool({ tool: t, setPath: true });
         expect(tool).toExist;
         expect(tool.tool).toEqual(t);
         expect(tool.executable).toMatch(t);
@@ -217,7 +218,7 @@ describe("Tool module", function () {
             expect(child_process.spawn).toHaveBeenCalledWith(
               tool.executable,
               [...tool.extra, ...args],
-              { env: { ADB_TRACE: "rwx" } }
+              { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
             );
             expect(spawnStartListenerStub).toHaveBeenCalledWith({
               cmd: [tool.tool, ...tool.extra, ...args]

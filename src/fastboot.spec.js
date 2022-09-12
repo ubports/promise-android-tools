@@ -1,7 +1,8 @@
 "use strict";
 
 /*
- * Copyright (C) 2017-2021 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2017-2022 Johannah Sprinz <hannah@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,6 +82,7 @@ describe("Fastboot module", function () {
             on: jest.fn((_, cb) => {
               if (i++ === 0) {
                 cb("Sending 'boot'");
+                cb("OKAY");
                 setTimeout(() => cb("Writing 'boot'"), 1);
                 setTimeout(() => cb("Finished 'boot'"), 2);
               } else {
@@ -118,7 +120,7 @@ describe("Fastboot module", function () {
             expect(child_process.spawn).toHaveBeenCalledWith(
               fastboot.executable,
               ["flash", "boot", "/path/to/boot.img"],
-              { env: { ADB_TRACE: "rwx" } }
+              { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
             );
             expect(child_process.spawn).toHaveBeenCalledWith(
               fastboot.executable,
@@ -129,7 +131,7 @@ describe("Fastboot module", function () {
                 "--disable-verity",
                 "/path/to/recovery.img"
               ],
-              { env: { ADB_TRACE: "rwx" } }
+              { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
             );
             expect(progress).toHaveBeenCalledWith(0);
             expect(progress).toHaveBeenCalledWith(0.15);
@@ -179,7 +181,7 @@ describe("Fastboot module", function () {
               expect(child_process.spawn).toHaveBeenCalledWith(
                 fastboot.executable,
                 ["flash", "boot", "/path/to/image"],
-                { env: { ADB_TRACE: "rwx" } }
+                { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
               );
               done();
             });

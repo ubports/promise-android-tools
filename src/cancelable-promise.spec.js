@@ -1,8 +1,8 @@
 "use strict";
 
 /*
- * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
- * Copyright (C) 2017-2022 Johannah Sprinz <hannah@ubports.com>
+ * Copyright (C) 2022 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2022 Johannah Sprinz <hannah@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,21 +18,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * Remove falsy values
- * @param {Object} obj object to process
- */
-export function removeFalsy(obj) {
-  if (typeof obj !== "object" || Array.isArray(obj)) return obj;
-  for (var i in obj) {
-    if (!obj[i]) {
-      delete obj[i];
-    } else {
-      obj[i] = removeFalsy(obj[i]);
-      if (!obj[i]) {
-        delete obj[i];
-      }
-    }
-  }
-  return Object.keys(obj).length ? obj : null;
-}
+import { jest, expect } from "@jest/globals";
+
+import cp from "cancelable-promise";
+
+describe("CancelablePromise", function () {
+  it("should export tool when packaged", function () {
+    cp.CancelablePromise = null;
+    return import("./cancelable-promise.js").then(cp =>
+      expect(cp).toBeTruthy()
+    );
+  });
+  it("should export tool when native", function () {
+    return import("./cancelable-promise.js").then(cp =>
+      expect(cp).toBeTruthy()
+    );
+  });
+});
