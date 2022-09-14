@@ -147,6 +147,16 @@ describe("Adb module", function () {
           expectArgs("start-server");
         });
       });
+      it("should kill all servers and start a new one listening for one device", function () {
+        stubExec();
+        const adb = new Adb();
+        return adb.startServer({ serialno: "1337" }, "1337").then(r => {
+          expect(r).toEqual(undefined);
+          expect(child_process.execFile).toHaveBeenCalledTimes(2);
+          expectArgs("-s", "1337", "kill-server");
+          expectArgs("-s", "1337", "start-server", "--one-device", "1337");
+        });
+      });
     });
 
     describe("killServer()", function () {

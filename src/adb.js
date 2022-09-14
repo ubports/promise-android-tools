@@ -128,11 +128,18 @@ export class Adb extends Tool {
 
   /**
    * Kill all adb servers and start a new one to rule them all
+   * @param {Object} [opts] - {host, port, protocol}
+   * @param {Object} [serialOrUsbId] - applies the --one-device SERIAL|USB flag, server will only connect to one USB device, specified by a serial number or USB device address
    * @returns {Promise}
    */
-  startServer(opts) {
-    if (opts) this.#confirgureNetwork(opts);
-    return this.killServer().then(() => this.exec("start-server"));
+  startServer(opts = {}, serialOrUsbId) {
+    this.applyConfig(opts);
+    return this.killServer().then(() =>
+      this.exec(
+        "start-server",
+        ...(serialOrUsbId ? ["--one-device", serialOrUsbId] : [])
+      )
+    );
   }
 
   /**
