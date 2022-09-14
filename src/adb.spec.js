@@ -212,6 +212,64 @@ describe("Adb module", function () {
       });
     });
 
+    describe("devices()", function () {
+      [
+        {
+          stdout: "List of devices attached\n",
+          ret: []
+        },
+        {
+          stdout:
+            "List of devices attached\n" +
+            "emulator-5554          device product:sdk_gphone_x86_arm model:AOSP_on_IA_Emulator device:generic_x86_arm transport_id:5",
+          ret: [
+            {
+              serialno: "emulator-5554",
+              product: "sdk_gphone_x86_arm",
+              model: "AOSP_on_IA_Emulator",
+              device: "generic_x86_arm",
+              transport_id: "5",
+              mode: "device"
+            }
+          ]
+        },
+        {
+          stdout:
+            "List of devices attached\n" +
+            "8945062f               device product:Device model:V777_SWM device:Device transport_id:4\n" +
+            "emulator-5554          device product:sdk_gphone_x86_arm model:AOSP_on_IA_Emulator device:generic_x86_arm transport_id:5",
+          ret: [
+            {
+              serialno: "8945062f",
+              product: "Device",
+              model: "V777_SWM",
+              device: "Device",
+              transport_id: "4",
+              mode: "device"
+            },
+            {
+              serialno: "emulator-5554",
+              product: "sdk_gphone_x86_arm",
+              model: "AOSP_on_IA_Emulator",
+              device: "generic_x86_arm",
+              transport_id: "5",
+              mode: "device"
+            }
+          ]
+        }
+      ].map(({ stdout, ret }, i) =>
+        it(`should return list of ${i} devices`, function () {
+          stubExec(null, stdout);
+          const adb = new Adb();
+          return adb.devices().then(r => {
+            expect(r).toEqual(ret);
+            expect(child_process.execFile).toHaveBeenCalledTimes(1);
+            expectArgs("devices", "-l");
+          });
+        })
+      );
+    });
+
     describe("getSerialno()", function () {
       it("should return serialnumber", function () {
         stubExec(false, "1234567890ABCDEF\n");
