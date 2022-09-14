@@ -35,6 +35,14 @@ describe("DeviceTools module", function () {
       const deviceTools = new DeviceTools();
       expect(deviceTools).toExist;
     });
+    it("should construct deviceTools with generic arg", function () {
+      const deviceTools = new DeviceTools({ port: 1337 });
+      expect(deviceTools).toExist;
+    });
+    it("should construct deviceTools with specific args", function () {
+      const deviceTools = new DeviceTools({ port: 1337 }, { serial: true }, {});
+      expect(deviceTools).toExist;
+    });
     ["adb", "fastboot", "heimdall"].forEach(tool => {
       ["exec", "spawn:start", "spawn:exit", "spawn:error"].forEach(signal =>
         it(`should emit ${signal} for ${tool}`, () => {

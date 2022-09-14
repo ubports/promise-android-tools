@@ -29,11 +29,20 @@ import { CancelablePromise } from "./cancelable-promise.js";
  * A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.
  */
 export class DeviceTools extends EventEmitter {
-  constructor() {
+  /**
+   * @param {Object} [adbOptions] options for adb
+   * @param {Object} [fastbootOptions] options for fastboot
+   * @param {Object} [heimdallOptions] options for heimdall
+   */
+  constructor(
+    adbOptions = {},
+    fastbootOptions = adbOptions,
+    heimdallOptions = adbOptions
+  ) {
     super();
-    this.adb = new Adb();
-    this.fastboot = new Fastboot();
-    this.heimdall = new Heimdall();
+    this.adb = new Adb(adbOptions);
+    this.fastboot = new Fastboot(fastbootOptions);
+    this.heimdall = new Heimdall(heimdallOptions);
 
     ["adb", "fastboot", "heimdall"].forEach(tool => {
       this[tool].on("exec", r => this.emit("exec", r));
