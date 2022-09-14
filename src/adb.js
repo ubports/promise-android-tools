@@ -22,38 +22,64 @@ import fs from "fs-extra";
 import path from "path";
 import { Tool } from "./tool.js";
 import { CancelablePromise } from "./cancelable-promise.js";
-import { ensureArgIfRequired } from "./common.js";
 
 const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;
 const DEFAULT_HOST = "localhost";
-const DEFAULT_SOCKET = (host = DEFAULT_HOST, port = DEFAULT_PORT) =>
-  `tcp:${host}:${port}`;
+const DEFAULT_PROTOCOL = "tcp";
 
 /**
  * Android Debug Bridge (ADB) module
  */
 export class Adb extends Tool {
+  config = {
+    //   -a                       listen on all network interfaces, not just localhost
+    allInterfaces: false,
+
+    //   -d                       use USB device (error if multiple devices connected)
+    useUsb: false,
+
+    //   -e                       use TCP/IP device (error if multiple TCP/IP devices available)
+    useTcpIp: false,
+
+    //   -s SERIAL                use device with given serial (overrides $ANDROID_SERIAL)
+    serialno: null,
+
+    //   -t ID                    use device with given transport id
+    transportId: null,
+
+    //   -H                       name of adb server host [default=localhost]
+    host: DEFAULT_HOST,
+
+    //   -P                       port of adb server [default=5037]
+    port: DEFAULT_PORT,
+
+    //   -L SOCKET                listen on given socket for adb server [default=tcp:localhost:5037]
+    protocol: DEFAULT_PROTOCOL,
+    get socket() {
+      return `${this.protocol}:${this.host}:${this.port}`;
+    },
+
+    //   --exit-on-write-error    exit if stdout is closed
+    exitOnWriteError: false
+  };
+
+  flagsModel = {
+    allInterfaces: ["-a", false, true],
+    useUsb: ["-d", false, true],
+    useTcpIp: ["-e", false, true],
+    serialno: ["-s", null],
+    transportId: ["-t", null],
+    host: ["-H", DEFAULT_HOST],
+    port: ["-P", DEFAULT_PORT],
+    protocol: ["-L", DEFAULT_PROTOCOL, false, "socket"],
+    exitOnWriteError: ["--exit-on-write-error", false, true]
+  };
+
   constructor(options = {}) {
     super({ tool: "adb", ...options });
-    this.#confirgureNetwork(options);
-  }
-
-  //  -H                       name of adb server host [default=localhost]
-  //  -P                       port of adb server [default=5037]
-  //  -L SOCKET                listen on given socket for adb server [default=tcp:localhost:5037]
-  #confirgureNetwork({ host, port, socket } = {}) {
-    this.host = host || DEFAULT_HOST;
-    this.extra = ensureArgIfRequired(this.extra, "-H", this.host, DEFAULT_HOST);
-    this.port = port || DEFAULT_PORT;
-    this.extra = ensureArgIfRequired(this.extra, "-P", this.port, DEFAULT_PORT);
-    this.socket = socket || DEFAULT_SOCKET(this.host, this.port);
-    this.extra = ensureArgIfRequired(
-      this.extra,
-      "-L",
-      this.socket,
-      DEFAULT_SOCKET(this.host, this.port)
-    );
+    this.applyConfig(options);
+    this.initializeFlags();
   }
 
   /**
@@ -141,6 +167,14 @@ export class Adb extends Tool {
   }
 
   /**
+   * reset offline/unauthorized devices to force reconnect
+   * @returns {Promise<String>} resolves device state
+   */
+  reconnectOffline() {
+    return this.reconnect("offline");
+  }
+
+  /**
    * list devices
    * @returns {Promise<[{serialno, mode, transport_id, model?, device?, product?}]>}
    */
@@ -162,54 +196,6 @@ export class Adb extends Tool {
             )
           )
       );
-  }
-
-  // global options:
-
-  //  -a                       listen on all network interfaces, not just localhost
-  _all() {
-    const ret = Object.create(this, Adb);
-    ret.extra = [...this.extra, "-d"];
-    return ret;
-  }
-
-  //  -d                       use USB device (error if multiple devices connected)
-  _usb() {
-    const ret = Object.create(this, Adb);
-    ret.extra = [...this.extra, "-d"];
-    return ret;
-  }
-
-  //  -e                       use TCP/IP device (error if multiple TCP/IP devices available)
-  _tcpip() {
-    const ret = Object.create(this, Adb);
-    ret.extra = [...this.extra, "-d"];
-    return ret;
-  }
-
-  //  -s SERIAL                use device with given serial (overrides $ANDROID_SERIAL)
-  _serial(serialno) {
-    if (!serialno) throw new Error("serialno required");
-    const ret = Object.create(this, Adb);
-    ret.extra = [...this.extra, "-s", serialno];
-    return ret;
-  }
-
-  //  -t ID                    use device with given transport id
-  _transport(id) {
-    const ret = Object.create(this, Adb);
-    ret.extra = [...this.extra, "-t", id];
-    return ret;
-  }
-  //  --one-device SERIAL|USB  only allowed with 'start-server' or 'server nodaemon', server will only connect to one USB device, specified by a serial number or USB device address.
-  //  --exit-on-write-error    exit if stdout is closed
-
-  /**
-   * reset offline/unauthorized devices to force reconnect
-   * @returns {Promise<String>} resolves device state
-   */
-  reconnectOffline() {
-    return this.reconnect("offline");
   }
 
   /**

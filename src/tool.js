@@ -32,6 +32,24 @@ import { CancelablePromise } from "./cancelable-promise.js";
  * @property {Object} execOptions options for child_process.exec
  */
 export class Tool extends EventEmitter {
+  tool;
+  config = {};
+  flagsModel = {};
+
+  get flags() {
+    return [
+      ...this.extra,
+      ...Object.entries(this.flagsModel).map(
+        ([key, [flag, defaultValue, noArgs, overrideKey]]) =>
+          this.config[key] !== defaultValue
+            ? noArgs
+              ? [flag]
+              : [flag, this.config[overrideKey || key]]
+            : []
+      )
+    ].flat();
+  }
+
   constructor(options = {}) {
     super();
     this.tool = options?.tool;
@@ -45,6 +63,63 @@ export class Tool extends EventEmitter {
       !process.env.PATH.includes(getAndroidToolBaseDir())
     )
       process.env.PATH = `${getAndroidToolBaseDir()}:${process.env.PATH}`;
+  }
+
+  /**
+   * return a clone of the current instance with a specified variation in the config options
+   * @param {Object} options object to override config
+   * @returns {Tool}
+   */
+  _withConfig(options) {
+    const ret = Object.create(this, Tool);
+    ret.config = { ...this.config };
+    for (const key in options) {
+      if (Object.hasOwnProperty.call(options, key)) {
+        ret.config[key] = options[key];
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * initialize helper functions to set every config option specified in the flags model.
+   * ```
+   * class MyTool extends Tool {
+   *   config = { a: "b" }
+   *   flagsModel = { a: ["-a", "b"] }
+   *   constructor() { this.initializeFlags(); }
+   * }
+   * const tool = new MyTool({a: "a"});
+   * tool.exec("arg", "--other-flag"); // tool will be called as "tool -a a arg --other-flag"
+   * tool.__a("b")exec("arg", "--other-flag"); // tool will be called as "tool arg --other-flag", because defaults are omitted
+   * tool.__a("c").exec("arg", "--other-flag"); // tool will be called as "tool -a c arg --other-flag"
+   * tool.exec("arg", "--other-flag"); // tool will be called as "tool -a a arg --other-flag", because the original instance is not changed
+   * ```
+   * @private
+   */
+  initializeFlags() {
+    for (const key in this.flagsModel) {
+      if (Object.hasOwn(this.flagsModel, key)) {
+        this[`__${key}`] = function (val) {
+          return this._withConfig({ [key]: val });
+        };
+      }
+    }
+  }
+
+  /**
+   * apply config options to the tool instance
+   * @param {Object} options config options
+   */
+  applyConfig(options) {
+    for (const key in this.config) {
+      if (
+        Object.getOwnPropertyDescriptor(this.config, key)?.writable &&
+        Object.hasOwn(options, key)
+      ) {
+        this.config[key] = options[key];
+      }
+    }
   }
 
   /**
@@ -65,13 +140,13 @@ export class Tool extends EventEmitter {
     return new CancelablePromise((resolve, reject, onCancel) => {
       const cp = child_process.execFile(
         _this.executable,
-        [..._this.extra, ...args],
+        [..._this.flags, ...args],
         _this.execOptions,
         (error, stdout, stderr) => {
           _this.emit(
             "exec",
             removeFalsy({
-              cmd: [_this.tool, ..._this.extra, ...args],
+              cmd: [_this.tool, ..._this.flags, ...args],
               error: error
                 ? {
                     message: error?.message
@@ -116,11 +191,11 @@ export class Tool extends EventEmitter {
   spawn(...args) {
     this.emit(
       "spawn:start",
-      removeFalsy({ cmd: [this.tool, ...this.extra, ...args].flat() })
+      removeFalsy({ cmd: [this.tool, ...this.flags, ...args].flat() })
     );
     const cp = child_process.spawn(
       this.executable,
-      [...this.extra, ...args].flat(),
+      [...this.flags, ...args].flat(),
       {
         env: {
           ...process.env,
@@ -134,7 +209,7 @@ export class Tool extends EventEmitter {
       this.emit(
         "spawn:exit",
         removeFalsy({
-          cmd: [this.tool, ...this.extra, ...args].flat(),
+          cmd: [this.tool, ...this.flags, ...args].flat(),
           code,
           signal
         })
@@ -144,7 +219,7 @@ export class Tool extends EventEmitter {
       this.emit(
         "spawn:error",
         removeFalsy({
-          cmd: [this.tool, ...this.extra, ...args].flat(),
+          cmd: [this.tool, ...this.flags, ...args].flat(),
           error
         })
       )

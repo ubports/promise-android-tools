@@ -36,26 +36,3 @@ export function removeFalsy(obj) {
   }
   return Object.keys(obj).length ? obj : null;
 }
-
-export function ensureArgIfRequired(args, arg, value, defaultValue) {
-  if (value && value !== defaultValue) return setArg(args, arg, value);
-  else return removeArg(args, arg);
-}
-
-export function setArg(args, arg, value) {
-  const i = args.indexOf(arg);
-  if (i !== -1) {
-    args[i + 1] = value;
-  } else {
-    args.push(arg, value);
-  }
-  return args;
-}
-
-export function removeArg(args, arg) {
-  const i = args.indexOf(arg);
-  if (i !== -1) {
-    args.splice(i, 2);
-  }
-  return args;
-}

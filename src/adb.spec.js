@@ -57,19 +57,32 @@ describe("Adb module", function () {
       expect(adb).toExist;
       expect(adb.tool).toEqual("adb");
       expect(adb.executable).toMatch("adb");
-      expect(adb.extra).toEqual([]);
+      expect(adb.flags).toEqual([]);
       expect(adb.execOptions).toEqual({});
     });
-    it("should construct adb with network options", function () {
+    it("should construct adb with options", function () {
       const adb = new Adb({
+        allInterfaces: true,
+        useUsb: true,
+        useTcpIp: true,
+        serialno: 1337,
+        transportId: 69,
         port: 5038,
         host: "somewhere",
-        socket: "udp:somewhere:5038"
+        protocol: "udp",
+        exitOnWrite: true
       });
       expect(adb).toExist;
       expect(adb.tool).toEqual("adb");
       expect(adb.executable).toMatch("adb");
-      expect(adb.extra).toEqual([
+      expect(adb.flags).toEqual([
+        "-a",
+        "-d",
+        "-e",
+        "-s",
+        1337,
+        "-t",
+        69,
         "-H",
         "somewhere",
         "-P",
@@ -79,6 +92,27 @@ describe("Adb module", function () {
       ]);
       expect(adb.execOptions).toEqual({});
     });
+  });
+
+  describe("flag helpers", function () {
+    [
+      ["allInterfaces", ["-a"]],
+      ["useUsb", ["-d"]],
+      ["useTcpIp", ["-e"]],
+      ["serialno", ["-s", "a"]],
+      ["transportId", ["-t", "a"]],
+      ["port", ["-P", "a"]],
+      ["host", ["-H", "a"]],
+      ["protocol", ["-L", "tcp:localhost:5037"]],
+      ["exitOnWriteError", ["--exit-on-write-error"]]
+    ].forEach(([flag, args]) =>
+      it(`should have __${flag}`, function () {
+        const adb = new Adb();
+        expect(adb.flags).toEqual([]);
+        expect(adb[`__${flag}`]("a").flags).toEqual(args);
+        expect(adb.flags).toEqual([]);
+      })
+    );
   });
 
   describe("basic functions", function () {
@@ -372,7 +406,7 @@ describe("Adb module", function () {
         return adb.sideload("tests/test-data/test_file").then(() => {
           expect(child_process.spawn).toHaveBeenCalledWith(
             adb.executable,
-            [...adb.extra, "sideload", "tests/test-data/test_file"],
+            ["sideload", "tests/test-data/test_file"],
             { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
           );
         });
