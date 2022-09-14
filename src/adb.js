@@ -121,6 +121,8 @@ export class Adb extends Tool {
       stderr?.includes("adb: pre-KitKat sideload connection failed: closed")
     ) {
       return "no device";
+    } else if (stderr?.includes("more than one device/emulator")) {
+      return "more than one device";
     } else {
       return super.handleError(error, stdout, stderr);
     }

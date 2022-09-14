@@ -33,6 +33,12 @@ export const adbErrors = [
     stderr: "error: no devices/emulators found"
   },
   {
+    expectedReturn: "more than one device",
+    error: { killed: false, code: 1, signal: null, cmd: "command" },
+    stdout: undefined,
+    stderr: "error: more than one device/emulator"
+  },
+  {
     expectedReturn: "unauthorized",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
     stdout: "",
