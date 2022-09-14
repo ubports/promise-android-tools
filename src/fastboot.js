@@ -18,18 +18,69 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as common from "./common.js";
 import { Tool } from "./tool.js";
 
 /**
  * fastboot android flashing and booting utility
  */
 export class Fastboot extends Tool {
-  constructor(options) {
-    super({
-      tool: "fastboot",
-      ...options
-    });
+  config = {
+    // -w                         Wipe userdata.
+    wipe: false,
+
+    //  -s <SERIAL|<tcp|udp:HOST[:PORT]>>   USB or network device
+    device: null,
+
+    // -S SIZE[K|M|G]             Break into sparse files no larger than SIZE.
+    maxSize: null,
+
+    // --force                    Force a flash operation that may be unsafe.
+    force: false,
+
+    // --slot SLOT                Use SLOT; 'all' for both slots, 'other' for non-current slot (default: current active slot).
+    slot: null,
+
+    // --set-active[=SLOT]        Sets the active slot before rebooting.
+    setActive: null,
+
+    // --skip-secondary           Don't flash secondary slots in flashall/update.
+    skipSecondary: false,
+
+    // --skip-reboot              Don't reboot device after flashing.
+    skipReboot: false,
+
+    // --disable-verity           Sets disable-verity when flashing vbmeta.
+    disableVerity: false,
+
+    // --disable-verification     Sets disable-verification when flashing vbmeta.
+    disableVerification: false,
+
+    // --fs-options=OPTION[,OPTION]   Enable filesystem features. OPTION supports casefold, projid, compress
+    fsOptions: null,
+
+    // --unbuffered               Don't buffer input or output.
+    unbuffered: false
+  };
+
+  flagsModel = {
+    wipe: ["-w", false, true],
+    device: ["-s", null],
+    maxSize: ["-S", null],
+    force: ["--force", false, true],
+    slot: ["--slot", null],
+    setActive: ["--set-active", null],
+    skipSecondary: ["--skip-secondary", false, true],
+    skipReboot: ["--skip-reboot", false, true],
+    disableVerity: ["--disable-verity", false, true],
+    disableVerification: ["--disable-verification", false, true],
+    fsOptions: ["--fs-options", null],
+    unbuffered: ["--unbuffered", false, true]
+  };
+
+  constructor(options = {}) {
+    super({ tool: "fastboot", ...options });
+    this.applyConfig(options);
+    this.initializeFlags();
   }
 
   /**
@@ -172,9 +223,7 @@ export class Fastboot extends Tool {
    */
   boot(image) {
     return this.exec("boot", image)
-      .then(stdout => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("booting failed: " + error);
       });
@@ -183,14 +232,13 @@ export class Fastboot extends Tool {
   /**
    * Reflash device from update.zip and set the flashed slot as active
    * @param {String} image image to flash
-   * @param {String} wipe wipe option
+   * @param {String} [wipe] wipe option
    * @returns {Promise}
    */
-  update(image, wipe) {
-    return this.exec(wipe ? "-w" : "", "update", image)
-      .then(stdout => {
-        return;
-      })
+  update(image, wipe = false) {
+    return this._withConfig({ wipe })
+      .exec("update", image)
+      .then(() => null)
       .catch(error => {
         throw new Error("update failed: " + error);
       });
@@ -202,9 +250,7 @@ export class Fastboot extends Tool {
    */
   rebootBootloader() {
     return this.exec("reboot-bootloader")
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("rebooting to bootloader failed: " + error);
       });
@@ -217,9 +263,7 @@ export class Fastboot extends Tool {
    */
   rebootFastboot() {
     return this.exec("reboot-fastboot")
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("rebooting to fastboot failed: " + error);
       });
@@ -231,9 +275,7 @@ export class Fastboot extends Tool {
    */
   rebootRecovery() {
     return this.exec("reboot-recovery")
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("rebooting to recovery failed: " + error);
       });
@@ -245,9 +287,7 @@ export class Fastboot extends Tool {
    */
   reboot() {
     return this.exec("reboot")
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("rebooting failed: " + error);
       });
@@ -259,9 +299,7 @@ export class Fastboot extends Tool {
    */
   continue() {
     return this.exec("continue")
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("continuing boot failed: " + error);
       });
@@ -286,9 +324,7 @@ export class Fastboot extends Tool {
       `format${type ? ":" + type : ""}${size ? ":" + size : ""}`,
       partition
     )
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("formatting failed: " + error);
       });
@@ -301,9 +337,7 @@ export class Fastboot extends Tool {
    */
   erase(partition) {
     return this.exec("erase", partition)
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("erasing failed: " + error);
       });
@@ -314,7 +348,8 @@ export class Fastboot extends Tool {
    * @param {String} slot - slot to set as active
    */
   setActive(slot) {
-    return this.exec(`--set-active=${slot}`)
+    return this._withConfig({ setActive: slot })
+      .exec()
       .then(stdout => {
         if (stdout && stdout.includes("error")) {
           throw new Error(stdout);
@@ -335,9 +370,7 @@ export class Fastboot extends Tool {
    */
   createLogicalPartition(partition, size) {
     return this.exec("create-logical-partition", partition, size)
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("creating logical partition failed: " + error);
       });
@@ -350,9 +383,7 @@ export class Fastboot extends Tool {
    */
   deleteLogicalPartition(partition) {
     return this.exec("delete-logical-partition", partition)
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("deleting logical partition failed: " + error);
       });
@@ -366,9 +397,7 @@ export class Fastboot extends Tool {
    */
   resizeLogicalPartition(partition, size) {
     return this.exec("resize-logical-partition", partition, size)
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("resizing logical partition failed: " + error);
       });
@@ -381,9 +410,7 @@ export class Fastboot extends Tool {
    */
   wipeSuper(image) {
     return this.exec("wipe-super", image)
-      .then(() => {
-        return;
-      })
+      .then(() => null)
       .catch(error => {
         throw new Error("wiping super failed: " + error);
       });

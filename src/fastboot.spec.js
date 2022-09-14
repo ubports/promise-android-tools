@@ -53,10 +53,74 @@ describe("Fastboot module", function () {
       expect(fastboot).toExist;
       expect(fastboot.tool).toEqual("fastboot");
       expect(fastboot.executable).toMatch("fastboot");
-      expect(fastboot.extra).toEqual([]);
+      expect(fastboot.flags).toEqual([]);
+      expect(fastboot.execOptions).toEqual({});
+    });
+    it("should construct fastboot with options", function () {
+      const fastboot = new Fastboot({
+        wipe: true,
+        device: 1337,
+        maxSize: "1G",
+        force: true,
+        slot: "all",
+        setActive: "other",
+        skipSecondary: true,
+        skipReboot: true,
+        disableVerity: true,
+        disableVerification: true,
+        fsOptions: "casefold,projid,compress",
+        unbuffered: true
+      });
+      expect(fastboot).toExist;
+      expect(fastboot.tool).toEqual("fastboot");
+      expect(fastboot.executable).toMatch("fastboot");
+      expect(fastboot.flags).toEqual([
+        "-w",
+        "-s",
+        1337,
+        "-S",
+        "1G",
+        "--force",
+        "--slot",
+        "all",
+        "--set-active",
+        "other",
+        "--skip-secondary",
+        "--skip-reboot",
+        "--disable-verity",
+        "--disable-verification",
+        "--fs-options",
+        "casefold,projid,compress",
+        "--unbuffered"
+      ]);
       expect(fastboot.execOptions).toEqual({});
     });
   });
+
+  describe("flag helpers", function () {
+    [
+      ["wipe", ["-w"]],
+      ["device", ["-s", "a"]],
+      ["maxSize", ["-S", "a"]],
+      ["force", ["--force"]],
+      ["slot", ["--slot", "a"]],
+      ["setActive", ["--set-active", "a"]],
+      ["skipSecondary", ["--skip-secondary"]],
+      ["skipReboot", ["--skip-reboot"]],
+      ["disableVerity", ["--disable-verity"]],
+      ["disableVerification", ["--disable-verification"]],
+      ["fsOptions", ["--fs-options", "a"]],
+      ["unbuffered", ["--unbuffered"]]
+    ].forEach(([flag, args]) =>
+      it(`should have __${flag}`, function () {
+        const fastboot = new Fastboot();
+        expect(fastboot.flags).toEqual([]);
+        expect(fastboot[`__${flag}`]("a").flags).toEqual(args);
+        expect(fastboot.flags).toEqual([]);
+      })
+    );
+  });
+
   describe("basic functions", function () {
     describe("handleError()", function () {
       fastbootErrors.forEach(e =>
@@ -223,14 +287,14 @@ describe("Fastboot module", function () {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.update("/path/to an/image").then(r => {
-          expectArgs("", "update", "/path/to an/image");
+          expectArgs("update", "/path/to an/image");
         });
       });
       it("should not wipe if not specified", function () {
         stubExec();
         const fastboot = new Fastboot();
-        return fastboot.update("/path/to/image").then(r => {
-          expectArgs("", "update", "/path/to/image");
+        return fastboot.update("/path/to/image", false).then(r => {
+          expectArgs("update", "/path/to/image");
         });
       });
       it("should wipe if specified", function () {
@@ -539,7 +603,7 @@ describe("Fastboot module", function () {
         stubExec();
         const fastboot = new Fastboot();
         return fastboot.setActive("a").then(r => {
-          expectArgs("--set-active=a");
+          expectArgs("--set-active", "a");
         });
       });
       it("should reject if locking failed", function (done) {
