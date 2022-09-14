@@ -206,7 +206,7 @@ export class Adb extends Tool {
 
   /**
    * list devices
-   * @returns {Promise<[{serialno, mode, transport_id, model?, device?, product?}]>}
+   * @returns {Promise<Array>} [{serialno, mode, transport_id, model?, device?, product?}]
    */
   devices() {
     return this.exec("devices", "-l")
