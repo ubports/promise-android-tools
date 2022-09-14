@@ -170,6 +170,30 @@ describe("Adb module", function () {
       });
     });
 
+    describe("connect()", function () {
+      it("should connect", function () {
+        stubExec();
+        const adb = new Adb();
+        adb.killServer = jest.fn();
+        adb.wait = jest.fn().mockResolvedValue("device");
+        return adb.connect("abc").then(r => {
+          expect(r).toEqual("device");
+          expect(child_process.execFile).toHaveBeenCalledTimes(1);
+          expectArgs("connect", "abc");
+        });
+      });
+      it("should reject on no device", function (done) {
+        stubExec(null, "no devices/emulators found");
+        const adb = new Adb();
+        adb.killServer = jest.fn();
+        adb.wait = jest.fn().mockResolvedValue("device");
+        adb.connect().catch(error => {
+          expectReject(error, "no device at address ");
+          done();
+        });
+      });
+    });
+
     describe("reconnect()", function () {
       it("should reconnect", function () {
         stubExec();

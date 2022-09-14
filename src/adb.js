@@ -156,10 +156,12 @@ export class Adb extends Tool {
    * @returns {Promise}
    */
   connect(address = "") {
-    return this.exec('connect', address).then(stdout => {
-      if (stdout?.includes("no devices/emulators found") ||
-          stdout?.includes("Name or service not known")) {
-        throw new Error("no device at address");
+    return this.exec("connect", address).then(stdout => {
+      if (
+        stdout?.includes("no devices/emulators found") ||
+        stdout?.includes("Name or service not known")
+      ) {
+        throw new Error(`no device at address ${address}`);
       } else {
         return this.wait();
       }
@@ -173,7 +175,10 @@ export class Adb extends Tool {
    */
   reconnect(modifier = "") {
     return this.exec(...["reconnect", modifier].filter(i => i)).then(stdout => {
-      if (stdout?.includes("No route to host")) {
+      if (
+        stdout?.includes("no devices/emulators found") ||
+        stdout?.includes("No route to host")
+      ) {
         throw new Error("no device");
       } else {
         return this.wait();
