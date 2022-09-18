@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
@@ -18,10 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import fs from "fs-extra";
+import fs from "fs/promises";
 import path from "path";
+import * as common from "./common.js";
 import { Tool } from "./tool.js";
-import { CancelablePromise } from "./cancelable-promise.js";
 
 const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;
@@ -30,56 +30,41 @@ const DEFAULT_PROTOCOL = "tcp";
 
 /**
  * Android Debug Bridge (ADB) module
+ * @property {AdbConfig} config adb config
  */
 export class Adb extends Tool {
-  config = {
-    //   -a                       listen on all network interfaces, not just localhost
-    allInterfaces: false,
-
-    //   -d                       use USB device (error if multiple devices connected)
-    useUsb: false,
-
-    //   -e                       use TCP/IP device (error if multiple TCP/IP devices available)
-    useTcpIp: false,
-
-    //   -s SERIAL                use device with given serial (overrides $ANDROID_SERIAL)
-    serialno: null,
-
-    //   -t ID                    use device with given transport id
-    transportId: null,
-
-    //   -H                       name of adb server host [default=localhost]
-    host: DEFAULT_HOST,
-
-    //   -P                       port of adb server [default=5037]
-    port: DEFAULT_PORT,
-
-    //   -L SOCKET                listen on given socket for adb server [default=tcp:localhost:5037]
-    protocol: DEFAULT_PROTOCOL,
-    get socket() {
-      return `${this.protocol}:${this.host}:${this.port}`;
-    },
-
-    //   --exit-on-write-error    exit if stdout is closed
-    exitOnWriteError: false
-  };
-
-  flagsModel = {
-    allInterfaces: ["-a", false, true],
-    useUsb: ["-d", false, true],
-    useTcpIp: ["-e", false, true],
-    serialno: ["-s", null],
-    transportId: ["-t", null],
-    host: ["-H", DEFAULT_HOST],
-    port: ["-P", DEFAULT_PORT],
-    protocol: ["-L", DEFAULT_PROTOCOL, false, "socket"],
-    exitOnWriteError: ["--exit-on-write-error", false, true]
-  };
-
   constructor(options = {}) {
-    super({ tool: "adb", ...options });
-    this.applyConfig(options);
-    this.initializeFlags();
+    super({
+      tool: "adb",
+      argsModel: {
+        allInterfaces: ["-a", false, true],
+        useUsb: ["-d", false, true],
+        useTcpIp: ["-e", false, true],
+        serialno: ["-s", null],
+        transportId: ["-t", null],
+        host: ["-H", DEFAULT_HOST],
+        port: ["-P", DEFAULT_PORT],
+        protocol: ["-L", DEFAULT_PROTOCOL, false, "socket"],
+        exitOnWriteError: ["--exit-on-write-error", false, true]
+      },
+      config: {
+        allInterfaces: false,
+        useUsb: false,
+        useTcpIp: false,
+        serialno: null,
+        transportId: null,
+        host: DEFAULT_HOST,
+        port: DEFAULT_PORT,
+        protocol: DEFAULT_PROTOCOL,
+        get socket() {
+          return `${this.protocol}:${this.host}:${this.port}`;
+        },
+        exitOnWriteError: false
+      },
+      ...options
+    });
+
+    this.config;
   }
 
   /**
@@ -91,13 +76,13 @@ export class Adb extends Tool {
 
   /**
    * Generate processable error messages from child_process.exec() callbacks
-   * @param {child_process.ExecException} error error returned by child_process.exec()
-   * @param {String} stdout stdandard output
-   * @param {String} stderr standard error
-   * @private
+   * @param {common.ExecException} error error returned by child_process.exec()
+   * @param {String} [stdout] stdandard output
+   * @param {String} [stderr] standard error
+   * @internal
    * @returns {String} error message
    */
-  handleError(error, stdout, stderr) {
+  handleError(error, stdout = "", stderr = "") {
     if (
       stderr?.includes("error: device unauthorized") ||
       stderr?.includes("error: device still authorizing")
@@ -255,8 +240,8 @@ export class Adb extends Tool {
    * copy local files/directories to device
    * @param {Array<String>} files path to files
    * @param {String} dest destination path on the device
-   * @param {Function} progress progress function
-   * @returns {CancelablePromise}
+   * @param {common.progressCallback} progress progress function
+   * @returns {Promise}
    */
   push(files = [], dest, progress = () => {}) {
     progress(0);
@@ -265,13 +250,12 @@ export class Adb extends Tool {
       progress(1);
       return Promise.resolve();
     } else {
-      const totalSize = files.reduce(
-        (acc, file) => acc + fs.statSync(file)["size"],
-        0
-      );
+      const totalSize = Promise.all(
+        files.map(file => fs.stat(file).then(({ size }) => size))
+      ).then(sizes => sizes.reduce((a, b) => a + b));
       let pushedSize = 0;
       const _this = this;
-      return new CancelablePromise((resolve, reject, onCancel) => {
+      return new Promise((resolve, reject) => {
         let stdout = "";
         let stderr = "";
         const cp = _this.spawn("push", ...files, dest);
@@ -289,34 +273,35 @@ export class Adb extends Tool {
               );
             }
           } else {
-            resolve();
+            resolve(null);
           }
         });
 
-        cp.stdout.on("data", d => (stdout += d.toString()));
-        cp.stderr.on("data", d => {
-          d.toString()
-            .split("\n")
-            .forEach(str => {
-              if (str.includes("cpp")) {
-                // logging from cpp files indicates debug output
-                if (str.includes("writex")) {
-                  // writex namespace indicates external writing
-                  pushedSize +=
-                    parseInt(str?.split("len=")[1]?.split(" ")[0]) || 0;
-                  progress(Math.min(pushedSize / totalSize, 1));
+        cp?.stdout?.on && cp.stdout.on("data", d => (stdout += d.toString()));
+        cp?.stderr?.on &&
+          cp.stderr.on("data", d => {
+            d.toString()
+              .split("\n")
+              .forEach(async str => {
+                if (str.includes("cpp")) {
+                  // logging from cpp files indicates debug output
+                  if (str.includes("writex")) {
+                    // writex namespace indicates external writing
+                    pushedSize +=
+                      parseInt(str?.split("len=")[1]?.split(" ")[0]) || 0;
+                    progress(Math.min(pushedSize / (await totalSize), 1));
+                  }
+                } else {
+                  stderr += str;
                 }
-              } else {
-                stderr += str;
-              }
-            });
-        });
+              });
+          });
 
-        onCancel(() => {
-          if (!cp.kill("SIGTERM")) {
-            setTimeout(() => cp.kill("SIGKILL"), 25);
-          }
-        });
+        // onCancel(() => {
+        //   if (!cp.kill("SIGTERM")) {
+        //     setTimeout(() => cp.kill("SIGKILL"), 25);
+        //   }
+        // });
       });
     }
   }
@@ -324,14 +309,13 @@ export class Adb extends Tool {
   /**
    * Reboot to a state
    * @param {String} state - system, recovery, bootloader, download, edl
-   * @async
    * @returns {Promise}
    */
-  async reboot(state) {
+  reboot(state) {
     if (
       !["system", "recovery", "bootloader", "download", "edl"].includes(state)
     ) {
-      throw new Error("unknown state: " + state);
+      return Promise.reject(new Error("unknown state: " + state));
     } else {
       return this.exec("reboot", state).then(stdout => {
         if (stdout?.includes("failed"))
@@ -344,14 +328,15 @@ export class Adb extends Tool {
   /**
    * sideload an ota package
    * @param {String} file - path to a file to sideload
-   * @returns {CancelablePromise}
+   * @param {common.progressCallback} progress progress function
+   * @returns {Promise}
    */
   sideload(file, progress = () => {}) {
     progress(0);
-    const totalSize = fs.statSync(file)["size"];
+    const totalSize = fs.stat(file).then(({ size }) => size);
     let pushedSize = 0;
     const _this = this;
-    return new CancelablePromise((resolve, reject, onCancel) => {
+    return new Promise((resolve, reject) => {
       let stdout = "";
       let stderr = "";
       const cp = _this.spawn("sideload", file);
@@ -369,34 +354,36 @@ export class Adb extends Tool {
             );
           }
         } else {
-          resolve();
+          resolve(null);
         }
       });
 
-      cp.stdout.on("data", d => (stdout += d.toString()));
-      cp.stderr.on("data", d => {
-        d.toString()
-          .split("\n")
-          .filter(s => s)
-          .forEach(str => {
-            if (str.includes("cpp")) {
-              // logging from cpp files indicates debug output
-              if (str.includes("writex")) {
-                // writex namespace indicates external writing
-                pushedSize += parseInt(str.split("len=")[1].split(" ")[0]) || 0;
-                progress(Math.min(pushedSize / totalSize, 1));
+      cp?.stdout?.on && cp.stdout.on("data", d => (stdout += d.toString()));
+      cp?.stderr?.on &&
+        cp.stderr.on("data", d => {
+          d.toString()
+            .split("\n")
+            .filter(s => s)
+            .forEach(async str => {
+              if (str.includes("cpp")) {
+                // logging from cpp files indicates debug output
+                if (str.includes("writex")) {
+                  // writex namespace indicates external writing
+                  pushedSize +=
+                    parseInt(str.split("len=")[1].split(" ")[0]) || 0;
+                  progress(Math.min(pushedSize / (await totalSize), 1));
+                }
+              } else {
+                stderr += str;
               }
-            } else {
-              stderr += str;
-            }
-          });
-      });
+            });
+        });
 
-      onCancel(() => {
-        if (!cp.kill("SIGTERM")) {
-          setTimeout(() => cp.kill("SIGKILL"), 25);
-        }
-      });
+      // onCancel(() => {
+      //   if (!cp.kill("SIGTERM")) {
+      //     setTimeout(() => cp.kill("SIGKILL"), 25);
+      //   }
+      // });
     });
   }
 
@@ -415,13 +402,13 @@ export class Adb extends Tool {
   /**
    * Reboot to a requested state, if not already in it
    * @param {String} state - system, recovery, bootloader
-   * @returns {Promise}
+   * @returns {Promise<string>} state
    */
   ensureState(state) {
     return this.getState().then(currentState =>
       currentState === state ||
       (currentState === "device" && state === "system")
-        ? Promise.resolve()
+        ? Promise.resolve(state)
         : this.reboot(state).then(() => this.wait())
     );
   }
@@ -461,7 +448,7 @@ export class Adb extends Tool {
 
   /**
    * returns true if recovery is system-image capable, false otherwise
-   * @returns {Promise<String>}
+   * @returns {Promise<Boolean>}
    */
   getSystemImageCapability() {
     return this.getprop("ro.ubuntu.recovery")
@@ -508,7 +495,7 @@ export class Adb extends Tool {
    * wait for device to be in a given state
    * @param {String} [state] any, device, recovery, rescue, sideload, bootloader, or disconnect
    * @param {String} [transport] any, usb, local
-   * @returns {CancelablePromise<String>} resolves state (offline, bootloader, device)
+   * @returns {Promise<String>} resolves state (offline, bootloader, device)
    */
   wait(state = "any", transport = "any") {
     if (
@@ -610,7 +597,7 @@ export class Adb extends Tool {
   /**
    * size of a file or directory
    * @param {String} file file or directory
-   * @returns {Promise<Float>} size
+   * @returns {Promise<number>} size
    */
   getFileSize(file) {
     return this.shell("du -shk " + file)
@@ -627,7 +614,7 @@ export class Adb extends Tool {
   /**
    * available size of a partition
    * @param {String} partition partition to check
-   * @returns {Promise<Integer>} available size
+   * @returns {Promise<number>} available size
    */
   getAvailablePartitionSize(partition) {
     return this.shell("df -k -P " + partition)
@@ -645,7 +632,7 @@ export class Adb extends Tool {
   /**
    * total size of a partition
    * @param {String} partition partition to check
-   * @returns {Promise<Integer>} total size
+   * @returns {Promise<number>} total size
    */
   getTotalPartitionSize(partition) {
     return this.shell("df -k -P " + partition)
@@ -662,7 +649,7 @@ export class Adb extends Tool {
 
   /**
    * [EXPERIMENTAL] Run a command via adb exec-out and pipe the result to a stream
-   * @param {steam.writable} writableStream e.g. fs.createWriteStream() to write to a file
+   * @param {import("fs").WriteStream} writableStream e.g. fs.createWriteStream() to write to a file
    * @param  {...any} args command to execute
    * @returns {Promise}
    */
@@ -671,14 +658,18 @@ export class Adb extends Tool {
     return new Promise(function (resolve, reject) {
       let stderr = "";
       const cp = _this.spawn("exec-out", `'${args.join(" ")}'`);
-      cp.stdout.pipe(writableStream);
-      cp.stderr.on("data", d => (stderr += d.toString()));
+      cp?.stdout && cp.stdout.pipe(writableStream);
+      cp?.stderr && cp.stderr.on("data", d => (stderr += d.toString()));
       cp.once("exit", (code, signal) => {
         writableStream.close();
         if (code || signal)
-          reject(new Error(_this.handleError({ code, signal }, null, stderr)));
-        else resolve();
+          reject(new Error(_this.handleError({ code, signal }, "", stderr)));
+        else resolve(null);
       });
+      // onCancel(() => {
+      //   cp.kill("SIGTERM");
+      //   writableStream.close();
+      // });
     });
   }
 
@@ -686,45 +677,49 @@ export class Adb extends Tool {
    * [EXPERIMENTAL] Backup "srcfile" from the device to local tar "destfile"
    * @param {String} srcfile file to back up
    * @param {String} destfile target destination
-   * @param {Function} progress progress function
-   * @async
+   * @param {common.progressCallback} progress progress function
    * @returns {Promise}
    */
-  async createBackupTar(srcfile, destfile, progress) {
+  createBackupTar(srcfile, destfile, progress) {
     progress(0);
-    const stream = fs.createWriteStream(destfile);
-    const fileSize = await this.getFileSize(srcfile);
+    const fileSize = this.getFileSize(srcfile);
     // FIXME with gzip compression (the -z flag on tar), the progress estimate is way off. It's still beneficial to enable it, because it saves a lot of space.
+    /** @type {NodeJS.Timeout} */
     let timeout;
-    function poll() {
-      const { size } = fs.statSync(destfile);
-      progress(size / 1024 / fileSize);
+    async function poll() {
+      const { size } = await fs.stat(destfile);
+      progress(size / 1024 / (await fileSize));
       timeout = setTimeout(poll, 1000);
     }
     poll();
-    return this.execOut(
-      stream,
-      "tar",
-      "-cpz",
-      "--exclude=*/var/cache ",
-      "--exclude=*/var/log ",
-      "--exclude=*/.cache/upstart ",
-      "--exclude=*/.cache/*.qmlc ",
-      "--exclude=*/.cache/*/qmlcache ",
-      "--exclude=*/.cache/*/qml_cache",
-      srcfile,
-      "2>/dev/null"
-    ).finally(() => clearTimeout(timeout));
+    return fs
+      .open(destfile)
+      .then(f =>
+        this.execOut(
+          f.createWriteStream(),
+          "tar",
+          "-cpz",
+          "--exclude=*/var/cache ",
+          "--exclude=*/var/log ",
+          "--exclude=*/.cache/upstart ",
+          "--exclude=*/.cache/*.qmlc ",
+          "--exclude=*/.cache/*/qmlcache ",
+          "--exclude=*/.cache/*/qml_cache",
+          srcfile,
+          "2>/dev/null"
+        )
+      )
+      .finally(() => clearTimeout(timeout));
   }
 
   /**
    * [EXPERIMENTAL] Restore tar "srcfile"
    * @param {String} srcfile file to restore
-   * @param {Function} progress progress callback
+   * @param {common.progressCallback} progress progress callback
    * @returns {Promise}
    */
   restoreBackupTar(srcfile, progress = () => {}) {
-    progress();
+    progress(0);
     return this.ensureState("recovery")
       .then(() => this.shell("mkfifo /restore.pipe"))
       .then(() =>
@@ -751,7 +746,8 @@ export class Adb extends Tool {
         Promise.all(
           backups.map(backup =>
             fs
-              .readJSON(path.join(backupBaseDir, backup, "metadata.json"))
+              .readFile(path.join(backupBaseDir, backup, "metadata.json"))
+              .then(r => JSON.parse(r.toString()))
               .then(metadata => ({
                 ...metadata,
                 dir: path.join(backupBaseDir, backup)
@@ -771,56 +767,62 @@ export class Adb extends Tool {
    * @param {Function} [progress] progress function
    * @returns {Promise<Object>} backup object
    */
-  async createUbuntuTouchBackup(
+  createUbuntuTouchBackup(
     backupBaseDir,
     comment,
     dataPartition = "/data",
     progress = () => {}
   ) {
     progress(0);
-    const time = new Date();
-    const dir = path.join(backupBaseDir, time.toISOString());
-    return this.ensureState("recovery")
-      .then(() => fs.ensureDir(dir))
-      .then(() =>
-        Promise.all([
-          this.shell("stat", "/data/user-data"),
-          this.shell("stat", "/data/syste-mdata")
-        ]).catch(() => this.shell("mount", dataPartition, "/data"))
-      )
-      .then(() =>
-        this.createBackupTar(
-          "/data/system-data",
-          path.join(dir, "system.tar.gz"),
-          p => progress(p * 0.5)
+    try {
+      const time = new Date().toISOString();
+      const dir = path.join(backupBaseDir, time);
+      return this.ensureState("recovery")
+        .then(() => fs.mkdir(dir, { recursive: true }))
+        .then(() =>
+          Promise.all([
+            this.shell("stat", "/data/user-data"),
+            this.shell("stat", "/data/syste-mdata")
+          ]).catch(() => this.shell("mount", dataPartition, "/data"))
         )
-      )
-      .then(() =>
-        this.createBackupTar(
-          "/data/user-data",
-          path.join(dir, "user.tar.gz"),
-          p => progress(50 + p * 0.5)
+        .then(() =>
+          this.createBackupTar(
+            "/data/system-data",
+            path.join(dir, "system.tar.gz"),
+            p => progress(p * 0.5)
+          )
         )
-      )
-      .then(async () => {
-        const metadata = {
-          codename: await this.getDeviceName(),
-          serialno: await this.getSerialno(),
-          size:
-            (await this.getFileSize("/data/user-data")) +
-            (await this.getFileSize("/data/system-data")),
-          time,
-          comment:
-            comment || `Ubuntu Touch backup created on ${time.toISOString()}`,
-          restorations: []
-        };
-        return fs
-          .writeJSON(path.join(dir, "metadata.json"), metadata)
-          .then(() => ({ ...metadata, dir }))
-          .catch(e => {
-            throw new Error(`Failed to restore: ${e}`);
-          });
-      });
+        .then(() =>
+          this.createBackupTar(
+            "/data/user-data",
+            path.join(dir, "user.tar.gz"),
+            p => progress(50 + p * 0.5)
+          )
+        )
+        .then(async () => {
+          const metadata = {
+            codename: await this.getDeviceName(),
+            serialno: await this.getSerialno(),
+            size:
+              (await this.getFileSize("/data/user-data")) +
+              (await this.getFileSize("/data/system-data")),
+            time,
+            comment: comment || `Ubuntu Touch backup created on ${time}`,
+            restorations: []
+          };
+          return fs
+            .writeFile(
+              path.join(dir, "metadata.json"),
+              JSON.stringify(metadata)
+            )
+            .then(() => ({ ...metadata, dir }))
+            .catch(e => {
+              throw new Error(`Failed to restore: ${e}`);
+            });
+        });
+    } catch (e) {
+      return Promise.reject(e);
+    }
   }
 
   /**
@@ -829,27 +831,37 @@ export class Adb extends Tool {
    * @param {Function} [progress] progress function
    * @returns {Promise<Object>} backup object
    */
-  async restoreUbuntuTouchBackup(dir, progress = () => {}) {
+  restoreUbuntuTouchBackup(dir, progress = () => {}) {
     progress(0); // FIXME report actual push progress
-    let metadata = await fs.readJSON(path.join(dir, "metadata.json"));
-    return this.ensureState("recovery")
-      .then(async () => {
-        metadata.restorations = metadata.restorations || [];
-        metadata.restorations.push({
-          codename: await this.getDeviceName(),
-          serialno: await this.getSerialno(),
-          time: new Date().toISOString()
-        });
+    return Promise.all([
+      fs
+        .readFile(path.join(dir, "metadata.json"))
+        .then(r => JSON.parse(r.toString())),
+      this.getDeviceName(),
+      this.getSerialno(),
+      new Date().toISOString(),
+      this.ensureState("recovery")
+    ])
+      .then(([metadata, codename, serialno, time]) => {
+        metadata.restorations = [
+          ...(metadata.restorations || []),
+          { codename, serialno, time }
+        ];
+        return Promise.resolve(progress(10))
+          .then(() => this.restoreBackupTar(path.join(dir, "system.tar.gz")))
+          .then(() => progress(50))
+          .then(() => this.restoreBackupTar(path.join(dir, "user.tar.gz")))
+          .then(() => progress(90))
+          .then(() =>
+            fs.writeFile(
+              path.join(dir, "metadata.json"),
+              JSON.stringify(metadata)
+            )
+          )
+          .then(() => this.reboot("system"))
+          .then(() => progress(100))
+          .then(() => ({ ...metadata, dir }));
       })
-      .then(() => progress(10))
-      .then(() => this.restoreBackupTar(path.join(dir, "system.tar.gz")))
-      .then(() => progress(50))
-      .then(() => this.restoreBackupTar(path.join(dir, "user.tar.gz")))
-      .then(() => progress(90))
-      .then(() => fs.writeJSON(path.join(dir, "metadata.json"), metadata))
-      .then(() => this.reboot("system"))
-      .then(() => progress(100))
-      .then(() => ({ ...metadata, dir }))
       .catch(e => {
         throw new Error(`Failed to restore: ${e}`);
       });

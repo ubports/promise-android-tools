@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
@@ -18,28 +18,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import child_process from "child_process";
-import { getAndroidToolPath, getAndroidToolBaseDir } from "android-tools-bin";
+import child_process, { ChildProcess } from "child_process";
 import EventEmitter from "events";
-import { removeFalsy } from "./common.js";
-import { CancelablePromise } from "./cancelable-promise.js";
+import { getAndroidToolPath, getAndroidToolBaseDir } from "android-tools-bin";
+import * as common from "./common.js";
+import assert from "assert";
+import { HierarchicalAbortController } from "./hierarchicalAbortController.js";
 
 /**
  * generic tool class
  * @property {String} tool tool identifier
  * @property {String} executable tool executable path
  * @property {Array<String>} extra extra cli arguments
- * @property {Object} execOptions options for child_process.exec
+ * @property {NodeJS.ProcessEnv} extraEnv extra environment variables
+ * @property {Config} config tool configuration
+ * @property {Array<String>} extraArgs extra cli arguments
+ * @property {ArgsModel} argsModel object describing arguments
+ * @property {HierarchicalAbortController} abortController abortSignal
  */
 export class Tool extends EventEmitter {
-  tool;
-  config = {};
-  flagsModel = {};
+  /** @type {Array<ChildProcess>} array of all running processes */
+  processes = [];
 
-  get flags() {
+  /** @type {Object.<string, string|undefined>} environment variables */
+  get env() {
+    return { ...process.env, ...this.extraEnv };
+  }
+
+  /** @type {Array<String>} cli arguments */
+  get args() {
     return [
-      ...this.extra,
-      ...Object.entries(this.flagsModel).map(
+      ...this.extraArgs,
+      ...Object.entries(this.argsModel).map(
         ([key, [flag, defaultValue, noArgs, overrideKey]]) =>
           this.config[key] !== defaultValue
             ? noArgs
@@ -50,19 +60,50 @@ export class Tool extends EventEmitter {
     ].flat();
   }
 
-  constructor(options = {}) {
+  /** @param {ToolOptions} param0 */
+  constructor({
+    tool,
+    signals = [],
+    extraArgs = [],
+    extraEnv = {
+      ADB_TRACE: "rwx"
+    },
+    setPath = false,
+    config = {},
+    argsModel = {},
+    ...options
+  }) {
     super();
-    this.tool = options?.tool;
-    this.executable = getAndroidToolPath(options?.tool);
-    this.extra = options?.extra || [];
-    this.execOptions = options?.execOptions || {};
-    this.processes = [];
-    if (
-      options.setPath &&
-      process.env.PATH &&
-      !process.env.PATH.includes(getAndroidToolBaseDir())
-    )
-      process.env.PATH = `${getAndroidToolBaseDir()}:${process.env.PATH}`;
+    assert(tool, "tool option is required");
+    this.tool = tool;
+    this.executable = getAndroidToolPath(this.tool);
+    this.abortController = new HierarchicalAbortController(...signals);
+    this.extraArgs = extraArgs;
+    this.extraEnv = extraEnv;
+    if (setPath) this.env.PATH = `${getAndroidToolBaseDir()}:${this.env.PATH}`;
+    this.config = config;
+    this.argsModel = argsModel;
+    this.applyConfig(options);
+    this.initializeArgs();
+  }
+
+  /**
+   * @param {...AbortSignal} signals
+   */
+  _withSignals(...signals) {
+    const ret = Object.create(this);
+    ret.abortController = new HierarchicalAbortController(
+      this.abortController.signal,
+      ...signals
+    );
+    ret.abortController.signal.addEventListener("abort", () =>
+      console.log("aborted")
+    );
+    return ret;
+  }
+
+  _withTimeout(msecs = 1000) {
+    return this._withSignals(AbortSignal.timeout(msecs));
   }
 
   /**
@@ -71,7 +112,7 @@ export class Tool extends EventEmitter {
    * @returns {Tool}
    */
   _withConfig(options) {
-    const ret = Object.create(this, Tool);
+    const ret = Object.create(this);
     ret.config = { ...this.config };
     for (const key in options) {
       if (Object.hasOwnProperty.call(options, key)) {
@@ -86,8 +127,8 @@ export class Tool extends EventEmitter {
    * ```
    * class MyTool extends Tool {
    *   config = { a: "b" }
-   *   flagsModel = { a: ["-a", "b"] }
-   *   constructor() { this.initializeFlags(); }
+   *   argsModel = { a: ["-a", "b"] }
+   *   constructor() { this.initializeArgs(); }
    * }
    * const tool = new MyTool({a: "a"});
    * tool.exec("arg", "--other-flag"); // tool will be called as "tool -a a arg --other-flag"
@@ -95,11 +136,11 @@ export class Tool extends EventEmitter {
    * tool.__a("c").exec("arg", "--other-flag"); // tool will be called as "tool -a c arg --other-flag"
    * tool.exec("arg", "--other-flag"); // tool will be called as "tool -a a arg --other-flag", because the original instance is not changed
    * ```
-   * @private
+   * @internal
    */
-  initializeFlags() {
-    for (const key in this.flagsModel) {
-      if (Object.hasOwn(this.flagsModel, key)) {
+  initializeArgs() {
+    for (const key in this.argsModel) {
+      if (Object.hasOwn(this.argsModel, key)) {
         this[`__${key}`] = function (val) {
           return this._withConfig({ [key]: val });
         };
@@ -109,9 +150,10 @@ export class Tool extends EventEmitter {
 
   /**
    * apply config options to the tool instance
-   * @param {Object} options config options
+   * @param {Config} options tool configuration config options
    */
   applyConfig(options) {
+    if (!options) return;
     for (const key in this.config) {
       if (
         Object.getOwnPropertyDescriptor(this.config, key)?.writable &&
@@ -132,21 +174,21 @@ export class Tool extends EventEmitter {
   /**
    * Execute a command. Used for short operations and operations that do not require real-time data access.
    * @param  {...any} args tool arguments
-   * @private
-   * @returns {CancelablePromise<String>} stdout
+   * @internal
+   * @returns {Promise<String>} stdout
    */
   exec(...args) {
     const _this = this;
-    return new CancelablePromise((resolve, reject, onCancel) => {
+    return new Promise((resolve, reject) => {
       const cp = child_process.execFile(
         _this.executable,
-        [..._this.flags, ...args],
-        _this.execOptions,
+        [..._this.args, ...args],
+        { encoding: "utf8", signal: this.abortController.signal },
         (error, stdout, stderr) => {
           _this.emit(
             "exec",
-            removeFalsy({
-              cmd: [_this.tool, ..._this.flags, ...args],
+            common.removeFalsy({
+              cmd: [_this.tool, ..._this.args, ...args],
               error: error
                 ? {
                     message: error?.message
@@ -172,35 +214,33 @@ export class Tool extends EventEmitter {
 
       this.processes.push(cp);
 
-      onCancel(() => {
-        if (!cp.kill("SIGTERM")) {
-          setTimeout(() => {
-            cp.kill("SIGKILL");
-          }, 25);
-        }
-      });
+      // onCancel(() => {
+      //   if (!cp.kill("SIGTERM")) {
+      //     setTimeout(() => {
+      //       cp.kill("SIGKILL");
+      //     }, 25);
+      //   }
+      // });
     });
   }
 
   /**
    * Spawn a child process. Used for long-running operations that require real-time data access.
    * @param  {...any} args tool arguments
-   * @private
+   * @internal
    * @returns {child_process.ChildProcess}
    */
   spawn(...args) {
     this.emit(
       "spawn:start",
-      removeFalsy({ cmd: [this.tool, ...this.flags, ...args].flat() })
+      common.removeFalsy({ cmd: [this.tool, ...this.args, ...args].flat() })
     );
     const cp = child_process.spawn(
       this.executable,
-      [...this.flags, ...args].flat(),
+      [...this.args, ...args].flat(),
       {
-        env: {
-          ...process.env,
-          ADB_TRACE: "rwx"
-        }
+        env: this.env,
+        signal: this.abortController.signal
       }
     );
     this.processes.push(cp);
@@ -208,8 +248,8 @@ export class Tool extends EventEmitter {
       this.processes.splice(this.processes.indexOf(cp), 1);
       this.emit(
         "spawn:exit",
-        removeFalsy({
-          cmd: [this.tool, ...this.flags, ...args].flat(),
+        common.removeFalsy({
+          cmd: [this.tool, ...this.args, ...args].flat(),
           code,
           signal
         })
@@ -218,8 +258,8 @@ export class Tool extends EventEmitter {
     cp.on("error", error =>
       this.emit(
         "spawn:error",
-        removeFalsy({
-          cmd: [this.tool, ...this.flags, ...args].flat(),
+        common.removeFalsy({
+          cmd: [this.tool, ...this.args, ...args].flat(),
           error
         })
       )
@@ -228,11 +268,10 @@ export class Tool extends EventEmitter {
   }
 
   /**
-   * Generate processable error messages from child_process.exec() callbacks
-   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * Generate processable error messages from child_process.exec() callbacks   * * @param {common.ExecException} error error returned by child_process.exec()
    * @param {String} stdout stdandard output
    * @param {String} stderr standard error
-   * @private
+   * @internal
    * @returns {String} error message
    */
   handleError(error, stdout, stderr) {
@@ -243,8 +282,8 @@ export class Tool extends EventEmitter {
       return "killed";
     } else {
       return JSON.stringify(
-        removeFalsy({
-          error: removeFalsy(error),
+        common.removeFalsy({
+          error: common.removeFalsy(error),
           stdout: stdout?.trim(),
           stderr: stderr?.trim()
         })
@@ -255,19 +294,19 @@ export class Tool extends EventEmitter {
   /**
    * Find out if a device can be seen
    * @virtual
-   * @returns {CancelablePromise<Boolean>} access?
+   * @returns {Promise<Boolean>} access?
    */
   hasAccess() {
-    return CancelablePromise.reject(new Error("virtual"));
+    return Promise.reject(new Error("virtual"));
   }
 
   /**
    * Wait for a device
-   * @returns {CancelablePromise}
+   * @returns {Promise}
    */
   wait() {
     var _this = this;
-    return new CancelablePromise(function (resolve, reject, onCancel) {
+    return new Promise(function (resolve, reject) {
       let timeout;
       function poll() {
         _this
@@ -275,7 +314,7 @@ export class Tool extends EventEmitter {
           .then(access => {
             if (access) {
               clearTimeout(timeout);
-              resolve();
+              resolve(null);
             } else {
               timeout = setTimeout(poll, 2000);
             }
@@ -285,9 +324,9 @@ export class Tool extends EventEmitter {
             reject(error);
           });
       }
-      onCancel(() => {
-        clearTimeout(timeout);
-      });
+      // onCancel(() => {
+      //   clearTimeout(timeout);
+      // });
       poll();
     });
   }

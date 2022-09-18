@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>

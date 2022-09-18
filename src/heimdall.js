@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2019-2022 UBports Foundation <info@ubports.com>
@@ -18,26 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import * as common from "./common.js";
 import { Tool } from "./tool.js";
-import { CancelablePromise } from "./cancelable-promise.js";
 
 /**
  * heimdall: flash firmware on samsung devices
  */
 export class Heimdall extends Tool {
   constructor(options) {
-    super({
-      tool: "heimdall",
-      ...options
-    });
+    super({ tool: "heimdall", ...options });
   }
 
   /**
    * Generate processable error messages from child_process.exec() callbacks
-   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {common.ExecException} error error returned by child_process.exec()
    * @param {String} stdout stdandard output
    * @param {String} stderr standard error
-   * @private
    * @returns {String} error message
    */
   handleError(error, stdout, stderr) {
@@ -78,7 +74,7 @@ export class Heimdall extends Tool {
 
   /**
    * Wait for a device
-   * @returns {CancelablePromise<String>}
+   * @returns {Promise<String>}
    */
   wait() {
     return super.wait().then(() => "download");
@@ -86,8 +82,8 @@ export class Heimdall extends Tool {
 
   /**
    * Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device.
-   * @param {String} file pit file to print
-   * @returns {Promise<String>}
+   * @param {String} [file] pit file to print
+   * @returns {Promise<string[]>}
    */
   printPit(file) {
     return this.exec("print-pit", ...(file ? ["--file", file] : []))
@@ -105,7 +101,7 @@ export class Heimdall extends Tool {
 
   /**
    * get partitions from pit file
-   * @returns {Promise<String>}
+   * @returns {Promise<{}[]>}
    */
   getPartitions() {
     return this.printPit().then(r =>

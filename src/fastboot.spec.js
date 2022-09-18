@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
@@ -53,8 +53,7 @@ describe("Fastboot module", function () {
       expect(fastboot).toExist;
       expect(fastboot.tool).toEqual("fastboot");
       expect(fastboot.executable).toMatch("fastboot");
-      expect(fastboot.flags).toEqual([]);
-      expect(fastboot.execOptions).toEqual({});
+      expect(fastboot.args).toEqual([]);
     });
     it("should construct fastboot with options", function () {
       const fastboot = new Fastboot({
@@ -74,7 +73,7 @@ describe("Fastboot module", function () {
       expect(fastboot).toExist;
       expect(fastboot.tool).toEqual("fastboot");
       expect(fastboot.executable).toMatch("fastboot");
-      expect(fastboot.flags).toEqual([
+      expect(fastboot.args).toEqual([
         "-w",
         "-s",
         1337,
@@ -93,7 +92,6 @@ describe("Fastboot module", function () {
         "casefold,projid,compress",
         "--unbuffered"
       ]);
-      expect(fastboot.execOptions).toEqual({});
     });
   });
 
@@ -114,9 +112,9 @@ describe("Fastboot module", function () {
     ].forEach(([flag, args]) =>
       it(`should have __${flag}`, function () {
         const fastboot = new Fastboot();
-        expect(fastboot.flags).toEqual([]);
-        expect(fastboot[`__${flag}`]("a").flags).toEqual(args);
-        expect(fastboot.flags).toEqual([]);
+        expect(fastboot.args).toEqual([]);
+        expect(fastboot[`__${flag}`]("a").args).toEqual(args);
+        expect(fastboot.args).toEqual([]);
       })
     );
   });

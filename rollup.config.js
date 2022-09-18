@@ -6,8 +6,7 @@ export default {
   },
   external: [
     "events",
-    "cancelable-promise",
-    "fs-extra",
+    "fs/promises",
     "path",
     "child_process",
     "android-tools-bin"

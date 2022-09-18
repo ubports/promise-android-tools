@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
@@ -23,26 +23,32 @@ import { Fastboot } from "./fastboot.js";
 import { Heimdall } from "./heimdall.js";
 
 import EventEmitter from "events";
-import { CancelablePromise } from "./cancelable-promise.js";
+import { HierarchicalAbortController } from "./hierarchicalAbortController.js";
 
 /**
  * A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.
+ * @property {HierarchicalAbortController} abortController abort controller
  */
 export class DeviceTools extends EventEmitter {
   /**
-   * @param {Object} [adbOptions] options for adb
-   * @param {Object} [fastbootOptions] options for fastboot
-   * @param {Object} [heimdallOptions] options for heimdall
+   * @param {Object} param0
+   * @param {ToolOptions} param0.adbOptions
+   * @param {ToolOptions} param0.fastbootOptions
+   * @param {ToolOptions} param0.heimdallOptions
+   * @param {AbortSignal[]} param0.signals
    */
-  constructor(
+  constructor({
     adbOptions = {},
-    fastbootOptions = adbOptions,
-    heimdallOptions = adbOptions
-  ) {
+    fastbootOptions = {},
+    heimdallOptions = {},
+    signals = []
+  }) {
     super();
-    this.adb = new Adb(adbOptions);
-    this.fastboot = new Fastboot(fastbootOptions);
-    this.heimdall = new Heimdall(heimdallOptions);
+    this.abortController = new HierarchicalAbortController(...signals);
+    signals = [this.abortController.signal];
+    this.adb = new Adb({ ...adbOptions, signals });
+    this.fastboot = new Fastboot({ ...fastbootOptions, signals });
+    this.heimdall = new Heimdall({ ...heimdallOptions, signals });
 
     ["adb", "fastboot", "heimdall"].forEach(tool => {
       this[tool].on("exec", r => this.emit("exec", r));
@@ -63,26 +69,26 @@ export class DeviceTools extends EventEmitter {
 
   /**
    * Wait for a device
-   * @returns {CancelablePromise<String>}
+   * @returns {Promise<String>}
    */
   wait() {
     const _this = this;
-    return new CancelablePromise(function (resolve, reject, onCancel) {
+    return new Promise(function (resolve, reject) {
       const waitPromises = [
         _this.adb.wait(),
         _this.fastboot.wait(),
         _this.heimdall.wait()
       ];
-      CancelablePromise.race(waitPromises)
+      Promise.race(waitPromises)
         .then(state => {
-          waitPromises.forEach(p => p.cancel());
+          waitPromises.forEach(p => "p.cancel()"); //FIXME;
           resolve(state);
         })
         .catch(() => {
           reject(new Error("no device"));
         });
 
-      onCancel(() => waitPromises.forEach(p => p.cancel()));
+      // onCancel(() => waitPromises.forEach(p => p.cancel()));
     });
   }
 

@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
@@ -18,77 +18,54 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import * as common from "./common.js";
 import { Tool } from "./tool.js";
 
 /**
  * fastboot android flashing and booting utility
+ * @property {FasbootConfig} config fastboot config
  */
 export class Fastboot extends Tool {
-  config = {
-    // -w                         Wipe userdata.
-    wipe: false,
-
-    //  -s <SERIAL|<tcp|udp:HOST[:PORT]>>   USB or network device
-    device: null,
-
-    // -S SIZE[K|M|G]             Break into sparse files no larger than SIZE.
-    maxSize: null,
-
-    // --force                    Force a flash operation that may be unsafe.
-    force: false,
-
-    // --slot SLOT                Use SLOT; 'all' for both slots, 'other' for non-current slot (default: current active slot).
-    slot: null,
-
-    // --set-active[=SLOT]        Sets the active slot before rebooting.
-    setActive: null,
-
-    // --skip-secondary           Don't flash secondary slots in flashall/update.
-    skipSecondary: false,
-
-    // --skip-reboot              Don't reboot device after flashing.
-    skipReboot: false,
-
-    // --disable-verity           Sets disable-verity when flashing vbmeta.
-    disableVerity: false,
-
-    // --disable-verification     Sets disable-verification when flashing vbmeta.
-    disableVerification: false,
-
-    // --fs-options=OPTION[,OPTION]   Enable filesystem features. OPTION supports casefold, projid, compress
-    fsOptions: null,
-
-    // --unbuffered               Don't buffer input or output.
-    unbuffered: false
-  };
-
-  flagsModel = {
-    wipe: ["-w", false, true],
-    device: ["-s", null],
-    maxSize: ["-S", null],
-    force: ["--force", false, true],
-    slot: ["--slot", null],
-    setActive: ["--set-active", null],
-    skipSecondary: ["--skip-secondary", false, true],
-    skipReboot: ["--skip-reboot", false, true],
-    disableVerity: ["--disable-verity", false, true],
-    disableVerification: ["--disable-verification", false, true],
-    fsOptions: ["--fs-options", null],
-    unbuffered: ["--unbuffered", false, true]
-  };
-
   constructor(options = {}) {
-    super({ tool: "fastboot", ...options });
-    this.applyConfig(options);
-    this.initializeFlags();
+    super({
+      tool: "fastboot",
+      argsModel: {
+        wipe: ["-w", false, true],
+        device: ["-s", null],
+        maxSize: ["-S", null],
+        force: ["--force", false, true],
+        slot: ["--slot", null],
+        setActive: ["--set-active", null],
+        skipSecondary: ["--skip-secondary", false, true],
+        skipReboot: ["--skip-reboot", false, true],
+        disableVerity: ["--disable-verity", false, true],
+        disableVerification: ["--disable-verification", false, true],
+        fsOptions: ["--fs-options", null],
+        unbuffered: ["--unbuffered", false, true]
+      },
+      config: {
+        wipe: false,
+        device: null,
+        maxSize: null,
+        force: false,
+        slot: null,
+        setActive: null,
+        skipSecondary: false,
+        skipReboot: false,
+        disableVerity: false,
+        disableVerification: false,
+        fsOptions: null,
+        unbuffered: false
+      },
+      ...options
+    });
   }
 
   /**
    * Generate processable error messages from child_process.exec() callbacks
-   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {common.ExecException} error error returned by child_process.exec()
    * @param {String} stdout stdandard output
    * @param {String} stderr standard error
-   * @private
    * @returns {String} error message
    */
   handleError(error, stdout, stderr) {
@@ -142,7 +119,7 @@ export class Fastboot extends Tool {
   /**
    * Write a file to a flash partition
    * @param {Array<FastbootFlashImage>} images Images to flash
-   * @param {Function} progress progress callback
+   * @param {common.progressCallback} progress progress callback
    * @returns {Promise}
    */
   flash(images, progress = () => {}) {
@@ -171,41 +148,45 @@ export class Fastboot extends Tool {
                   if (code || signal) {
                     reject(_this.handleError({ code, signal }, stdout, stderr));
                   } else {
-                    resolve();
+                    resolve("");
                   }
                 });
-                cp.stdout.on("data", d => (stdout += d.toString()));
-                cp.stderr.on("data", d => {
-                  d.toString()
-                    .trim()
-                    .split("\n")
-                    .forEach(str => {
-                      // FIXME improve and simplify logic
-                      if (!str.includes("OKAY")) {
-                        if (str.includes("Sending")) {
-                          try {
-                            if (str.includes("sparse")) {
-                              sparseCurr = parseInt(
-                                str.split("/")[0].split("' ")[1]
-                              );
-                              sparseTotal = parseInt(
-                                str.split("/")[1].split(" ")[0]
-                              );
-                            }
-                          } catch {}
-                          progress(
-                            offset + scale * ((sparseCurr * 0.3) / sparseTotal)
-                          );
-                        } else if (str.includes("Writing")) {
-                          progress(
-                            offset + scale * ((sparseCurr * 0.9) / sparseTotal)
-                          );
-                        } else if (!str.includes("Finished")) {
-                          stderr += str;
+                cp?.stdout &&
+                  cp.stdout.on("data", d => (stdout += d.toString()));
+                cp?.stderr &&
+                  cp.stderr.on("data", d => {
+                    d.toString()
+                      .trim()
+                      .split("\n")
+                      .forEach(str => {
+                        // FIXME improve and simplify logic
+                        if (!str.includes("OKAY")) {
+                          if (str.includes("Sending")) {
+                            try {
+                              if (str.includes("sparse")) {
+                                sparseCurr = parseInt(
+                                  str.split("/")[0].split("' ")[1]
+                                );
+                                sparseTotal = parseInt(
+                                  str.split("/")[1].split(" ")[0]
+                                );
+                              }
+                            } catch {}
+                            progress(
+                              offset +
+                                scale * ((sparseCurr * 0.3) / sparseTotal)
+                            );
+                          } else if (str.includes("Writing")) {
+                            progress(
+                              offset +
+                                scale * ((sparseCurr * 0.9) / sparseTotal)
+                            );
+                          } else if (!str.includes("Finished")) {
+                            stderr += str;
+                          }
                         }
-                      }
-                    });
-                });
+                      });
+                  });
               })
           ),
         _this.wait()
@@ -232,7 +213,7 @@ export class Fastboot extends Tool {
   /**
    * Reflash device from update.zip and set the flashed slot as active
    * @param {String} image image to flash
-   * @param {String} [wipe] wipe option
+   * @param {String|Boolean} [wipe] wipe option
    * @returns {Promise}
    */
   update(image, wipe = false) {
@@ -508,7 +489,7 @@ export class Fastboot extends Tool {
 
   /**
    * Wait for a device
-   * @returns {CancelablePromise<String>}
+   * @returns {Promise<String>}
    */
   wait() {
     return super.wait().then(() => "bootloader");

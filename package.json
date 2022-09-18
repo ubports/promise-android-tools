@@ -35,15 +35,16 @@
   ],
   "homepage": "https://github.com/ubports/promise-android-tools#readme",
   "dependencies": {
-    "android-tools-bin": "^1.0.7",
-    "cancelable-promise": "^3.2.3",
-    "fs-extra": "^10.1.0"
+    "android-tools-bin": "^1.0.8"
   },
   "devDependencies": {
+    "@types/jest": "^29.0.3",
     "cross-env": "^7.0.3",
-    "jest": "^27.5.1",
+    "jest": "^29.0.3",
     "jsdoc": "^3.6.11",
     "prettier": "^2.7.1",
-    "rollup": "^2.79.0"
+    "rollup": "^2.79.0",
+    "ts-jest": "^29.0.1",
+    "typescript": "^4.8.3"
   }
 }

@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2019-2022 UBports Foundation <info@ubports.com>
@@ -107,8 +107,7 @@ describe("Heimdall module", function () {
       expect(heimdall).toExist;
       expect(heimdall.tool).toEqual("heimdall");
       expect(heimdall.executable).toMatch("heimdall");
-      expect(heimdall.extra).toEqual([]);
-      expect(heimdall.execOptions).toEqual({});
+      expect(heimdall.extraArgs).toEqual([]);
     });
   });
   describe("basic functions", function () {

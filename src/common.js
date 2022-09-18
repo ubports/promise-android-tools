@@ -1,4 +1,4 @@
-"use strict";
+// @ts-check
 
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
@@ -36,3 +36,19 @@ export function removeFalsy(obj) {
   }
   return Object.keys(obj).length ? obj : null;
 }
+
+/**
+ * @typedef ExecException
+ * @property {Number | null} [code]
+ * @property {NodeJS.Signals | null} [signal]
+ * @property {String} [message]
+ */
+
+/**
+ * This callback type is called `requestCallback` and is displayed as a global symbol.
+ *
+ * @callback progressCallback
+ * @param {number} percentage
+ */
+
+// @type {import('child_process').ExecException}
