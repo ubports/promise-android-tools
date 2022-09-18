@@ -101,7 +101,11 @@ describe("Tool module", function () {
           expect(child_process.execFile).toHaveBeenCalledWith(
             tool.executable,
             [...tool.extraArgs, ...args],
-            { encoding: "utf8" },
+            {
+              encoding: "utf8",
+              signal: expect.any(AbortSignal),
+              env: expect.any(Object)
+            },
             expect.any(Function)
           );
         });
@@ -221,7 +225,10 @@ describe("Tool module", function () {
             expect(child_process.spawn).toHaveBeenCalledWith(
               tool.executable,
               [...tool.extraArgs, ...args],
-              { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
+              {
+                env: expect.objectContaining({ ADB_TRACE: "rwx" }),
+                signal: expect.any(AbortSignal)
+              }
             );
             expect(spawnStartListenerStub).toHaveBeenCalledWith({
               cmd: [tool.tool, ...tool.extraArgs, ...args]

@@ -497,7 +497,10 @@ describe("Adb module", function () {
           expect(child_process.spawn).toHaveBeenCalledWith(
             adb.executable,
             ["sideload", "tests/test-data/test_file"],
-            { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
+            {
+              env: expect.objectContaining({ ADB_TRACE: "rwx" }),
+              signal: expect.any(AbortSignal)
+            }
           );
         });
       });

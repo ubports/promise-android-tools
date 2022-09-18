@@ -183,7 +183,11 @@ export class Tool extends EventEmitter {
       const cp = child_process.execFile(
         _this.executable,
         [..._this.args, ...args],
-        { encoding: "utf8", signal: this.abortController.signal },
+        {
+          encoding: "utf8",
+          signal: this.abortController.signal,
+          env: this.env
+        },
         (error, stdout, stderr) => {
           _this.emit(
             "exec",

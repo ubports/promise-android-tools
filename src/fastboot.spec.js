@@ -182,7 +182,10 @@ describe("Fastboot module", function () {
             expect(child_process.spawn).toHaveBeenCalledWith(
               fastboot.executable,
               ["flash", "boot", "/path/to/boot.img"],
-              { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
+              {
+                env: expect.objectContaining({ ADB_TRACE: "rwx" }),
+                signal: expect.any(AbortSignal)
+              }
             );
             expect(child_process.spawn).toHaveBeenCalledWith(
               fastboot.executable,
@@ -193,7 +196,10 @@ describe("Fastboot module", function () {
                 "--disable-verity",
                 "/path/to/recovery.img"
               ],
-              { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
+              {
+                env: expect.objectContaining({ ADB_TRACE: "rwx" }),
+                signal: expect.any(AbortSignal)
+              }
             );
             expect(progress).toHaveBeenCalledWith(0);
             expect(progress).toHaveBeenCalledWith(0.15);
@@ -243,7 +249,10 @@ describe("Fastboot module", function () {
               expect(child_process.spawn).toHaveBeenCalledWith(
                 fastboot.executable,
                 ["flash", "boot", "/path/to/image"],
-                { env: expect.objectContaining({ ADB_TRACE: "rwx" }) }
+                {
+                  env: expect.objectContaining({ ADB_TRACE: "rwx" }),
+                  signal: expect.any(AbortSignal)
+                }
               );
               done();
             });
