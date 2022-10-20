@@ -1,5 +1,3 @@
-// @ts-check
-
 /*
  * Copyright (C) 2017-2022 UBports Foundation <info@ubports.com>
  * Copyright (C) 2017-2022 Johannah Sprinz <hannah@ubports.com>
@@ -18,37 +16,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * Remove falsy values
- * @param {Object} obj object to process
- */
-export function removeFalsy(obj) {
-  if (typeof obj !== "object" || Array.isArray(obj)) return obj;
-  for (var i in obj) {
-    if (!obj[i]) {
-      delete obj[i];
-    } else {
-      obj[i] = removeFalsy(obj[i]);
-      if (!obj[i]) {
-        delete obj[i];
-      }
+import test from "ava";
+
+import * as common from "./common.js";
+
+test("removeFalsy()", async t => {
+  t.deepEqual(
+    common.removeFalsy({
+      a: "a",
+      b: "",
+      c: 0,
+      d: null,
+      e: undefined,
+      f: { test: "this" },
+      g: 1337,
+      h: {},
+      i: { test: null },
+      j: ["a", "b"],
+      k: { foo: { bar: null }, baz: true, brz: {} },
+      l: " ",
+      m: "\n",
+      n: "\r\n",
+      o: " \n\r\n"
+    }),
+    {
+      a: "a",
+      f: { test: "this" },
+      g: 1337,
+      j: ["a", "b"],
+      k: { baz: true }
     }
-  }
-  return Object.keys(obj).length ? obj : null;
-}
-
-/**
- * @typedef ExecException
- * @property {Number | null} [code]
- * @property {NodeJS.Signals | null} [signal]
- * @property {String} [message]
- */
-
-/**
- * This callback type is called `requestCallback` and is displayed as a global symbol.
- *
- * @callback progressCallback
- * @param {number} percentage
- */
-
-// @type {import('child_process').ExecException}
+  );
+});

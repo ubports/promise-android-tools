@@ -1,5 +1,3 @@
-// @ts-check
-
 /*
  * Copyright (C) 2019-2022 UBports Foundation <info@ubports.com>
  * Copyright (C) 2019-2022 Johannah Sprinz <hannah@ubports.com>
@@ -18,8 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as common from "./common.js";
-import { Tool } from "./tool.js";
+import { ExecException } from "child_process";
+import { Tool, ToolOptions } from "./tool.js";
+
+export type HeimdallOptions = ToolOptions | {};
 
 /**
  * heimdall: flash firmware on samsung devices
@@ -29,14 +29,8 @@ export class Heimdall extends Tool {
     super({ tool: "heimdall", ...options });
   }
 
-  /**
-   * Generate processable error messages from child_process.exec() callbacks
-   * @param {common.ExecException} error error returned by child_process.exec()
-   * @param {String} stdout stdandard output
-   * @param {String} stderr standard error
-   * @returns {String} error message
-   */
-  handleError(error, stdout, stderr) {
+  /** Generate processable error messages from child_process.exec() callbacks */
+  handleError(error?: ExecException | {}, stdout?: string, stderr?: string) {
     if (
       stderr?.includes(
         "ERROR: Failed to detect compatible download-mode device."
@@ -48,19 +42,13 @@ export class Heimdall extends Tool {
     }
   }
 
-  /**
-   * Find out if a device in download mode can be seen by heimdall
-   * @returns {Promise<Boolean>}
-   */
-  detect() {
+  /** Find out if a device in download mode can be seen by heimdall */
+  detect(): Promise<boolean> {
     return this.hasAccess();
   }
 
-  /**
-   * Find out if a device in download mode can be seen by heimdall
-   * @returns {Promise<Boolean>}
-   */
-  hasAccess() {
+  /** Find out if a device in download mode can be seen by heimdall */
+  hasAccess(): Promise<boolean> {
     return this.exec("detect")
       .then(() => true)
       .catch(error => {
@@ -72,20 +60,13 @@ export class Heimdall extends Tool {
       });
   }
 
-  /**
-   * Wait for a device
-   * @returns {Promise<String>}
-   */
-  wait() {
+  /** Wait for a device */
+  wait(): Promise<"download"> {
     return super.wait().then(() => "download");
   }
 
-  /**
-   * Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device.
-   * @param {String} [file] pit file to print
-   * @returns {Promise<string[]>}
-   */
-  printPit(file) {
+  /** Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device. */
+  printPit(file?: string): Promise<string[]> {
     return this.exec("print-pit", ...(file ? ["--file", file] : []))
       .then(r =>
         r
@@ -99,11 +80,8 @@ export class Heimdall extends Tool {
       });
   }
 
-  /**
-   * get partitions from pit file
-   * @returns {Promise<{}[]>}
-   */
-  getPartitions() {
+  /** get partitions from pit file */
+  getPartitions(): Promise<{}[]> {
     return this.printPit().then(r =>
       r.map(r =>
         r
@@ -117,22 +95,12 @@ export class Heimdall extends Tool {
     );
   }
 
-  /**
-   * @typedef HeimdallFlashImage
-   * @property {String} partition partition to flash
-   * @property {String} file path to an image file
-   */
-
-  /**
-   * Flash firmware files to partitions (names or identifiers)
-   * @param {Array<HeimdallFlashImage>} images Images to flash
-   * @returns {Promise}
-   */
-  flash(images) {
+  /** Flash firmware files to partitions (names or identifiers) */
+  flash(images: { partition: string; file: string }[]): Promise<void> {
     // TODO report progress similar to fastboot.flash()
     return this.exec(
       "flash",
       ...images.map(i => [`--${i.partition}`, i.file]).flat()
-    ).then(() => null);
+    ).then(() => {});
   }
 }

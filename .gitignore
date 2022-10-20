@@ -71,4 +71,4 @@ docs
 test
 
 # ignore playground
-example.js
+example.*s

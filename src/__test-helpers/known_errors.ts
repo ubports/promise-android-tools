@@ -1,4 +1,14 @@
-export const genericErrors = tool => [
+interface KnownError {
+  expectedReturn: string;
+  error?: any;
+  stdout?: string;
+  stderr?: string;
+}
+
+export const genericErrors = (tool: string): KnownError[] => [
+  {
+    expectedReturn: "null"
+  },
   {
     expectedReturn: "killed",
     error: { killed: false, code: 1, signal: null, cmd: "command" },
@@ -24,7 +34,7 @@ export const genericErrors = tool => [
   }
 ];
 
-export const adbErrors = [
+export const adbErrors: KnownError[] = [
   ...genericErrors("adb"),
   {
     expectedReturn: "no device",
@@ -74,7 +84,7 @@ export const adbErrors = [
   }
 ];
 
-export const fastbootErrors = [
+export const fastbootErrors: KnownError[] = [
   ...genericErrors("fastboot"),
   {
     expectedReturn: "bootloader locked",
@@ -217,7 +227,7 @@ export const fastbootErrors = [
   }
 ];
 
-export const heimdallErrors = [
+export const heimdallErrors: KnownError[] = [
   ...genericErrors("heimdall"),
   {
     expectedReturn: "no device",

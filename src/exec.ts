@@ -1,5 +1,3 @@
-// @ts-check
-
 /*
  * Copyright (C) 2022 UBports Foundation <info@ubports.com>
  * Copyright (C) 2022 Johannah Sprinz <hannah@ubports.com>
@@ -18,19 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export class HierarchicalAbortController extends AbortController {
-  /** @param {...AbortSignal} signals */
-  constructor(...signals) {
-    super();
-    this.listen(...signals);
-  }
+import { execFile } from "child_process";
+import { promisify } from "util";
 
-  /** @param {...AbortSignal} signals */
-  listen(...signals) {
-    for (const signal of signals) {
-      if (signal.aborted) return this.abort();
-      // @ts-ignore
-      signal.addEventListener("abort", this.abort.bind(this));
-    }
-  }
-}
+export const exec = promisify(execFile);
+export { spawn, ChildProcess, ExecException } from "child_process";

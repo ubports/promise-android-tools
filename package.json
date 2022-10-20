@@ -3,11 +3,12 @@
   "version": "4.0.14",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "main": "./lib/module.cjs",
+  "types": "./lib/module.d.ts",
   "type": "module",
   "scripts": {
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --coverage",
+    "test": "npx c8 -r text -r html --all --src src/ -x \"**/*.spec.ts\" -x src/__test-helpers ava src/*.spec.ts",
     "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none --end-of-line=lf -uw",
-    "docs": "npx jsdoc -c jsdoc-config.json",
+    "docs": "npx typedoc",
     "build": "npx rollup -c"
   },
   "files": [
@@ -34,17 +35,28 @@
     "ubuntu-touch"
   ],
   "homepage": "https://github.com/ubports/promise-android-tools#readme",
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ]
+  },
   "dependencies": {
-    "android-tools-bin": "^1.0.8"
+    "android-tools-bin": "^1.0.8",
+    "typescript-mix": "^3.1.3"
   },
   "devDependencies": {
-    "@types/jest": "^29.0.3",
-    "cross-env": "^7.0.3",
-    "jest": "^29.0.3",
-    "jsdoc": "^3.6.11",
+    "@ava/typescript": "^3.0.1",
+    "ava": "^4.3.3",
+    "c8": "^7.12.0",
     "prettier": "^2.7.1",
     "rollup": "^2.79.0",
-    "ts-jest": "^29.0.1",
-    "typescript": "^4.8.3"
+    "testdouble": "^3.16.6",
+    "ts-node": "^10.9.1",
+    "typedoc": "^0.23.17",
+    "typedoc-plugin-markdown": "^3.13.6",
+    "typescript": "^4.8.4"
   }
 }
