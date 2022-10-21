@@ -124,7 +124,11 @@ export class Adb extends Tool {
   }
 
   /** Generate processable error messages from child_process.exec() callbacks */
-  handleError(error?: ExecException | {}, stdout?: string, stderr?: string) {
+  public handleError(
+    error?: ExecException | {},
+    stdout?: string,
+    stderr?: string
+  ): string {
     if (
       stderr?.includes("error: device unauthorized") ||
       stderr?.includes("error: device still authorizing")
@@ -160,7 +164,7 @@ export class Adb extends Tool {
    * @param options - new config options to apply
    * @param serialOrUsbId - applies the --one-device SERIAL|USB flag, server will only connect to one USB device, specified by a serial number or USB device address
    */
-  startServer(
+  public async startServer(
     options: AdbOptions = {},
     serialOrUsbId?: string | number
   ): Promise<void> {
@@ -176,12 +180,12 @@ export class Adb extends Tool {
   }
 
   /** Kill all running servers */
-  killServer(): Promise<void> {
+  public async killServer(): Promise<void> {
     return this.exec("kill-server").then(() => {});
   }
 
   /** Specifically connect to a device (tcp) */
-  connect(address: string): Promise<ActualDeviceState> {
+  public async connect(address: string): Promise<ActualDeviceState> {
     return this.exec("connect", address).then(stdout => {
       if (
         stdout?.includes("no devices/emulators found") ||
@@ -195,7 +199,9 @@ export class Adb extends Tool {
   }
 
   /** kick connection from host side to force reconnect */
-  reconnect(modifier?: "device" | "offline"): Promise<ActualDeviceState> {
+  public async reconnect(
+    modifier?: "device" | "offline"
+  ): Promise<ActualDeviceState> {
     return this.exec("reconnect", modifier).then(stdout => {
       if (
         stdout?.includes("no devices/emulators found") ||
@@ -209,17 +215,17 @@ export class Adb extends Tool {
   }
 
   /** kick connection from device side to force reconnect */
-  reconnectDevice(): Promise<string> {
+  public async reconnectDevice(): Promise<string> {
     return this.reconnect("device");
   }
 
   /** reset offline/unauthorized devices to force reconnect */
-  reconnectOffline(): Promise<string> {
+  public async reconnectOffline(): Promise<string> {
     return this.reconnect("offline");
   }
 
   /** list devices */
-  devices(): Promise<Device[]> {
+  public async devices(): Promise<Device[]> {
     return this.exec("devices", "-l")
       .then(r => r.replace("List of devices attached", "").trim())
       .then(r => r.split("\n").map(device => device.trim().split(/\s+/)))
@@ -240,7 +246,7 @@ export class Adb extends Tool {
   }
 
   /** Get the devices serial number */
-  getSerialno(): Promise<string> {
+  public async getSerialno(): Promise<string> {
     return this.exec("get-serialno").then(stdout => {
       if (!stdout || stdout?.includes("unknown") || !SERIALNO.test(stdout)) {
         throw new Error(`invalid serial number: ${stdout?.trim()}`);
@@ -254,7 +260,7 @@ export class Adb extends Tool {
    * run remote shell command
    * @returns stdout
    */
-  shell(...args: (string | number)[]): Promise<string> {
+  public async shell(...args: (string | number)[]): Promise<string> {
     return this.exec("shell", args.join(" ")).then(stdout => stdout?.trim());
   }
 
@@ -293,22 +299,17 @@ export class Adb extends Tool {
     return Math.min(Math.round((current / total) * 100000) / 100000, 1);
   }
 
-  /**
-   * copy local files/directories to device
-   * @param files path to files
-   * @param dest destination path on the device
-   * @param progress progress function
-   */
-  async push(
+  private async spawnFileTransfer(
+    command: string,
     files: string[] = [],
-    dest: string,
+    args: string[] = [],
     progress: common.ProgressCallback = () => {}
   ): Promise<void> {
     progress(0);
     if (!files?.length) {
       // if there are no files, report 100% and resolve
       progress(1);
-      return Promise.resolve();
+      return;
     } else {
       const _this = this;
       return new Promise((resolve, reject) => {
@@ -325,7 +326,7 @@ export class Adb extends Tool {
         let stderr = "";
         const cp = _this
           ._withEnv({ ADB_TRACE: "rwx" })
-          .spawn("push", ...files, dest);
+          .spawn(command, ...files, ...args);
         cp.once("exit", (code, signal) =>
           resolve(_this.onCpExit(code, signal, stdout, stderr))
         );
@@ -354,46 +355,29 @@ export class Adb extends Tool {
   }
 
   /**
+   * copy local files/directories to device
+   * @param files path to files
+   * @param dest destination path on the device
+   * @param progress progress function
+   */
+  public async push(
+    files: string[] = [],
+    dest: string,
+    progress: common.ProgressCallback = () => {}
+  ): Promise<void> {
+    return this.spawnFileTransfer("push", files, [dest], progress);
+  }
+
+  /**
    * sideload an ota package
    * @param file - path to a file to sideload
    * @param progress progress function
    */
-  sideload(
+  public async sideload(
     file: string,
     progress: common.ProgressCallback = () => {}
   ): Promise<void> {
-    progress(0);
-    const totalSize = stat(file).then(({ size }) => size);
-    let pushedSize = 0;
-    const _this = this;
-    return new Promise((resolve, reject) => {
-      let stdout = "";
-      let stderr = "";
-      const cp = _this._withEnv({ ADB_TRACE: "rwx" }).spawn("sideload", file);
-      cp.once("exit", (code, signal) =>
-        resolve(_this.onCpExit(code, signal, stdout, stderr))
-      );
-
-      cp?.stdout?.on && cp.stdout.on("data", d => (stdout += d.toString()));
-      cp?.stderr?.on &&
-        cp.stderr.on("data", d => {
-          d.toString()
-            .split("\n")
-            .forEach(async str => {
-              if (!str.includes("cpp")) {
-                stderr += str;
-              } else {
-                pushedSize += _this.parseChunkSize(str);
-                progress(
-                  _this.normalizeProgress(
-                    pushedSize,
-                    (await totalSize) as number
-                  )
-                );
-              }
-            });
-        });
-    });
+    return this.spawnFileTransfer("sideload", [file], [], progress);
   }
 
   /**
@@ -403,7 +387,7 @@ export class Adb extends Tool {
    * into recovery and automatically starts sideload mode,
    * sideload-auto-reboot is the same but reboots after sideloading.
    */
-  reboot(state?: RebootState): Promise<void> {
+  public async reboot(state?: RebootState): Promise<void> {
     return this.exec("reboot", state).then(stdout => {
       if (stdout?.includes("failed"))
         throw new Error(`reboot failed: ${stdout}`);
@@ -412,7 +396,7 @@ export class Adb extends Tool {
   }
 
   /** Return the status of the device */
-  getState(): Promise<ActualDeviceState> {
+  public async getState(): Promise<ActualDeviceState> {
     return this.exec("get-state").then(
       stdout => stdout.trim() as ActualDeviceState
     );
@@ -423,7 +407,7 @@ export class Adb extends Tool {
   //////////////////////////////////////////////////////////////////////////////
 
   /** Reboot to a requested state, if not already in it */
-  async ensureState(state: DeviceState): Promise<ActualDeviceState> {
+  public async ensureState(state: DeviceState): Promise<ActualDeviceState> {
     return this.getState().then(currentState =>
       currentState === state
         ? state
@@ -432,7 +416,7 @@ export class Adb extends Tool {
   }
 
   /** read property from getprop or, failing that, the default.prop file */
-  getprop(prop: string): Promise<string> {
+  public async getprop(prop: string): Promise<string> {
     return this.shell("getprop", prop).then(stdout => {
       if (!stdout || stdout?.includes("not found")) {
         return this.shell("cat", "default.prop")
@@ -453,12 +437,12 @@ export class Adb extends Tool {
   }
 
   /** get device codename from getprop or by reading the default.prop file */
-  getDeviceName(): Promise<string> {
+  public async getDeviceName(): Promise<string> {
     return this.getprop("ro.product.device");
   }
 
   /** resolves true if recovery is system-image capable, false otherwise */
-  getSystemImageCapability(): Promise<boolean> {
+  public async getSystemImageCapability(): Promise<boolean> {
     return this.getprop("ro.ubuntu.recovery")
       .then(r => Boolean(r))
       .catch(e => {
@@ -471,14 +455,14 @@ export class Adb extends Tool {
   }
 
   /** Find out what operating system the device is running (currently android and ubuntu touch) */
-  getOs(): Promise<"ubuntutouch" | "android"> {
+  public async getOs(): Promise<"ubuntutouch" | "android"> {
     return this.shell("cat", "/etc/system-image/channel.ini").then(stdout => {
       return stdout ? "ubuntutouch" : "android";
     });
   }
 
   /** Find out if a device can be seen by adb */
-  hasAccess(): Promise<boolean> {
+  public async hasAccess(): Promise<boolean> {
     return this.shell("echo", ".")
       .then(stdout => {
         if (stdout == ".") return true;
@@ -494,7 +478,7 @@ export class Adb extends Tool {
   }
 
   /** wait for a device, optionally limiting to specific states or transport types */
-  wait(
+  public async wait(
     state: WaitState = "any",
     transport: "any" | "usb" | "local" = "any"
   ): Promise<ActualDeviceState> {
@@ -504,7 +488,7 @@ export class Adb extends Tool {
   }
 
   /** Format partition */
-  format(partition: string): Promise<void> {
+  public async format(partition: string): Promise<void> {
     return this.shell("cat", "/etc/recovery.fstab")
       .then(fstab => {
         const block = this.findPartitionInFstab(partition, fstab);
@@ -522,14 +506,14 @@ export class Adb extends Tool {
   }
 
   /** Format cache if possible and rm -rf its contents */
-  async wipeCache(): Promise<void> {
+  public async wipeCache(): Promise<void> {
     await this.format("cache").catch(() => {});
     await this.shell("rm", "-rf", "/cache/*");
     return;
   }
 
   /** Find the partition associated with a mountpoint in an fstab */
-  findPartitionInFstab(partition: string, fstab: string): string {
+  private findPartitionInFstab(partition: string, fstab: string): string {
     try {
       return fstab
         .split("\n")
@@ -544,7 +528,10 @@ export class Adb extends Tool {
   }
 
   /** Find a partition and verify its type */
-  verifyPartitionType(partition: string, type: string): Promise<boolean> {
+  public async verifyPartitionType(
+    partition: string,
+    type: string
+  ): Promise<boolean> {
     return this.shell("mount").then(stdout => {
       if (
         !(stdout.includes(" on /") && stdout.includes(" type ")) ||
@@ -559,7 +546,7 @@ export class Adb extends Tool {
   }
 
   /** size of a file or directory */
-  getFileSize(file: string): Promise<number> {
+  public async getFileSize(file: string): Promise<number> {
     return this.shell("du -shk " + file)
       .then(size => {
         if (isNaN(parseFloat(size)))
@@ -572,7 +559,7 @@ export class Adb extends Tool {
   }
 
   /** available size of a partition */
-  getAvailablePartitionSize(partition: string): Promise<number> {
+  public async getAvailablePartitionSize(partition: string): Promise<number> {
     return this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
       .then(arr => parseInt(arr[arr.length - 3]))
@@ -586,7 +573,7 @@ export class Adb extends Tool {
   }
 
   /** total size of a partition */
-  getTotalPartitionSize(partition: string): Promise<number> {
+  public async getTotalPartitionSize(partition: string): Promise<number> {
     return this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
       .then(arr => parseInt(arr[arr.length - 5]))
@@ -600,7 +587,7 @@ export class Adb extends Tool {
   }
 
   /** [EXPERIMENTAL] Run a command via adb exec-out and pipe the result to a stream, e.g., from fs.createWriteStream() */
-  execOut(
+  public async execOut(
     writableStream: WriteStream,
     ...args: (string | number | null | undefined)[]
   ): Promise<void> {
@@ -620,7 +607,7 @@ export class Adb extends Tool {
   }
 
   /** [EXPERIMENTAL] Backup "srcfile" from the device to local tar "destfile" */
-  async createBackupTar(
+  public async createBackupTar(
     srcfile: string,
     destfile: string,
     progress: common.ProgressCallback
@@ -629,13 +616,13 @@ export class Adb extends Tool {
     const fileSize = this.getFileSize(srcfile);
     // FIXME with gzip compression (the -z flag on tar), the progress estimate is way off. It's still beneficial to enable it, because it saves a lot of space.
     let timeout: NodeJS.Timeout;
-    async function poll() {
+    const poll = async () => {
       try {
         const { size } = await stat(destfile);
-        progress(size / 1024 / (await fileSize));
+        progress(this.normalizeProgress(size / 1024, await fileSize));
       } catch (e) {}
-      timeout = setTimeout(poll, 1000);
-    }
+      timeout = setTimeout(poll, 500);
+    };
     poll();
     return open(destfile, "w")
       .then(f =>
@@ -657,7 +644,7 @@ export class Adb extends Tool {
   }
 
   /** [EXPERIMENTAL] Restore tar "srcfile" */
-  restoreBackupTar(
+  public async restoreBackupTar(
     srcfile: string,
     progress: common.ProgressCallback = () => {}
   ): Promise<void> {
@@ -682,7 +669,7 @@ export class Adb extends Tool {
    * @param backupBaseDir path to backup storage location
    * @returns backup list
    */
-  listUbuntuBackups(backupBaseDir: string): Promise<{}[]> {
+  public async listUbuntuBackups(backupBaseDir: string): Promise<{}[]> {
     return readdir(backupBaseDir)
       .then(backups =>
         Promise.all(
@@ -708,7 +695,7 @@ export class Adb extends Tool {
    * @param progress progress function
    * @returns backup object
    */
-  async createUbuntuTouchBackup(
+  public async createUbuntuTouchBackup(
     backupBaseDir: string,
     comment: string = "",
     dataPartition: string = "/data",
@@ -763,7 +750,7 @@ export class Adb extends Tool {
    * @param progress progress function
    * @returns backup object
    */
-  async restoreUbuntuTouchBackup(
+  public async restoreUbuntuTouchBackup(
     dir: string,
     progress: common.ProgressCallback = () => {}
   ): Promise<{}> {

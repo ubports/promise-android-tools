@@ -312,16 +312,14 @@ export class Fastboot extends Tool {
   }
 
   /** Format a flash partition. Can override the fs type and/or size the bootloader reports */
-  format(
+  async format(
     partition: string,
     type?: string,
     size?: string | number
   ): Promise<void> {
     if (!type && size) {
-      return Promise.reject(
-        new Error(
-          "formatting failed: size specification requires type to be specified as well"
-        )
+      throw new Error(
+        "formatting failed: size specification requires type to be specified as well"
       );
     }
     return this.exec(

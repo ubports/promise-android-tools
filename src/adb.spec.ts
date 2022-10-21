@@ -420,13 +420,6 @@ test("wait()", async t => {
 
 testrecoveryfstabs.forEach(device => {
   device.partitions.forEach(partition => {
-    test(`findPartitionInFstab() for ${partition.mountpoint} for ${device.device}`, async t => {
-      const [[adb]] = fake()([device.fstab, "", 0]);
-      t.is(
-        await adb.findPartitionInFstab(partition.mountpoint, device.fstab),
-        partition.partition
-      );
-    });
     test(`format() should resolve ${partition.mountpoint} for ${device.device}`, async t => {
       const [[adb]] = fake()(["", "", 0]);
       td.replace(adb, "shell");
@@ -445,13 +438,6 @@ testrecoveryfstabs.forEach(device => {
           "failed to format data: Error: failed to mount: /dev/block/data /data"
       });
     });
-  });
-});
-
-test("findPartitionInFstab() should throw on error", async t => {
-  const [[adb]] = fake()(["", "", 0]);
-  t.throws(() => adb.findPartitionInFstab("data", ""), {
-    message: "failed to parse fstab"
   });
 });
 
@@ -523,7 +509,7 @@ test("createBackupTar()", async t => {
   t.falsy(await adb.createBackupTar("/cache", dest, progress));
   t.is(await readFile(dest, { encoding: "utf8" }), "1\n");
   td.verify(progress(0));
-  td.verify(progress(0.001953125));
+  td.verify(progress(0.00195));
 });
 
 test("restoreBackupTar() should resolve", async t => {
