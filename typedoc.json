@@ -1,5 +1,5 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["./src/*.ts"],
-  "exclude": ["**/*.spec.js"]
+  "entryPoints": ["./src/module.ts"],
+  "exclude": ["**/*.spec.ts"]
 }
