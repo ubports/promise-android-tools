@@ -19,8 +19,8 @@ export const createFile = async (
 /** create temporary sandbox dir */
 export const create = async (prefix = DEFAULT_PREFIX): Promise<string> => {
   const baseDir = base(prefix);
-  await mkdir(base(prefix), { recursive: true });
-  return mkdtemp(base(prefix));
+  await mkdir(baseDir, { recursive: true });
+  return mkdtemp(baseDir);
 };
 
 /** rm all temporary sandbox dirs */

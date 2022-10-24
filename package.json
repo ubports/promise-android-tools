@@ -1,6 +1,6 @@
 {
   "name": "promise-android-tools",
-  "version": "4.0.14",
+  "version": "5.0.0",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "main": "./lib/module.cjs",
   "types": "./lib/module.d.ts",
@@ -9,7 +9,8 @@
     "test": "npx c8 -r text -r html --all --src src/ -x \"**/*.spec.ts\" -x src/__test-helpers ava src/*.spec.ts",
     "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none --end-of-line=lf -uw",
     "docs": "npx typedoc",
-    "build": "npx rollup -c"
+    "build": "npm run clean && npx tsc --build",
+    "clean": "npx tsc --build --clean"
   },
   "files": [
     "lib/module.cjs",
@@ -44,19 +45,18 @@
     ]
   },
   "dependencies": {
-    "android-tools-bin": "^1.0.8",
+    "android-tools-bin": "^2.0.0",
+    "tslib": "^2.4.0",
     "typescript-mix": "^3.1.3"
   },
   "devDependencies": {
     "@ava/typescript": "^3.0.1",
-    "ava": "^4.3.3",
+    "ava": "^5.0.1",
     "c8": "^7.12.0",
     "prettier": "^2.7.1",
-    "rollup": "^2.79.0",
     "testdouble": "^3.16.6",
     "ts-node": "^10.9.1",
-    "typedoc": "^0.23.17",
-    "typedoc-plugin-markdown": "^3.13.6",
+    "typedoc": "^0.23.18",
     "typescript": "^4.8.4"
   }
 }

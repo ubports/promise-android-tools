@@ -48,9 +48,13 @@ export class DeviceTools extends Interface {
     this.heimdall = new Heimdall({ ...heimdallOptions, signals });
 
     ["adb", "fastboot", "heimdall"].forEach(tool => {
+      //@ts-ignore
       this[tool].on("exec", r => this.emit("exec", r));
+      //@ts-ignore
       this[tool].on("spawn:start", r => this.emit("spawn:start", r));
+      //@ts-ignore
       this[tool].on("spawn:exit", r => this.emit("spawn:exit", r));
+      //@ts-ignore
       this[tool].on("spawn:error", r => this.emit("spawn:error", r));
     });
   }

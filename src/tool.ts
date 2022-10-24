@@ -17,12 +17,16 @@
  */
 
 import { exec, spawn, ChildProcess, ExecException } from "./exec.js";
-import { getAndroidToolPath, getAndroidToolBaseDir } from "android-tools-bin";
+import {
+  getAndroidToolPath,
+  getAndroidToolBaseDir,
+  Tool as BundledTool
+} from "android-tools-bin";
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
 
 /** executable in PATH or path to an executable */
-type ToolString = "adb" | "fastboot" | "heimdall" | string;
+export type ToolString = "adb" | "fastboot" | "heimdall" | string;
 
 export interface ToolOptions {
   tool: ToolString;
@@ -115,7 +119,7 @@ export class Tool extends Interface {
   }: ToolOptions) {
     super();
     this.tool = tool;
-    this.executable = getAndroidToolPath(this.tool);
+    this.executable = getAndroidToolPath(this.tool as BundledTool);
     this.listen(...signals);
     this.extraArgs = extraArgs;
     this.extraEnv = extraEnv;
@@ -127,7 +131,7 @@ export class Tool extends Interface {
   }
 
   /** return a clone with a specified variation in the config options */
-  _withConfig(config: ToolConfig | { tool?: null }): this {
+  _withConfig(config: typeof this.config): this {
     const ret = Object.create(this);
     ret.config = { ...this.config };
     for (const key in config) {
@@ -172,15 +176,23 @@ export class Tool extends Interface {
     for (const key in this.argsModel) {
       if (Object.hasOwn(this.argsModel, key)) {
         const [_arg, defaultValue, isFlag] = this.argsModel[key];
-        this[`__${key}`] = function (val) {
+        this[`__${key}` as `__${keyof typeof this.argsModel}`] = function (
+          val: any
+        ) {
           return this._withConfig({ [key]: isFlag ? !defaultValue : val });
         };
       }
     }
   }
 
+  /** helper functions */
+  [key: `__${keyof typeof this.argsModel}`]: (val?: any) => this;
+  // FIXME https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html
+  // [Helper<ArgsModel>]!: (val: any) => this
+  // type Helper<Type> = `__${string & keyof Type}`;
+
   /** apply config options to the tool instance */
-  applyConfig(config: ToolConfig | { tool?: null }): void {
+  applyConfig(config: typeof this.config): void {
     for (const key in this.config) {
       if (
         Object.getOwnPropertyDescriptor(this.config, key)?.writable &&

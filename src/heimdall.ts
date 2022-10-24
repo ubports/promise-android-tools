@@ -25,7 +25,7 @@ export type HeimdallOptions = ToolOptions | {};
  * heimdall: flash firmware on samsung devices
  */
 export class Heimdall extends Tool {
-  constructor(options) {
+  constructor(options: HeimdallOptions = {}) {
     super({ tool: "heimdall", ...options });
   }
 
@@ -90,7 +90,7 @@ export class Heimdall extends Tool {
           .reduce((result, item) => {
             result[item[0]] = item[1];
             return result;
-          }, {})
+          }, {} as { [k: string]: string })
       )
     );
   }

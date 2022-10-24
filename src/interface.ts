@@ -30,7 +30,8 @@ export declare var AbortSignal: {
 
 export interface Interface extends EventEmitter, HierarchicalAbortController {}
 export class Interface extends HierarchicalAbortController {
-  @use(EventEmitter, HierarchicalAbortController) this;
+  @use(EventEmitter, HierarchicalAbortController)
+  this!: Interface;
 
   /** returns clone listening to additional AbortSignals */
   public _withSignals(...signals: AbortSignal[]): this {

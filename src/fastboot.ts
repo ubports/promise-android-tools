@@ -74,11 +74,10 @@ export interface FastbootConfig {
 
 export type FastbootOptions = ToolOptions | FastbootConfig | {};
 
-/**
- * fastboot android flashing and booting utility
- * @property {FasbootConfig} config fastboot config
- */
+/** fastboot android flashing and booting utility */
 export class Fastboot extends Tool {
+  config!: FastbootConfig;
+
   constructor(options: FastbootOptions = {}) {
     super({
       tool: "fastboot",
@@ -197,7 +196,7 @@ export class Fastboot extends Tool {
                     d.toString()
                       .trim()
                       .split("\n")
-                      .forEach(str => {
+                      .forEach((str: string) => {
                         // FIXME improve and simplify logic
                         try {
                           if (!str.includes("OKAY")) {

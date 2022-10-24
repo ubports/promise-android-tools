@@ -82,7 +82,7 @@ test("_withConfig() should add config", async t => {
     config: { wipe: false }
   });
   const toolWithConfig = tool._withConfig({ wipe: true });
-  const toolFromHelper = tool["__wipe"]();
+  const toolFromHelper = tool.__wipe();
   t.deepEqual(tool.config, { wipe: false });
   t.deepEqual(tool.args, []);
   t.deepEqual(toolWithConfig.config, { wipe: true });

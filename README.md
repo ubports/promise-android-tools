@@ -99,6 +99,7 @@ When using the library with modern editors like VScode/VScodium or Atom, you can
 
 Version 5.0.0 introduces...
 
+typescript
 argsModel and config
 removes fs-extra dependency
 deprecate execOptions
@@ -117,7 +118,7 @@ Version 4.0.0 includes a major re-factoring effort that touched almost every fun
 - `<tool>.waitForDevice()` and `<tool>.stopWaiting()` have been deprecated in favor of `<tool>.wait()`.
   - On `fastboot` and `heimdall`, `<tool>.wait()` will poll using `<tool>.hasAccess()` at a fixed interval. It does not take arguments.
   - `adb.wait()` uses the `adb wait-for-[-TRANSPORT]-STATE` command instead. You can optionally specify the state or transport as arguments, eg `adb.wait("recovery", "usb")`.
-  - The `<tool>.wait()` function returns a [Promise](https://github.com/alkemics/Promise), which extends the native ES promise to support cancelling pending promises. Calling `const p = adb.wait(); setTimeout(() => p.cancel(), 5000);` will kill the waiting child-process and settle the pending promise.
+  - The `<tool>.wait()` function returns a [CancelablePromise](https://github.com/alkemics/CancelablePromise), which extends the native ES promise to support cancelling pending promises. Calling `const p = adb.wait(); setTimeout(() => p.cancel(), 5000);` will kill the waiting child-process and settle the pending promise.
 - `adb.pushArray()` has been deprecated and incorporated into the `adb.push()` API.
   - Since the `adb push` command supports pushing multiple files to the same location and this is the most common usecase, the `adb.pushArray()` function has been deprecated. The `adb.push()` function now takes an array of source file paths, a target destination path on the device, and a progress callback.
   - The progress is now reported on-the-fly and no longer requires polling via `adb shell stat <file>`. This results in faster and more accurate reporting.

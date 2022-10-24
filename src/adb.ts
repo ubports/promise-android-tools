@@ -86,12 +86,11 @@ interface Device {
   product?: string;
 }
 
-/**
- * Android Debug Bridge (ADB) module
- * @property {AdbConfig} config adb config
- */
+/** Android Debug Bridge (ADB) module */
 export class Adb extends Tool {
-  constructor(options = {}) {
+  config!: AdbConfig;
+
+  constructor(options: AdbOptions = {}) {
     super({
       tool: "adb",
       argsModel: {
@@ -336,7 +335,7 @@ export class Adb extends Tool {
           cp.stderr.on("data", d => {
             d.toString()
               .split("\n")
-              .forEach(async str => {
+              .forEach(async (str: string) => {
                 if (!str.includes("cpp")) {
                   stderr += str;
                 } else {
