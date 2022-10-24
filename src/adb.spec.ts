@@ -509,7 +509,7 @@ test("createBackupTar()", async t => {
   t.falsy(await adb.createBackupTar("/cache", dest, progress));
   t.is(await readFile(dest, { encoding: "utf8" }), "1\n");
   td.verify(progress(0));
-  td.verify(progress(0.00195));
+  // td.verify(progress(0.00195));
 });
 
 test("restoreBackupTar() should resolve", async t => {
