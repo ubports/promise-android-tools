@@ -268,10 +268,12 @@ export abstract class Tool extends Interface {
     /** standard error */
     stderr?: string
   ): string {
+    if (error) error.message &&= error.message
+      .replace(new RegExp(this.executable, "g"), this.tool)
     // REMOVE
-    console.log(error)
-    console.log(this.tool)
-    console.log(this.executable)
+    console.log("message", error?.message, "\n",
+      "tool", this.tool, "\n",
+      "executable", this.executable, "\n")
     if (
       stderr?.includes("Killed") ||
       stderr?.includes("killed by remote request") ||
@@ -279,9 +281,7 @@ export abstract class Tool extends Interface {
     ) {
       return "killed";
     } else {
-      return JSON.stringify(common.removeFalsy({ error, stdout, stderr }))
-        .replace(new RegExp(`${sep}${sep}`, "g"), sep)
-        .replace(new RegExp(this.executable, "g"), this.tool);
+      return JSON.stringify(common.removeFalsy({ error, stdout, stderr }));
     }
   }
 
