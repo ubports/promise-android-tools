@@ -18,7 +18,7 @@
 
 import test from "ava";
 
-import { deviceTools as fake } from "./__test-helpers/fake.js";
+import { deviceTools as fake, EXECUTABLE } from "./__test-helpers/fake.js";
 
 test("constructor()", async t => {
   const [[deviceTools_basic]] = fake()([]);
@@ -38,8 +38,7 @@ test("wait() should resolve", async t => {
 test("wait() should escalate and reject errors", async t => {
   const [[deviceTools]] = fake()(["", "", 1]);
   await t.throwsAsync(deviceTools.wait(), {
-    message:
-      '{"error":{"message":"Command failed: ./src/__test-helpers/fake_executable.js wait-for-any-any","code":1}}'
+    message: `{"error":{"message":"Command failed: ${EXECUTABLE} wait-for-any-any","code":1}}`
   });
 });
 

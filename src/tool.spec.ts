@@ -19,9 +19,7 @@
 import test from "ava";
 import * as td from "testdouble";
 import { genericErrors } from "./__test-helpers/known_errors.js";
-import { tool as fake } from "./__test-helpers/fake.js";
-
-const FAKE_EXECUTABLE = "./src/__test-helpers/fake_executable.js";
+import { EXECUTABLE, tool as fake } from "./__test-helpers/fake.js";
 
 test(`constructor() should construct`, async t => {
   ["adb", "fastboot", "heimdall"].forEach(cmd => {
@@ -118,7 +116,7 @@ test("exec() should reject on error", async t => {
   const [[tool, error]] = fake()([undefined, "not ok", 255]);
   tool.on("exec", e =>
     t.like(e, {
-      cmd: [FAKE_EXECUTABLE],
+      cmd: [EXECUTABLE],
       ...error
     })
   );

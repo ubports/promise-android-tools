@@ -10,7 +10,11 @@ class Tool extends _Tool {
   config!: ToolConfig;
 }
 
-const FAKE_EXECUTABLE = resolve("./src/__test-helpers/fake_executable.js");
+export const EXECUTABLE = resolve(
+  `./src/__test-helpers/fake_executable.${
+    process.platform == "win32" ? "bat" : "js"
+  }`
+);
 type FakeError = {
   error?: ExecException | { [propName: string]: any };
   stdout?: string;
@@ -35,7 +39,7 @@ const fake =
       }),
       {
         error: {
-          message: `Command failed: ${FAKE_EXECUTABLE}\n${stderr || ""}`,
+          message: `Command failed: ${EXECUTABLE}\n${stderr || ""}`,
           code
         },
         stdout,
@@ -44,38 +48,26 @@ const fake =
     ]);
 
 export const adb = (options: AdbOptions = {}) =>
-  fake(
-    new Adb({
-      tool: FAKE_EXECUTABLE,
-      ...options
-    })
-  ) as (...fakes: FakeArgs[]) => Fake<Adb>[];
+  fake(new Adb({ tool: EXECUTABLE, ...options })) as (
+    ...fakes: FakeArgs[]
+  ) => Fake<Adb>[];
 export const fastboot = (options: FastbootOptions = {}) =>
-  fake(
-    new Fastboot({
-      tool: FAKE_EXECUTABLE,
-      ...options
-    })
-  ) as (...fakes: FakeArgs[]) => Fake<Fastboot>[];
+  fake(new Fastboot({ tool: EXECUTABLE, ...options })) as (
+    ...fakes: FakeArgs[]
+  ) => Fake<Fastboot>[];
 export const heimdall = (options: HeimdallOptions = {}) =>
-  fake(
-    new Heimdall({
-      tool: FAKE_EXECUTABLE,
-      ...options
-    })
-  ) as (...fakes: FakeArgs[]) => Fake<Heimdall>[];
+  fake(new Heimdall({ tool: EXECUTABLE, ...options })) as (
+    ...fakes: FakeArgs[]
+  ) => Fake<Heimdall>[];
 export const tool = (options: ToolOptions | {} = {}) =>
-  fake(
-    new Tool({
-      tool: FAKE_EXECUTABLE,
-      ...options
-    })
-  ) as (...fakes: FakeArgs[]) => Fake<Tool>[];
+  fake(new Tool({ tool: EXECUTABLE, ...options })) as (
+    ...fakes: FakeArgs[]
+  ) => Fake<Tool>[];
 export const deviceTools = (options: DeviceToolsOptions = {}) =>
   fake(
     new DeviceTools({
-      adbOptions: { tool: FAKE_EXECUTABLE, ...options.adbOptions },
-      fastbootOptions: { tool: FAKE_EXECUTABLE, ...options.fastbootOptions },
-      heimdallOptions: { tool: FAKE_EXECUTABLE, ...options.heimdallOptions }
+      adbOptions: { tool: EXECUTABLE, ...options.adbOptions },
+      fastbootOptions: { tool: EXECUTABLE, ...options.fastbootOptions },
+      heimdallOptions: { tool: EXECUTABLE, ...options.heimdallOptions }
     })
   ) as (...fakes: FakeArgs[]) => Fake<DeviceTools>[];

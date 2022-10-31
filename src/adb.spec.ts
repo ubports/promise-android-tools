@@ -27,7 +27,7 @@ import { ExecException } from "node:child_process";
 import { WriteStream } from "fs";
 import sandbox from "./__test-helpers/sandbox.js";
 import { readFile } from "node:fs/promises";
-import { adb as fake } from "./__test-helpers/fake.js";
+import { adb as fake, EXECUTABLE } from "./__test-helpers/fake.js";
 
 test.after(async t => sandbox.remove().catch(() => {}));
 
@@ -379,8 +379,7 @@ test("getSystemImageCapability() should resolve false", async t => {
 test("getSystemImageCapability() should reject", async t => {
   const [[adb]] = fake()(["", "", 1]);
   await t.throwsAsync(adb.getSystemImageCapability(), {
-    message:
-      '{"error":{"message":"Command failed: ./src/__test-helpers/fake_executable.js shell getprop ro.ubuntu.recovery","code":1}}'
+    message: `{"error":{"message":"Command failed: ${EXECUTABLE} shell getprop ro.ubuntu.recovery","code":1}}`
   });
 });
 

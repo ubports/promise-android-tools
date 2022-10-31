@@ -1,9 +1,4 @@
 #!/usr/bin/env node
-0</* :{
-  @echo off
-  node %~f0 %*
-  exit /b %errorlevel%
-:} */0;
 const [_node, _script, ...args] = process.argv;
 if (process.env.MOCK_EXIT) {
   const { stdout, stderr, code, delay } = JSON.parse(process.env.MOCK_EXIT);
