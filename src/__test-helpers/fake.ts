@@ -3,13 +3,14 @@ import { Fastboot, FastbootOptions } from "../fastboot.js";
 import { Heimdall, HeimdallOptions } from "../heimdall.js";
 import { Tool as _Tool, ToolConfig, ToolOptions } from "../tool.js";
 import { ExecException } from "node:child_process";
+import { normalize } from "node:path";
 import { DeviceTools, DeviceToolsOptions } from "../module.js";
 
 class Tool extends _Tool {
   config!: ToolConfig;
 }
 
-const FAKE_EXECUTABLE = "./src/__test-helpers/fake_executable.js";
+const FAKE_EXECUTABLE = normalize("./src/__test-helpers/fake_executable.js");
 type FakeError = {
   error?: ExecException | { [propName: string]: any };
   stdout?: string;
