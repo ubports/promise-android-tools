@@ -1,1 +1,1 @@
-node fake_executable.js
+node src\__test-helpers\fake_executable.bat
