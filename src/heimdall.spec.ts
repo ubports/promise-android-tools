@@ -20,7 +20,7 @@ import test from "ava";
 
 import { heimdall as fake } from "./__test-helpers/fake.js";
 import { Heimdall } from "./heimdall.js";
-import { ExecException } from "child_process";
+import { ExecException } from "node:child_process";
 import { heimdallErrors } from "./__test-helpers/known_errors.js";
 
 const printPitFromDevice = `Heimdall v1.4.0

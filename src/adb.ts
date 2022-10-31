@@ -16,10 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ExecException } from "child_process";
-import { stat, readdir, mkdir, open, writeFile, readFile } from "fs/promises";
+import { ExecException } from "node:child_process";
+import {
+  stat,
+  readdir,
+  mkdir,
+  open,
+  writeFile,
+  readFile
+} from "node:fs/promises";
 import { WriteStream } from "fs";
-import * as path from "path";
+import * as path from "node:path";
 import * as common from "./common.js";
 import { Tool, ToolOptions } from "./tool.js";
 

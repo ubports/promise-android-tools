@@ -54,7 +54,7 @@ export interface ToolOptions {
 }
 
 /** tool configuration */
-interface ToolConfig {
+export interface ToolConfig {
   [propName: string]: any;
 }
 
@@ -68,7 +68,7 @@ interface ArgsModel {
 /**
  * generic tool class
  */
-export class Tool extends Interface {
+export abstract class Tool extends Interface {
   /** bundled tool, executable in PATH, or path to an executable */
   tool: ToolString;
 
@@ -82,10 +82,10 @@ export class Tool extends Interface {
   extraEnv: NodeJS.ProcessEnv;
 
   /** tool configuration */
-  config: ToolConfig;
+  abstract config: ToolConfig;
 
   /** object describing arguments */
-  argsModel: ArgsModel;
+  protected argsModel!: ArgsModel;
 
   /** environment variables */
   get env(): NodeJS.ProcessEnv {
@@ -124,10 +124,8 @@ export class Tool extends Interface {
     this.extraArgs = extraArgs;
     this.extraEnv = extraEnv;
     if (setPath) this.env.PATH = `${getAndroidToolBaseDir()}:${this.env.PATH}`;
-    this.config = config;
-    this.argsModel = argsModel;
+    this.#initializeArgs(config, argsModel);
     this.applyConfig(options);
-    this.#initializeArgs();
   }
 
   /** return a clone with a specified variation in the config options */
@@ -172,7 +170,9 @@ export class Tool extends Interface {
    * tool.exec("arg", "--other-flag"); // tool will be called as "tool -a a arg --other-flag", because the original instance is not changed
    * ```
    */
-  #initializeArgs(): void {
+  #initializeArgs(config, argsModel): void {
+    this.config = config;
+    this.argsModel = argsModel;
     for (const key in this.argsModel) {
       if (Object.hasOwn(this.argsModel, key)) {
         const [_arg, defaultValue, isFlag] = this.argsModel[key];

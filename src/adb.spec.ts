@@ -24,10 +24,10 @@ import testrecoveryfstabs from "./__test-helpers/testrecoveryfstabs.js";
 import { ActualDeviceState, Adb, RebootState } from "./adb.js";
 import { getAndroidToolPath } from "android-tools-bin";
 import { adbErrors } from "./__test-helpers/known_errors.js";
-import { ExecException } from "child_process";
+import { ExecException } from "node:child_process";
 import { WriteStream } from "fs";
 import sandbox from "./__test-helpers/sandbox.js";
-import { readFile } from "fs/promises";
+import { readFile } from "node:fs/promises";
 import { adb as fake } from "./__test-helpers/fake.js";
 
 test.after(async t => sandbox.remove().catch(() => {}));

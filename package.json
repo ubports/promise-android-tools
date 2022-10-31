@@ -2,15 +2,15 @@
   "name": "promise-android-tools",
   "version": "5.0.0",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
+  "type": "module",
+  "source": "./src/module.ts",
   "main": "./lib/module.cjs",
   "types": "./lib/module.d.ts",
-  "type": "module",
   "scripts": {
-    "test": "npx c8 -r text -r html --all --src src/ -x \"**/*.spec.ts\" -x src/__test-helpers ava src/*.spec.ts",
+    "test": "npx c8 -r text -r html --all --src src/ -x \"**/*.spec.*\" -x \"**/__test-helpers\" ava src/*.spec.ts",
     "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none --end-of-line=lf -uw",
     "docs": "npx typedoc",
-    "build": "npm run clean && npx tsc --build",
-    "clean": "npx tsc --build --clean"
+    "build": "rm -rf lib && npx tsc --build ./tsconfig.build.json"
   },
   "files": [
     "lib/module.cjs",
@@ -37,12 +37,12 @@
   ],
   "homepage": "https://github.com/ubports/promise-android-tools#readme",
   "ava": {
-    "extensions": {
-      "ts": "module"
-    },
-    "nodeArguments": [
-      "--loader=ts-node/esm"
-    ]
+    "typescript": {
+      "rewritePaths": {
+        "src/": "test/"
+      },
+      "compile": "tsc"
+    }
   },
   "dependencies": {
     "android-tools-bin": "^2.0.0",

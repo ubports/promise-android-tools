@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ExecException } from "child_process";
+import { ExecException } from "node:child_process";
 import * as common from "./common.js";
 import { Tool, ToolOptions } from "./tool.js";
 

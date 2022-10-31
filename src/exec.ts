@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { execFile } from "child_process";
-import { promisify } from "util";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 export const exec = promisify(execFile);
-export { spawn, ChildProcess, ExecException } from "child_process";
+export { spawn, ChildProcess, ExecException } from "node:child_process";

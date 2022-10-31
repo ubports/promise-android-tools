@@ -16,15 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ExecException } from "child_process";
+import { ExecException } from "node:child_process";
 import { Tool, ToolOptions } from "./tool.js";
 
 export type HeimdallOptions = ToolOptions | {};
+export interface HeimdallConfig {}
 
 /**
  * heimdall: flash firmware on samsung devices
  */
 export class Heimdall extends Tool {
+  config!: HeimdallConfig;
+
   constructor(options: HeimdallOptions = {}) {
     super({ tool: "heimdall", ...options });
   }

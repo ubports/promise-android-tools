@@ -1,9 +1,12 @@
 import { Adb } from "../adb.js";
 import { Fastboot } from "../fastboot.js";
 import { Heimdall } from "../heimdall.js";
-import { Tool } from "../tool.js";
-import { ExecException } from "child_process";
+import { Tool as _Tool, ToolConfig } from "../tool.js";
+import { ExecException } from "node:child_process";
 import { DeviceTools } from "../module.js";
+class Tool extends _Tool {
+  config!: ToolConfig;
+}
 
 const FAKE_EXECUTABLE = "./src/__test-helpers/fake_executable.js";
 type FakeError = {

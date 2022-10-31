@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { use } from "typescript-mix";
 import { HierarchicalAbortController } from "./hierarchicalAbortController.js";
 

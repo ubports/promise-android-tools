@@ -1,5 +1,5 @@
-import { mkdtemp, rm, mkdir, open } from "fs/promises";
-import { join, sep } from "path";
+import { mkdtemp, rm, mkdir, open } from "node:fs/promises";
+import { join, sep } from "node:path";
 import { tmpdir } from "os";
 
 const DEFAULT_PREFIX = "promise-android-tools";

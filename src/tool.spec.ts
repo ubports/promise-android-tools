@@ -18,9 +18,13 @@
 
 import test from "ava";
 import * as td from "testdouble";
-import { Tool } from "./tool.js";
+import { Tool as _Tool, ToolConfig } from "./tool.js";
 import { genericErrors } from "./__test-helpers/known_errors.js";
 import { tool as fake } from "./__test-helpers/fake.js";
+
+class Tool extends _Tool {
+  config!: ToolConfig;
+}
 
 const FAKE_EXECUTABLE = "./src/__test-helpers/fake_executable.js";
 
