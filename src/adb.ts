@@ -27,8 +27,7 @@ import {
 } from "node:fs/promises";
 import { WriteStream } from "fs";
 import * as path from "node:path";
-import * as common from "./common.js";
-import { Tool, ToolOptions } from "./tool.js";
+import { Tool, ToolOptions, ProgressCallback } from "./tool.js";
 
 const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;
@@ -84,7 +83,7 @@ export type WaitState =
   | "sideload"
   | "disconnect";
 
-interface Device {
+export interface Device {
   serialno: string;
   mode: string;
   transport_id: string | number;
@@ -309,7 +308,7 @@ export class Adb extends Tool {
     command: string,
     files: string[] = [],
     args: string[] = [],
-    progress: common.ProgressCallback = () => {}
+    progress: ProgressCallback = () => {}
   ): Promise<void> {
     progress(0);
     if (!files?.length) {
@@ -369,7 +368,7 @@ export class Adb extends Tool {
   public async push(
     files: string[] = [],
     dest: string,
-    progress: common.ProgressCallback = () => {}
+    progress: ProgressCallback = () => {}
   ): Promise<void> {
     return this.spawnFileTransfer("push", files, [dest], progress);
   }
@@ -381,7 +380,7 @@ export class Adb extends Tool {
    */
   public async sideload(
     file: string,
-    progress: common.ProgressCallback = () => {}
+    progress: ProgressCallback = () => {}
   ): Promise<void> {
     return this.spawnFileTransfer("sideload", [file], [], progress);
   }
@@ -616,7 +615,7 @@ export class Adb extends Tool {
   public async createBackupTar(
     srcfile: string,
     destfile: string,
-    progress: common.ProgressCallback
+    progress: ProgressCallback
   ): Promise<void> {
     progress(0);
     const fileSize = this.getFileSize(srcfile);
@@ -652,7 +651,7 @@ export class Adb extends Tool {
   /** [EXPERIMENTAL] Restore tar "srcfile" */
   public async restoreBackupTar(
     srcfile: string,
-    progress: common.ProgressCallback = () => {}
+    progress: ProgressCallback = () => {}
   ): Promise<void> {
     progress(0);
     return this.ensureState("recovery")
@@ -705,7 +704,7 @@ export class Adb extends Tool {
     backupBaseDir: string,
     comment: string = "",
     dataPartition: string = "/data",
-    progress: common.ProgressCallback = () => {}
+    progress: ProgressCallback = () => {}
   ): Promise<{}> {
     progress(0);
     const time = new Date().toISOString();
@@ -758,7 +757,7 @@ export class Adb extends Tool {
    */
   public async restoreUbuntuTouchBackup(
     dir: string,
-    progress: common.ProgressCallback = () => {}
+    progress: ProgressCallback = () => {}
   ): Promise<{}> {
     progress(0); // FIXME report actual push progress
     return Promise.all([

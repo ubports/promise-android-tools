@@ -22,7 +22,7 @@ import { Heimdall, HeimdallOptions } from "./heimdall.js";
 
 import { Interface } from "./interface.js";
 
-interface DeviceToolsOptions {
+export interface DeviceToolsOptions {
   adbOptions?: AdbOptions;
   fastbootOptions?: FastbootOptions;
   heimdallOptions?: HeimdallOptions;
@@ -91,8 +91,9 @@ export class DeviceTools extends Interface {
   }
 }
 
-export { Adb, AdbOptions } from "./adb.js";
-export { Fastboot, FastbootOptions } from "./fastboot.js";
-export { Heimdall, HeimdallOptions } from "./heimdall.js";
-export { Tool, ToolOptions } from "./tool.js";
-export { HierarchicalAbortController } from "./hierarchicalAbortController.js";
+export * from "./adb.js";
+export * from "./fastboot.js";
+export * from "./heimdall.js";
+export * from "./tool.js";
+export * from "./interface.js";
+export * from "./hierarchicalAbortController.js";

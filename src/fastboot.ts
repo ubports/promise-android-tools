@@ -17,10 +17,9 @@
  */
 
 import { ExecException } from "node:child_process";
-import * as common from "./common.js";
-import { Tool, ToolOptions } from "./tool.js";
+import { ProgressCallback, Tool, ToolOptions } from "./tool.js";
 
-interface FastbootFlashImage {
+export interface FastbootFlashImage {
   /** partition to flash */
   partition: string;
 
@@ -157,7 +156,7 @@ export class Fastboot extends Tool {
   /** Write a file to a flash partition */
   flash(
     images: FastbootFlashImage[],
-    progress: common.ProgressCallback = () => {}
+    progress: ProgressCallback = () => {}
   ): Promise<void> {
     progress(0);
     const _this = this;

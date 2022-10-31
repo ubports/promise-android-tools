@@ -25,6 +25,8 @@ import {
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
 
+export type ProgressCallback = (percentage: number) => void;
+
 /** executable in PATH or path to an executable */
 export type ToolString = "adb" | "fastboot" | "heimdall" | string;
 
@@ -58,10 +60,10 @@ export interface ToolConfig {
   [propName: string]: any;
 }
 
-type Arg = [string, any?, any?, string?];
+export type Arg = [string, any?, any?, string?];
 
 /** object describing arguments */
-interface ArgsModel {
+export interface ArgsModel {
   [propName: string]: Arg;
 }
 

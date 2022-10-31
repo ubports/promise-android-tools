@@ -32,5 +32,3 @@ export function removeFalsy(obj: any): any {
   }
   return Object.keys(obj).length ? obj : null;
 }
-
-export type ProgressCallback = (percentage: number) => void;
