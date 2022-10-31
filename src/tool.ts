@@ -276,7 +276,7 @@ export abstract class Tool extends Interface {
     } else {
       return JSON.stringify(
         common.removeFalsy({ error, stdout, stderr })
-      ).replace(new RegExp(this.executable, "g"), this.tool);
+      ).replaceAll(this.executable.replaceAll("\\", "\\\\"), this.tool);
     }
   }
 
