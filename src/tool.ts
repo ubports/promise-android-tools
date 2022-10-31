@@ -24,7 +24,7 @@ import {
 } from "android-tools-bin";
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
-import {normalize} from "node:path"
+import { sep } from "node:path";
 
 export type ProgressCallback = (percentage: number) => void;
 
@@ -275,9 +275,9 @@ export abstract class Tool extends Interface {
     ) {
       return "killed";
     } else {
-      return JSON.stringify(
-        common.removeFalsy({ error, stdout, stderr })
-      ).replace(new RegExp(normalize(this.executable), "g"), this.tool);
+      return JSON.stringify(common.removeFalsy({ error, stdout, stderr }))
+        .replace(new RegExp(`${sep}${sep}`, "g"), sep)
+        .replace(new RegExp(this.executable, "g"), this.tool);
     }
   }
 
