@@ -28,7 +28,26 @@ export declare var AbortSignal: {
   abort(): AbortSignal;
 };
 
-export interface Interface extends EventEmitter, HierarchicalAbortController {}
+export interface Interface extends EventEmitter, HierarchicalAbortController {
+  on(
+    eventName: "exec",
+    listener: (e: {
+      cmd: string[];
+      error?: Error;
+      stdout?: string;
+      stderr?: string;
+    }) => void
+  ): this;
+  on(eventName: "spawn:start", listener: (e: { cmd: string[] }) => void): this;
+  on(
+    eventName: "spawn:exit",
+    listener: (e: { cmd: string[]; error?: Error }) => void
+  ): this;
+  on(
+    eventName: "spawn:error",
+    listener: (e: { cmd: string[]; error: Error }) => void
+  ): this;
+}
 export class Interface extends HierarchicalAbortController {
   @use(EventEmitter, HierarchicalAbortController)
   this!: Interface;

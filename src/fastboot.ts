@@ -188,50 +188,46 @@ export class Fastboot extends Tool {
                     resolve("bootloader");
                   }
                 });
-                cp?.stdout &&
-                  cp.stdout.on("data", d => (stdout += d.toString()));
-                cp?.stderr &&
-                  cp.stderr.on("data", d => {
-                    d.toString()
-                      .trim()
-                      .split("\n")
-                      .forEach((str: string) => {
-                        // FIXME improve and simplify logic
-                        try {
-                          if (!str.includes("OKAY")) {
-                            if (str.includes(`Sending '${partition}'`)) {
-                              progress(offset + 0.3 * scale);
-                            } else if (
-                              str.includes(`Sending sparse '${partition}'`)
-                            ) {
-                              [sparseCurr, sparseTotal] = str
-                                .split(/' |\/| \(/)
-                                .slice(1, 3)
-                                .map(parseFloat);
-                              progress(
-                                offset +
-                                  sparseOffset() * scale +
-                                  sparseScale() * 0.33 * scale
-                              );
-                            } else if (str.includes(`Writing '${partition}'`)) {
-                              progress(
-                                offset +
-                                  sparseOffset() * scale +
-                                  sparseScale() * 0.85 * scale
-                              );
-                            } else if (
-                              str.includes(`Finished '${partition}'`)
-                            ) {
-                              progress(offset + scale);
-                            } else {
-                              throw new Error(`failed to parse '${str}'`);
-                            }
+                cp?.stdout?.on("data", d => (stdout += d.toString()));
+                cp?.stderr?.on("data", d => {
+                  d.toString()
+                    .trim()
+                    .split("\n")
+                    .forEach((str: string) => {
+                      // FIXME improve and simplify logic
+                      try {
+                        if (!str.includes("OKAY")) {
+                          if (str.includes(`Sending '${partition}'`)) {
+                            progress(offset + 0.3 * scale);
+                          } else if (
+                            str.includes(`Sending sparse '${partition}'`)
+                          ) {
+                            [sparseCurr, sparseTotal] = str
+                              .split(/' |\/| \(/)
+                              .slice(1, 3)
+                              .map(parseFloat);
+                            progress(
+                              offset +
+                                sparseOffset() * scale +
+                                sparseScale() * 0.33 * scale
+                            );
+                          } else if (str.includes(`Writing '${partition}'`)) {
+                            progress(
+                              offset +
+                                sparseOffset() * scale +
+                                sparseScale() * 0.85 * scale
+                            );
+                          } else if (str.includes(`Finished '${partition}'`)) {
+                            progress(offset + scale);
+                          } else {
+                            throw new Error(`failed to parse '${str}'`);
                           }
-                        } catch (e) {
-                          stderr += str;
                         }
-                      });
-                  });
+                      } catch (e) {
+                        stderr += str;
+                      }
+                    });
+                });
               })
           ),
         _this.wait()

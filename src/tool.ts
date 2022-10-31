@@ -24,6 +24,7 @@ import {
 } from "android-tools-bin";
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
+import {normalize} from "node:path"
 
 export type ProgressCallback = (percentage: number) => void;
 

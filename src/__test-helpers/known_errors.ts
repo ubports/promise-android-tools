@@ -27,7 +27,7 @@ export const genericErrors = (tool: string): KnownError[] => [
       killed: false,
       code: 1,
       signal: null,
-      cmd: `/path/to/${tool} some command`
+      cmd: `${tool} some command`
     },
     stdout: "",
     stderr: `${tool}: something went wrong\n`
