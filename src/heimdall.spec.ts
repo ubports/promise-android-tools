@@ -19,7 +19,6 @@
 import test from "ava";
 
 import { heimdall as fake } from "./__test-helpers/fake.js";
-import { Heimdall } from "./heimdall.js";
 import { ExecException } from "node:child_process";
 import { heimdallErrors } from "./__test-helpers/known_errors.js";
 
@@ -77,14 +76,12 @@ Rebooting device...
 Releasing device interface...`;
 
 test("constructor()", async t => {
-  const heimdall = new Heimdall({});
-  t.is(heimdall.tool, "heimdall");
-  t.regex(heimdall.executable, /.*heimdall.*/);
+  const [[heimdall]] = fake()([]);
   t.deepEqual(heimdall.args, []);
 });
 
 test("handleError()", async t => {
-  const heimdall = new Heimdall({});
+  const [[heimdall]] = fake({ tool: "heimdall" })([]);
   heimdall.executable = "/path/to/heimdall";
   heimdallErrors.forEach(({ error, stdout, stderr, expectedReturn }) => {
     t.is(

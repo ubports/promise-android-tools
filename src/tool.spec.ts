@@ -18,19 +18,14 @@
 
 import test from "ava";
 import * as td from "testdouble";
-import { Tool as _Tool, ToolConfig } from "./tool.js";
 import { genericErrors } from "./__test-helpers/known_errors.js";
 import { tool as fake } from "./__test-helpers/fake.js";
-
-class Tool extends _Tool {
-  config!: ToolConfig;
-}
 
 const FAKE_EXECUTABLE = "./src/__test-helpers/fake_executable.js";
 
 test(`constructor() should construct`, async t => {
   ["adb", "fastboot", "heimdall"].forEach(cmd => {
-    const tool = new Tool({ tool: cmd, setPath: true });
+    const [[tool]] = fake({ tool: cmd, setPath: true })([]);
     t.is(tool.tool, cmd);
     t.regex(tool.executable, new RegExp(`.*${cmd}.*`));
     t.deepEqual(tool.extraArgs, []);
@@ -78,13 +73,13 @@ test("_withTimeout() should timeout", async t => {
 });
 
 test("_withConfig() should add config", async t => {
-  const tool = new Tool({
+  const [[tool]] = fake({
     tool: "adb",
     argsModel: {
       wipe: ["-w", false, true]
     },
     config: { wipe: false }
-  });
+  })([]);
   const toolWithConfig = tool._withConfig({ wipe: true });
   const toolFromHelper = tool.__wipe();
   t.deepEqual(tool.config, { wipe: false });
@@ -107,62 +102,13 @@ test("_withEnv() should add env", async t => {
 
 test(`abort() should abort`, async t => {
   t.plan(4);
-  const tool = new Tool({ tool: "adb" });
+  const [[tool]] = fake()([]);
   tool.signal.addEventListener("abort", () => t.pass());
   t.false(tool.signal.aborted);
   t.falsy(tool.abort());
   t.true(tool.signal.aborted);
 });
 
-[[], ["-a"], ["-a", "-s", "-d", "-f"]].forEach(extraArgs => {
-  test(`exec() should resolve stdout with ${JSON.stringify({
-    extraArgs
-  })}`, async t => {
-    t.plan(2);
-    const tool = new Tool({ tool: FAKE_EXECUTABLE, extraArgs });
-    const args = ["these", "-are", "--all=valid", "./arguments"];
-    tool.on("exec", e =>
-      t.deepEqual(e, {
-        cmd: [tool.tool, ...tool.extraArgs, ...args],
-        stdout: [...tool.extraArgs, ...args].join("\n")
-      })
-    );
-    return tool.exec(...args).then(r => {
-      t.is(r, [...tool.extraArgs, ...args].join("\n"));
-    });
-  });
-  test(`spawn() should exit with ${JSON.stringify({
-    extraArgs
-  })}`, async t => {
-    t.plan(5);
-    const tool = new Tool({ tool: FAKE_EXECUTABLE, extraArgs });
-    const args = ["these", "-are", "--all=valid", "./arguments"];
-    tool.on("spawn:start", e =>
-      t.deepEqual(e, {
-        cmd: [tool.tool, ...tool.extraArgs, ...args]
-      })
-    );
-    tool.on("spawn:exit", e =>
-      t.deepEqual(e, {
-        cmd: [tool.tool, ...tool.extraArgs, ...args]
-      })
-    );
-    tool.on("spawn:error", () => t.fail());
-    return new Promise((resolve, reject) =>
-      tool
-        .spawn(...args)
-        .on("error", reject)
-        .on("exit", (code, signal) => {
-          t.is(code, 0);
-          t.falsy(signal);
-          resolve();
-        })
-        ?.stdout?.on("data", data =>
-          t.is(data.toString(), [...tool.extraArgs, ...args].join("\n") + "\n")
-        )
-    );
-  });
-});
 test("exec() should resolve stderr if stdout empty", async t => {
   const [[tool]] = fake()([undefined, "ok", 0]);
   return tool.exec().then(stdout => t.is(stdout, "ok"));
@@ -236,7 +182,7 @@ test("spawn() should allow aborting", async t => {
 
 test("handleError()", async t => {
   genericErrors("adb").forEach(({ error, stdout, stderr, expectedReturn }) => {
-    const tool = new Tool({ tool: "adb" });
+    const [[tool]] = fake({ tool: "adb" })([]);
     tool.executable = "/path/to/adb";
     t.is(
       tool.handleError(error, stdout, stderr),

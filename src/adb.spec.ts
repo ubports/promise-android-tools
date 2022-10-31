@@ -21,8 +21,7 @@ import * as td from "testdouble";
 
 import testrecoveryfstabs from "./__test-helpers/testrecoveryfstabs.js";
 
-import { ActualDeviceState, Adb, RebootState } from "./adb.js";
-import { getAndroidToolPath } from "android-tools-bin";
+import { RebootState } from "./adb.js";
 import { adbErrors } from "./__test-helpers/known_errors.js";
 import { ExecException } from "node:child_process";
 import { WriteStream } from "fs";
@@ -33,12 +32,10 @@ import { adb as fake } from "./__test-helpers/fake.js";
 test.after(async t => sandbox.remove().catch(() => {}));
 
 test("constructor()", async t => {
-  const plainAdb = new Adb();
-  t.is(plainAdb.tool, "adb");
-  t.regex(plainAdb.executable, /.*adb.*/);
+  const [[plainAdb]] = fake()([]);
   t.deepEqual(plainAdb.args, []);
 
-  const adb = new Adb({
+  const [[adb]] = fake({
     allInterfaces: true,
     useUsb: true,
     useTcpIp: true,
@@ -48,9 +45,7 @@ test("constructor()", async t => {
     host: "somewhere",
     protocol: "udp",
     exitOnWrite: true
-  });
-  t.is(adb.tool, "adb");
-  t.regex(adb.executable, /.*adb.*/);
+  })([]);
   t.deepEqual(adb.args, [
     "-a",
     "-d",
@@ -69,7 +64,7 @@ test("constructor()", async t => {
 });
 
 test("flag helpers", async t => {
-  const adb = new Adb();
+  const [[adb]] = fake()([]);
   [
     ["allInterfaces", ["-a"]],
     ["useUsb", ["-d"]],
@@ -100,7 +95,7 @@ test("killServer()", async t => {
 
 test("handleError()", async t => {
   adbErrors.forEach(({ error, stdout, stderr, expectedReturn }) => {
-    const adb = new Adb();
+    const [[adb]] = fake({ tool: "adb" })([]);
     adb.executable = "/path/to/adb";
     t.is(
       adb.handleError(error as ExecException, stdout, stderr),

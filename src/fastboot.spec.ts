@@ -19,18 +19,14 @@
 import test from "ava";
 import * as td from "testdouble";
 
-import { Fastboot } from "./fastboot.js";
-import { getAndroidToolPath } from "android-tools-bin";
 import { fastbootErrors } from "./__test-helpers/known_errors.js";
 import { fastboot as fake } from "./__test-helpers/fake.js";
 
 test("constructor()", async t => {
-  const plainFastboot = new Fastboot({});
-  t.is(plainFastboot.tool, "fastboot");
-  t.regex(plainFastboot.executable, /.*fastboot.*/);
+  const [[plainFastboot]] = fake()([]);
   t.deepEqual(plainFastboot.args, []);
 
-  const fastboot = new Fastboot({
+  const [[fastboot]] = fake({
     wipe: true,
     device: 1337,
     maxSize: "1G",
@@ -43,7 +39,7 @@ test("constructor()", async t => {
     disableVerification: true,
     fsOptions: "casefold,projid,compress",
     unbuffered: true
-  });
+  })([]);
   t.deepEqual(fastboot.args, [
     "-w",
     "-s",
@@ -66,7 +62,7 @@ test("constructor()", async t => {
 });
 
 test("flag helpers", async t => {
-  const fastboot = new Fastboot();
+  const [[fastboot]] = fake()([]);
   [
     ["wipe", ["-w"]],
     ["device", ["-s", "a"]],
@@ -89,7 +85,7 @@ test("flag helpers", async t => {
 
 test("handleError()", async t => {
   fastbootErrors.forEach(({ error, stdout, stderr, expectedReturn }) => {
-    const fastboot = new Fastboot();
+    const [[fastboot]] = fake({ tool: "fastboot" })([]);
     fastboot.executable = "/path/to/fastboot";
     t.is(
       fastboot.handleError(error, stdout, stderr),

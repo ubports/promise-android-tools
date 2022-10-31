@@ -9,19 +9,8 @@ if (process.env.MOCK_EXIT) {
   } else {
     setTimeout(() => process.exit(code), delay || 0);
   }
-} else if (args.length === 1 && args[0] === "pass") {
-  console.log("ok");
-  process.exit(0);
-} else if (args.length) {
-  Promise.all(
-    args.map(arg =>
-      new Promise(resolve => setTimeout(resolve, 1)).then(() =>
-        console.log(arg)
-      )
-    )
-  ).then(() => process.exit(0));
 } else {
-  console.log("not ok");
-  console.error("should have args");
+  console.log("set MOCK_EXIT env var");
+  console.error("env not set");
   process.exit(-1);
 }
