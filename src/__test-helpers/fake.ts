@@ -30,9 +30,15 @@ type FakeArgs = [
   delay?: number
 ];
 
-const fake =
-  (tool: Fakeable) =>
-  (...fakes: FakeArgs[]): Fake<typeof tool>[] =>
+const fake = (tool: Fakeable) => {
+  if (tool["executable"]) {
+    tool["executable"] = EXECUTABLE;
+  } else {
+    tool["adb"].executable = EXECUTABLE;
+    tool["fastboot"].executable = EXECUTABLE;
+    tool["heimdall"].executable = EXECUTABLE;
+  }
+  return (...fakes: FakeArgs[]): Fake<typeof tool>[] =>
     fakes.map(([stdout, stderr, code, delay]) => [
       tool._withEnv({
         MOCK_EXIT: JSON.stringify({ stdout, stderr, code, delay })
@@ -46,28 +52,19 @@ const fake =
         stderr
       }
     ]);
+};
 
 export const adb = (options: AdbOptions = {}) =>
-  fake(new Adb({ tool: EXECUTABLE, ...options })) as (
-    ...fakes: FakeArgs[]
-  ) => Fake<Adb>[];
+  fake(new Adb(options)) as (...fakes: FakeArgs[]) => Fake<Adb>[];
 export const fastboot = (options: FastbootOptions = {}) =>
-  fake(new Fastboot({ tool: EXECUTABLE, ...options })) as (
-    ...fakes: FakeArgs[]
-  ) => Fake<Fastboot>[];
+  fake(new Fastboot(options)) as (...fakes: FakeArgs[]) => Fake<Fastboot>[];
 export const heimdall = (options: HeimdallOptions = {}) =>
-  fake(new Heimdall({ tool: EXECUTABLE, ...options })) as (
-    ...fakes: FakeArgs[]
-  ) => Fake<Heimdall>[];
+  fake(new Heimdall(options)) as (...fakes: FakeArgs[]) => Fake<Heimdall>[];
 export const tool = (options: ToolOptions | {} = {}) =>
   fake(new Tool({ tool: EXECUTABLE, ...options })) as (
     ...fakes: FakeArgs[]
   ) => Fake<Tool>[];
 export const deviceTools = (options: DeviceToolsOptions = {}) =>
-  fake(
-    new DeviceTools({
-      adbOptions: { tool: EXECUTABLE, ...options.adbOptions },
-      fastbootOptions: { tool: EXECUTABLE, ...options.fastbootOptions },
-      heimdallOptions: { tool: EXECUTABLE, ...options.heimdallOptions }
-    })
-  ) as (...fakes: FakeArgs[]) => Fake<DeviceTools>[];
+  fake(new DeviceTools(options)) as (
+    ...fakes: FakeArgs[]
+  ) => Fake<DeviceTools>[];

@@ -19,13 +19,12 @@
 import test from "ava";
 import * as td from "testdouble";
 import { genericErrors } from "./__test-helpers/known_errors.js";
-import { EXECUTABLE, tool as fake } from "./__test-helpers/fake.js";
+import { tool as fake } from "./__test-helpers/fake.js";
 
 test(`constructor() should construct`, async t => {
   ["adb", "fastboot", "heimdall"].forEach(cmd => {
     const [[tool]] = fake({ tool: cmd, setPath: true })([]);
     t.is(tool.tool, cmd);
-    t.regex(tool.executable, new RegExp(`.*${cmd}.*`));
     t.deepEqual(tool.extraArgs, []);
     t.deepEqual(tool.args, []);
   });
@@ -116,7 +115,7 @@ test("exec() should reject on error", async t => {
   const [[tool, error]] = fake()([undefined, "not ok", 255]);
   tool.on("exec", e =>
     t.like(e, {
-      cmd: [EXECUTABLE],
+      cmd: [tool.executable],
       ...error
     })
   );

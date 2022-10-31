@@ -20,7 +20,7 @@ import test from "ava";
 import * as td from "testdouble";
 
 import { fastbootErrors } from "./__test-helpers/known_errors.js";
-import { EXECUTABLE, fastboot as fake } from "./__test-helpers/fake.js";
+import { fastboot as fake } from "./__test-helpers/fake.js";
 
 test("constructor()", async t => {
   const [[plainFastboot]] = fake()([]);
@@ -152,7 +152,7 @@ test("flash() should throw on error", async t => {
       message: "Flashing failed: bootloader locked"
     }),
     t.throwsAsync(fastboot_failed.flash(args), {
-      message: `Flashing failed: Error: {"error":{"message":"Command failed: ${EXECUTABLE} devices\\nSending sparse \'boot\'\\neverything exploded","code":1},"stderr":"Sending sparse \'boot\'\\neverything exploded"}`
+      message: `Flashing failed: Error: {"error":{"message":"Command failed: fastboot devices\\nSending sparse \'boot\'\\neverything exploded","code":1},"stderr":"Sending sparse \'boot\'\\neverything exploded"}`
     })
   ]);
 });
@@ -165,7 +165,7 @@ test("boot()", async t => {
   await Promise.all([
     t.falsy(await fastboot.boot("/path/to/image")),
     t.throwsAsync(fastboot_error.boot("/path/to/image"), {
-      message: `booting failed: Error: {"error":{"message":"Command failed: ${EXECUTABLE} boot /path/to/image\\neverything exploded","code":1},"stderr":"everything exploded"}`
+      message: `booting failed: Error: {"error":{"message":"Command failed: fastboot boot /path/to/image\\neverything exploded","code":1},"stderr":"everything exploded"}`
     })
   ]);
 });
@@ -179,7 +179,7 @@ test("update()", async t => {
     t.falsy(await fastboot.update("/path/to/image")),
     t.falsy(await fastboot.update("/path/to/image", true)),
     t.throwsAsync(fastboot_error.update("/path/to/image"), {
-      message: `update failed: Error: {"error":{"message":"Command failed: ${EXECUTABLE} update /path/to/image\\neverything exploded","code":1},"stderr":"everything exploded"}`
+      message: `update failed: Error: {"error":{"message":"Command failed: fastboot update /path/to/image\\neverything exploded","code":1},"stderr":"everything exploded"}`
     })
   ]);
 });
@@ -211,7 +211,7 @@ test("format()", async t => {
   await Promise.all([
     t.falsy(await fastboot.format("boot", "ext4", 1337)),
     t.throwsAsync(fastboot_error.format("cache"), {
-      message: `formatting failed: Error: {"error":{"message":"Command failed: ${EXECUTABLE} format cache\\neverything exploded","code":1},"stderr":"everything exploded"}`
+      message: `formatting failed: Error: {"error":{"message":"Command failed: fastboot format cache\\neverything exploded","code":1},"stderr":"everything exploded"}`
     }),
     t.throwsAsync(fastboot.format("cache", undefined, 1337), {
       message:
@@ -225,7 +225,7 @@ test("erase()", async t => {
   await Promise.all([
     t.falsy(await fastboot.erase("cache")),
     t.throwsAsync(fastboot_error.erase("cache"), {
-      message: `erasing failed: Error: {"error":{"message":"Command failed: ${EXECUTABLE} erase cache\\nerror","code":1},"stderr":"error"}`
+      message: `erasing failed: Error: {"error":{"message":"Command failed: fastboot erase cache\\nerror","code":1},"stderr":"error"}`
     })
   ]);
 });
