@@ -18,17 +18,16 @@
 
 import test from "ava";
 
-import { DeviceTools } from "./module.js";
 import { deviceTools as fake } from "./__test-helpers/fake.js";
 
 test("constructor()", async t => {
-  const deviceTools_basic = new DeviceTools({});
+  const [[deviceTools_basic]] = fake()([]);
   t.truthy(deviceTools_basic);
-  const deviceTools_complex = new DeviceTools({
+  const [[deviceTools_complex]] = fake({
     adbOptions: { port: 1337 },
     fastbootOptions: { serial: true },
     heimdallOptions: {}
-  });
+  })([]);
   t.is(deviceTools_complex.adb.config.port, 1337);
 });
 
