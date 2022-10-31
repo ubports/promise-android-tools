@@ -18,13 +18,13 @@
 
 import { exec, spawn, ChildProcess, ExecException } from "./exec.js";
 import {
-  getAndroidToolPath,
-  getAndroidToolBaseDir,
+  getAndroidToolPath as toolPath,
+  getAndroidToolBaseDir as toolBaseDir,
   Tool as BundledTool
 } from "android-tools-bin";
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
-import { sep } from "node:path";
+import { sep, normalize } from "node:path";
 
 export type ProgressCallback = (percentage: number) => void;
 
@@ -122,11 +122,11 @@ export abstract class Tool extends Interface {
   }: ToolOptions) {
     super();
     this.tool = tool;
-    this.executable = getAndroidToolPath(this.tool as BundledTool);
+    this.executable = normalize(toolPath(this.tool as BundledTool));
     this.listen(...signals);
     this.extraArgs = extraArgs;
     this.extraEnv = extraEnv;
-    if (setPath) this.env.PATH = `${getAndroidToolBaseDir()}:${this.env.PATH}`;
+    if (setPath) this.env.PATH = `${toolBaseDir()}:${this.env.PATH}`;
     this.#initializeArgs(config, argsModel);
     this.applyConfig(options);
   }
@@ -268,6 +268,10 @@ export abstract class Tool extends Interface {
     /** standard error */
     stderr?: string
   ): string {
+    // REMOVE
+    console.log(error)
+    console.log(this.tool)
+    console.log(this.executable)
     if (
       stderr?.includes("Killed") ||
       stderr?.includes("killed by remote request") ||
