@@ -8,6 +8,10 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [5.0.0]
 
+### Changed
+
+- Major refactoring and Typescript migration, see the [README.md](./README.md) upgrade guide ([#73](https://github.com/ubports/promise-android-tools/pull/73))
+
 ### Added
 
 - Introduce a setPath option for tools ([#72](https://github.com/ubports/promise-android-tools/pull/72))
