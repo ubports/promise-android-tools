@@ -17,14 +17,18 @@
  */
 
 export class HierarchicalAbortController extends AbortController {
-  /** @param signals abort signals to listen to */
-  constructor(...signals: AbortSignal[]) {
+  constructor(
+    /** abort signals to listen to */
+    ...signals: AbortSignal[]
+  ) {
     super();
     this.listen(...signals);
   }
 
-  /** @param signals abort signals to listen to */
-  listen(...signals: AbortSignal[]) {
+  listen(
+    /** abort signals to listen to */
+    ...signals: AbortSignal[]
+  ) {
     for (const signal of signals) {
       if (signal.aborted) return this.abort();
       // @ts-ignore

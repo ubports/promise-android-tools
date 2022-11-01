@@ -19,8 +19,8 @@
 /** Remove falsy values from any object */
 export function removeFalsy(obj?: {}): any {
   if (typeof obj !== "object" || Array.isArray(obj)) return obj;
-  for (var i in obj) {
-    if (Object.getOwnPropertyDescriptor(obj, i)?.get) {
+  for (const i in obj) {
+    if ((Object.getOwnPropertyDescriptor(obj, i) as PropertyDescriptor).get) {
       Object.defineProperty(obj, i, {
         value: removeFalsy(obj[i]),
         writable: true

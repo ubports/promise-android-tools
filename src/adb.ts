@@ -179,13 +179,11 @@ export class Adb extends Tool {
     });
   }
 
-  /**
-   * Kill all adb servers and start a new one to rule them all
-   * @param options - new config options to apply
-   * @param serialOrUsbId - applies the --one-device SERIAL|USB flag, server will only connect to one USB device, specified by a serial number or USB device address
-   */
+  /** Kill all adb servers and start a new one to rule them all */
   public async startServer(
+    /** new config options to apply */
     options: AdbOptions = {},
+    /** applies the --one-device SERIAL|USB flag, server will only connect to one USB device, specified by a serial number or USB device address */
     serialOrUsbId?: string | number
   ): Promise<void> {
     this.applyConfig(options);
@@ -302,7 +300,7 @@ export class Adb extends Tool {
     namespace: "writex" | "readx" = "writex"
   ): number {
     return str.includes(namespace)
-      ? parseInt(str.split("len=")[1]?.split(" ")[0]) || 0
+      ? parseInt(str.split("len=")[1].split(" ")[0]) || 0
       : 0;
   }
 
@@ -315,7 +313,7 @@ export class Adb extends Tool {
     command: string,
     files: string[] = [],
     args: string[] = [],
-    progress: ProgressCallback = () => {}
+    progress: ProgressCallback
   ): Promise<void> {
     progress(0);
     if (!files.length) {
@@ -365,12 +363,7 @@ export class Adb extends Tool {
     }
   }
 
-  /**
-   * copy local files/directories to device
-   * @param files path to files
-   * @param dest destination path on the device
-   * @param progress progress function
-   */
+  /** copy local files/directories to device */
   public async push(
     files: string[] = [],
     dest: string,
@@ -379,11 +372,7 @@ export class Adb extends Tool {
     return this.spawnFileTransfer("push", files, [dest], progress);
   }
 
-  /**
-   * sideload an ota package
-   * @param file - path to a file to sideload
-   * @param progress progress function
-   */
+  /** sideload an ota package */
   public async sideload(
     file: string,
     progress: ProgressCallback = () => {}

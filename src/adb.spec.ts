@@ -224,6 +224,8 @@ test("push() should push files and resolve", async t => {
     "a",
     "some.cpp writex len=42\n" +
       "some.cpp writex len=1\n" +
+      "some.cpp hello\n" +
+      "some.cpp readx len=NaN\n" +
       "some.cpp writex len=NaN\n" +
       "some.cpp writex len=69\n",
     0
@@ -310,6 +312,7 @@ test("sideload() should sideload and resolve", async t => {
   ]);
   const progress = td.func(p => {});
   t.falsy(await adb.sideload("src/__test-helpers/test_file", progress));
+  t.falsy(await adb.sideload("src/__test-helpers/test_file"));
   td.verify(progress(0));
 });
 
