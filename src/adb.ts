@@ -39,6 +39,16 @@ const DEFAULT_PORT = 5037;
 const DEFAULT_HOST = "localhost";
 const DEFAULT_PROTOCOL = "tcp";
 
+export interface UbuntuBackupMetadata {
+  codename: string;
+  comment: string;
+  dir: string;
+  serialno: string | number;
+  size: string | number;
+  time: string;
+  restorations?: { codename: string; serialno: string; time: string }[];
+}
+
 export interface AdbConfig {
   /**   -a                       listen on all network interfaces, not just localhost */
   allInterfaces: boolean;
@@ -179,49 +189,43 @@ export class Adb extends Tool {
     serialOrUsbId?: string | number
   ): Promise<void> {
     this.applyConfig(options);
-    return this.killServer()
-      .then(() =>
-        this.exec(
-          "start-server",
-          ...(serialOrUsbId ? ["--one-device", serialOrUsbId] : [])
-        )
+    await this.killServer().then(() =>
+      this.exec(
+        "start-server",
+        ...(serialOrUsbId ? ["--one-device", serialOrUsbId] : [])
       )
-      .then(() => {});
+    );
   }
 
   /** Kill all running servers */
   public async killServer(): Promise<void> {
-    return this.exec("kill-server").then(() => {});
+    await this.exec("kill-server");
   }
 
   /** Specifically connect to a device (tcp) */
   public async connect(address: string): Promise<ActualDeviceState> {
-    return this.exec("connect", address).then(stdout => {
-      if (
-        stdout?.includes("no devices/emulators found") ||
-        stdout?.includes("Name or service not known")
-      ) {
-        throw this.error(new Error("no device"), stdout);
-      } else {
-        return this.wait();
-      }
-    });
+    const stdout = await this.exec("connect", address);
+    if (
+      stdout.includes("no devices/emulators found") ||
+      stdout.includes("Name or service not known")
+    ) {
+      throw this.error(new Error("no device"), stdout);
+    }
+    return this.wait();
   }
 
   /** kick connection from host side to force reconnect */
   public async reconnect(
     modifier?: "device" | "offline"
   ): Promise<ActualDeviceState> {
-    return this.exec("reconnect", modifier).then(stdout => {
-      if (
-        stdout?.includes("no devices/emulators found") ||
-        stdout?.includes("No route to host")
-      ) {
-        throw this.error(new Error("no device"), stdout);
-      } else {
-        return this.wait();
-      }
-    });
+    const stdout = await this.exec("reconnect", modifier);
+    if (
+      stdout.includes("no devices/emulators found") ||
+      stdout.includes("No route to host")
+    ) {
+      throw this.error(new Error("no device"), stdout);
+    }
+    return this.wait();
   }
 
   /** kick connection from device side to force reconnect */
@@ -257,24 +261,19 @@ export class Adb extends Tool {
 
   /** Get the devices serial number */
   public async getSerialno(): Promise<string> {
-    return this.exec("get-serialno").then(stdout => {
-      if (!stdout || stdout?.includes("unknown") || !SERIALNO.test(stdout)) {
-        throw this.error(
-          new Error(`invalid serial number: ${stdout?.trim()}`),
-          stdout
-        );
-      } else {
-        return stdout.trim();
-      }
-    });
+    const serialno = await this.exec("get-serialno");
+    if (serialno.includes("unknown") || !SERIALNO.test(serialno)) {
+      throw this.error(
+        new Error(`invalid serial number: ${serialno}`),
+        serialno
+      );
+    }
+    return serialno;
   }
 
-  /**
-   * run remote shell command
-   * @returns stdout
-   */
+  /** run remote shell command and resolve stdout */
   public async shell(...args: (string | number)[]): Promise<string> {
-    return this.exec("shell", args.join(" ")).then(stdout => stdout?.trim());
+    return this.exec("shell", args.join(" "));
   }
 
   /** determine child_process.spawn() result */
@@ -303,7 +302,7 @@ export class Adb extends Tool {
     namespace: "writex" | "readx" = "writex"
   ): number {
     return str.includes(namespace)
-      ? parseInt(str?.split("len=")[1]?.split(" ")[0]) || 0
+      ? parseInt(str.split("len=")[1]?.split(" ")[0]) || 0
       : 0;
   }
 
@@ -319,7 +318,7 @@ export class Adb extends Tool {
     progress: ProgressCallback = () => {}
   ): Promise<void> {
     progress(0);
-    if (!files?.length) {
+    if (!files.length) {
       // if there are no files, report 100% and resolve
       progress(1);
       return;
@@ -330,8 +329,8 @@ export class Adb extends Tool {
           files.map(file => stat(file).then(({ size }) => size))
         )
           .then(sizes => sizes.reduce((a, b) => a + b))
-          .catch(() => {
-            reject(this.error(new Error("file not found")));
+          .catch(error => {
+            reject(this.error(error));
             return 0;
           });
         let pushedSize = 0;
@@ -339,30 +338,29 @@ export class Adb extends Tool {
         let stderr = "";
         const cp = _this
           ._withEnv({ ADB_TRACE: "rwx" })
-          .spawn(command, ...files, ...args);
-        cp.once("exit", (code, signal) =>
-          resolve(_this.onCpExit(code, signal, stdout, stderr))
-        );
+          .spawn(command, ...files, ...args)
+          .once("exit", (code, signal) =>
+            resolve(_this.onCpExit(code, signal, stdout, stderr))
+          );
 
-        cp?.stdout?.on && cp.stdout.on("data", d => (stdout += d.toString()));
-        cp?.stderr?.on &&
-          cp.stderr.on("data", d => {
-            d.toString()
-              .split("\n")
-              .forEach(async (str: string) => {
-                if (!str.includes("cpp")) {
-                  stderr += str;
-                } else {
-                  pushedSize += _this.parseChunkSize(str);
-                  progress(
-                    _this.normalizeProgress(
-                      pushedSize,
-                      (await totalSize) as number
-                    )
-                  );
-                }
-              });
-          });
+        cp.stdout.on("data", d => (stdout += d.toString()));
+        cp.stderr.on("data", d => {
+          d.toString()
+            .split("\n")
+            .forEach(async (str: string) => {
+              if (!str.includes("cpp")) {
+                stderr += str;
+              } else {
+                pushedSize += _this.parseChunkSize(str);
+                progress(
+                  _this.normalizeProgress(
+                    pushedSize,
+                    (await totalSize) as number
+                  )
+                );
+              }
+            });
+        });
       });
     }
   }
@@ -401,11 +399,10 @@ export class Adb extends Tool {
    * sideload-auto-reboot is the same but reboots after sideloading.
    */
   public async reboot(state?: RebootState): Promise<void> {
-    return this.exec("reboot", state).then(stdout => {
-      if (stdout?.includes("failed"))
-        throw this.error(new Error(`reboot failed`), stdout);
-      else return;
-    });
+    const stdout = await this.exec("reboot", state);
+    if (stdout.includes("failed")) {
+      throw this.error(new Error(`reboot failed`), stdout);
+    }
   }
 
   /** Return the status of the device */
@@ -430,19 +427,18 @@ export class Adb extends Tool {
 
   /** read property from getprop or, failing that, the default.prop file */
   public async getprop(prop: string): Promise<string> {
-    return this.shell("getprop", prop).then(stdout => {
-      if (!stdout || stdout?.includes("not found")) {
-        return this.shell("cat", "default.prop").then(stdout => {
-          if (stdout && stdout.includes(`${prop}=`)) {
-            return stdout.split(`${prop}=`)[1].split("\n")[0].trim();
-          } else {
-            throw this.error(new Error("unknown getprop error"), stdout);
-          }
-        });
-      } else {
-        return stdout.trim();
-      }
-    });
+    const stdout = await this.shell("getprop", prop);
+    if (!stdout || stdout.includes("not found")) {
+      return this.shell("cat", "default.prop").then(stdout => {
+        if (stdout && stdout.includes(`${prop}=`)) {
+          return stdout.split(`${prop}=`)[1].split("\n")[0].trim();
+        } else {
+          throw this.error(new Error("unknown getprop error"), stdout);
+        }
+      });
+    } else {
+      return stdout;
+    }
   }
 
   /** get device codename from getprop or by reading the default.prop file */
@@ -554,35 +550,30 @@ export class Adb extends Tool {
 
   /** size of a file or directory */
   public async getFileSize(file: string): Promise<number> {
-    return this.shell("du -shk " + file).then(size => {
-      if (isNaN(parseFloat(size)))
-        throw this.error(new Error(`Cannot parse size from ${size}`), size);
-      else return parseFloat(size);
-    });
+    const size = await this.shell("du -shk " + file);
+    if (isNaN(parseFloat(size)))
+      throw this.error(new Error(`Cannot parse size from ${size}`), size);
+    return parseFloat(size);
   }
 
   /** available size of a partition */
   public async getAvailablePartitionSize(partition: string): Promise<number> {
-    return this.shell("df -k -P " + partition)
+    const size = await this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
-      .then(arr => parseInt(arr[arr.length - 3]))
-      .then(size => {
-        if (isNaN(size))
-          throw this.error(new Error(`Cannot parse size from ${size}`));
-        else return size;
-      });
+      .then(arr => parseInt(arr[arr.length - 3]));
+    if (isNaN(size))
+      throw this.error(new Error(`Cannot parse size from ${size}`));
+    return size;
   }
 
   /** total size of a partition */
   public async getTotalPartitionSize(partition: string): Promise<number> {
-    return this.shell("df -k -P " + partition)
+    const size = await this.shell("df -k -P " + partition)
       .then(stdout => stdout.split(/[ ,]+/))
-      .then(arr => parseInt(arr[arr.length - 5]))
-      .then(size => {
-        if (isNaN(size))
-          throw this.error(new Error(`Cannot parse size from ${size}`));
-        else return size;
-      });
+      .then(arr => parseInt(arr[arr.length - 5]));
+    if (isNaN(size))
+      throw this.error(new Error(`Cannot parse size from ${size}`));
+    return size;
   }
 
   /** [EXPERIMENTAL] Run a command via adb exec-out and pipe the result to a stream, e.g., from fs.createWriteStream() */
@@ -593,20 +584,23 @@ export class Adb extends Tool {
     const _this = this;
     return new Promise(function (resolve, reject) {
       let stderr = "";
-      const cp = _this.spawn("exec-out", `'${args.join(" ")}'`);
-      cp?.stdout && cp.stdout.pipe(writableStream);
-      cp?.stderr && cp.stderr.on("data", d => (stderr += d.toString()));
-      cp.once("exit", (code, signal) => {
-        writableStream.close();
-        if (code || signal)
-          reject(_this.error({ code, signal } as RawError, undefined, stderr));
-        else resolve();
-      });
+      const cp = _this
+        .spawn("exec-out", `'${args.join(" ")}'`)
+        .once("exit", (code, signal) => {
+          writableStream.close();
+          if (code || signal)
+            reject(
+              _this.error({ code, signal } as RawError, undefined, stderr)
+            );
+          else resolve();
+        });
+      cp.stdout.pipe(writableStream);
+      cp.stderr.on("data", d => (stderr += d.toString()));
     });
   }
 
   /** [EXPERIMENTAL] Backup "srcfile" from the device to local tar "destfile" */
-  public async createBackupTar(
+  private async createBackupTar(
     srcfile: string,
     destfile: string,
     progress: ProgressCallback
@@ -643,12 +637,12 @@ export class Adb extends Tool {
   }
 
   /** [EXPERIMENTAL] Restore tar "srcfile" */
-  public async restoreBackupTar(
+  private async restoreBackupTar(
     srcfile: string,
     progress: ProgressCallback = () => {}
   ): Promise<void> {
     progress(0);
-    return this.ensureState("recovery")
+    await this.ensureState("recovery")
       .then(() => this.shell("mkfifo /restore.pipe"))
       .then(() =>
         Promise.all([
@@ -656,16 +650,13 @@ export class Adb extends Tool {
           this.shell("cd /;", "cat /restore.pipe | tar -xvz")
         ])
       )
-      .then(() => this.shell("rm", "/restore.pipe"))
-      .then(() => {});
+      .then(() => this.shell("rm", "/restore.pipe"));
   }
 
-  /**
-   * List backups
-   * @param backupBaseDir path to backup storage location
-   * @returns backup list
-   */
-  public async listUbuntuBackups(backupBaseDir: string): Promise<{}[]> {
+  /** List backups */
+  public async listUbuntuBackups(
+    backupBaseDir: string
+  ): Promise<UbuntuBackupMetadata[]> {
     return readdir(backupBaseDir)
       .then(backups =>
         Promise.all(
@@ -683,98 +674,84 @@ export class Adb extends Tool {
       .catch(() => []);
   }
 
-  /**
-   * create a full backup of ubuntu touch
-   * @param backupBaseDir path to backup storage location
-   * @param comment description of the backup
-   * @param dataPartition data partition on the device
-   * @param progress progress function
-   * @returns backup object
-   */
+  /** create a full backup of ubuntu touch */
   public async createUbuntuTouchBackup(
     backupBaseDir: string,
     comment: string = "",
     dataPartition: string = "/data",
     progress: ProgressCallback = () => {}
-  ): Promise<{}> {
+  ): Promise<UbuntuBackupMetadata> {
     progress(0);
+    const codename = await this.getDeviceName();
+    const serialno = await this.getSerialno();
     const time = new Date().toISOString();
     const dir = path.join(backupBaseDir, time);
-    return this.ensureState("recovery")
-      .then(() => mkdir(dir, { recursive: true }))
-      .then(() =>
+    await Promise.all([
+      mkdir(dir, { recursive: true }),
+      this.ensureState("recovery").then(() =>
         Promise.all([
           this.shell("stat", "/data/user-data"),
           this.shell("stat", "/data/syste-mdata")
         ]).catch(() => this.shell("mount", dataPartition, "/data"))
       )
-      .then(() =>
-        this.createBackupTar(
-          "/data/system-data",
-          path.join(dir, "system.tar.gz"),
-          p => progress(p * 0.5)
-        )
-      )
-      .then(() =>
-        this.createBackupTar(
-          "/data/user-data",
-          path.join(dir, "user.tar.gz"),
-          p => progress(50 + p * 0.5)
-        )
-      )
-      .then(async () => {
-        const metadata = {
-          codename: await this.getDeviceName(),
-          serialno: await this.getSerialno(),
-          size:
-            (await this.getFileSize("/data/user-data")) +
-            (await this.getFileSize("/data/system-data")),
-          time,
-          comment: comment || `Ubuntu Touch backup created on ${time}`,
-          restorations: []
-        };
-        return writeFile(
-          path.join(dir, "metadata.json"),
-          JSON.stringify(metadata)
-        ).then(() => ({ ...metadata, dir }));
-      });
+    ]);
+    await this.createBackupTar(
+      "/data/system-data",
+      path.join(dir, "system.tar.gz"),
+      p => progress(p * 0.5)
+    );
+    await this.createBackupTar(
+      "/data/user-data",
+      path.join(dir, "user.tar.gz"),
+      p => progress(50 + p * 0.5)
+    );
+    const metadata = {
+      codename: await codename,
+      serialno: await serialno,
+      size:
+        (await this.getFileSize("/data/user-data")) +
+        (await this.getFileSize("/data/system-data")),
+      time,
+      comment: comment || `Ubuntu Touch backup created on ${time}`,
+      restorations: []
+    };
+    await writeFile(
+      path.join(dir, "metadata.json"),
+      JSON.stringify(metadata, null, "  ")
+    );
+    return { ...metadata, dir };
   }
 
-  /**
-   * restore a full backup of ubuntu touch
-   * @param dir directory where backup is stored
-   * @param progress progress function
-   * @returns backup object
-   */
+  /** restore a full backup of ubuntu touch */
   public async restoreUbuntuTouchBackup(
     dir: string,
     progress: ProgressCallback = () => {}
-  ): Promise<{}> {
+  ): Promise<UbuntuBackupMetadata> {
     progress(0); // FIXME report actual push progress
-    return Promise.all([
-      readFile(path.join(dir, "metadata.json")).then(r =>
-        JSON.parse(r.toString())
+    const codename = this.getDeviceName();
+    const serialno = this.getSerialno();
+    const time = new Date().toISOString();
+    const metadata = JSON.parse(
+      await readFile(path.join(dir, "metadata.json"), { encoding: "utf-8" })
+    );
+    metadata.restorations = [
+      ...(metadata.restorations || []),
+      { codename: await codename, serialno: await serialno, time }
+    ];
+    await this.ensureState("recovery");
+    progress(10);
+    await this.restoreBackupTar(path.join(dir, "system.tar.gz"));
+    progress(50);
+    await this.restoreBackupTar(path.join(dir, "user.tar.gz"));
+    progress(90);
+    await Promise.all([
+      writeFile(
+        path.join(dir, "metadata.json"),
+        JSON.stringify(metadata, null, "  ")
       ),
-      this.getDeviceName(),
-      this.getSerialno(),
-      new Date().toISOString(),
-      this.ensureState("recovery")
-    ]).then(([metadata, codename, serialno, time]) => {
-      metadata.restorations = [
-        ...(metadata.restorations || []),
-        { codename, serialno, time }
-      ];
-      return Promise.resolve(progress(10))
-        .then(() => this.restoreBackupTar(path.join(dir, "system.tar.gz")))
-        .then(() => progress(50))
-        .then(() => this.restoreBackupTar(path.join(dir, "user.tar.gz")))
-        .then(() => progress(90))
-        .then(() =>
-          writeFile(path.join(dir, "metadata.json"), JSON.stringify(metadata))
-        )
-        .then(() => this.reboot())
-        .then(() => progress(100))
-        .then(() => ({ ...metadata, dir }));
-    });
+      this.reboot()
+    ]);
+    progress(100);
+    return { ...metadata, dir };
   }
 }

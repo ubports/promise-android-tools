@@ -25,7 +25,7 @@ import { AdbError, RebootState } from "./adb.js";
 import { adbErrors } from "./__test-helpers/known_errors.js";
 import { WriteStream } from "fs";
 import sandbox from "./__test-helpers/sandbox.js";
-import { readFile } from "node:fs/promises";
+import { readFile, cp } from "node:fs/promises";
 import { adb as fake } from "./__test-helpers/fake.js";
 
 test.after(async t => sandbox.remove().catch(() => {}));
@@ -244,7 +244,7 @@ test("push() should push files and resolve", async t => {
 test("push() should reject if files not found by fs.stat()", async t => {
   const [[adb]] = fake()([]);
   await t.throwsAsync(adb.push(["src/__test-helpers/does not exist"], "dest"), {
-    message: "file not found"
+    message: /ENOENT/
   });
 });
 test("push() should reject if files not found by adb", async t => {
@@ -500,7 +500,7 @@ test("createBackupTar()", async t => {
   const [[adb]] = fake()(["1", "", 0, 1750]);
   const dest = `${await sandbox.create()}/backup.tar`;
   const progress = td.func(p => {});
-  t.falsy(await adb.createBackupTar("/cache", dest, progress));
+  t.falsy(await adb["createBackupTar"]("/cache", dest, progress));
   t.is(await readFile(dest, { encoding: "utf8" }), "1\n");
   td.verify(progress(0));
   // td.verify(progress(0.00195));
@@ -510,12 +510,12 @@ test("restoreBackupTar() should resolve", async t => {
   const [[adb]] = fake()(["1", "", 0]);
   const dest = await sandbox.createFile("backup.tar");
   const progress = td.func(p => {});
-  t.falsy(await adb.restoreBackupTar(dest, progress));
+  t.falsy(await adb["restoreBackupTar"](dest, progress));
   td.verify(progress(0));
 });
 test("restoreBackupTar() should throw", async t => {
   const [[adb]] = fake()(["", "", 1]);
-  await t.throwsAsync(adb.restoreBackupTar("dest"));
+  await t.throwsAsync(adb["restoreBackupTar"]("dest"));
 });
 
 test("listUbuntuBackups()", async t => {
@@ -550,14 +550,22 @@ test("createUbuntuTouchBackup()", async t => {
 
 test("restoreUbuntuTouchBackup()", async t => {
   const [[adb], [adb_error]] = fake()(["123", "", 0], ["1", "", 1]);
+  const dest = await sandbox.create();
+  await cp("./src/__test-helpers/fake_backup", dest, { recursive: true });
   const progress = td.func(p => {});
+  const ok = adb.restoreUbuntuTouchBackup(dest, progress);
+  t.like(await ok, {
+    codename: "bacon",
+    comment: "a fake backup",
+    dir: dest,
+    serialno: 1337,
+    size: 42,
+    time: "2000"
+  });
+  t.is((await ok).restorations?.length, 1);
+  t.like((await ok).restorations?.at(0), { codename: "123", serialno: "123" });
   await t.throwsAsync(
-    adb.restoreUbuntuTouchBackup("./src/__test-helpers/fake_backup", progress),
-    {
-      message: "file not found"
-    }
-  );
-  await t.throwsAsync(
-    adb_error.restoreUbuntuTouchBackup("./src/__test-helpers/fake_backup")
+    adb_error.restoreUbuntuTouchBackup("./src/__test-helpers/fake_backup"),
+    { message: "Command failed: adb shell getprop ro.product.device" }
   );
 });
