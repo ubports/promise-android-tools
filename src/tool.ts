@@ -327,13 +327,14 @@ export abstract class Tool extends Interface {
 
   /** Parse and simplify errors */
   protected error(error: RawError, stdout?: string, stderr?: string): RawError {
-    const r = new RegExp(this.executable, "g");
-    error.message &&= error.message?.replace(r, this.tool)?.trim();
+    error.message &&= error.message
+      ?.replaceAll(this.executable, this.tool)
+      ?.trim();
     console.log(error.message, "\n", this.executable);
     return new this.Error(
       error,
-      stdout?.replace(r, this.tool),
-      stderr?.replace(r, this.tool)
+      stdout?.replaceAll(this.executable, this.tool),
+      stderr?.replaceAll(this.executable, this.tool)
     );
   }
 

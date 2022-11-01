@@ -532,6 +532,7 @@ test("listUbuntuBackups()", async t => {
 });
 
 test("createUbuntuTouchBackup()", async t => {
+  if (process.platform === "win32") return t.pass();
   const [[adb], [adb_error]] = fake()(["123", "", 0], ["1", "", 1]);
   const dest = await sandbox.create();
   const progress = td.func(p => {});
