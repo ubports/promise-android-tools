@@ -1,8 +1,8 @@
-import { ExecException } from "../exec.js";
+import { RawError, ToolErrorMessage } from "../tool.js";
 
 interface KnownError {
-  expectedReturn: string;
-  error: Partial<ExecException>;
+  expectedReturn: ToolErrorMessage|string;
+  error: RawError;
   stdout?: string;
   stderr?: string;
 }

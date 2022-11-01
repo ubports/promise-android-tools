@@ -44,9 +44,11 @@
       "compile": "tsc"
     }
   },
+  "peerDependencies": {
+    "android-tools-bin": "^2.0.0"
+  },
   "dependencies": {
-    "android-tools-bin": "^2.0.0",
-    "tslib": "^2.4.0",
+    "tslib": "^2.4.1",
     "typescript-mix": "^3.1.3"
   },
   "devDependencies": {

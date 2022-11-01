@@ -24,7 +24,7 @@ import {
 } from "android-tools-bin";
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
-import { sep, normalize } from "node:path";
+import { normalize } from "node:path";
 
 export type Mutable<T> = {
   -readonly [P in keyof T]: T[P];
@@ -76,9 +76,10 @@ export interface ArgsModel {
 }
 
 export type RawError = Partial<ExecException & Mutable<DOMException | Error>>;
+export type ToolErrorMessage = "aborted" | "no device" | "more than one device" | "unauthorized" | "device offline" | "bootloader locked" | "enable unlocking" | "low battery" | "failed to boot";
 export interface ToolError extends Error, Partial<DOMException> {}
 export class ToolError extends Error implements ExecException, ToolError {
-  get message(): string {
+  get message(): ToolErrorMessage|string {
     if (this.killed) {
       return "aborted";
     } else {
@@ -255,9 +256,6 @@ export abstract class Tool extends Interface {
 
   /** helper functions */
   [key: `__${keyof typeof this.argsModel}`]: (val?: any) => this;
-  // FIXME https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html
-  // [Helper<ArgsModel>]!: (val: any) => this
-  // type Helper<Type> = `__${string & keyof Type}`;
 
   /** apply config options to the tool instance */
   applyConfig(config: typeof this.config): void {

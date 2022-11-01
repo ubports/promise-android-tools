@@ -8,14 +8,14 @@ This is still a work in progress. Not all functions have been added and API stab
 
 ## Usage
 
-Install the package by running `npm i promise-android-tools`.
+Install the package by running `npm i promise-android-tools android-tools-bin`.
 
 ### Quick-start example
 
 The default settings should cover most usecases.
 
-```javascript
-const { DeviceTools } = require("promise-android-tools");
+```typescript
+import { DeviceTools } from "promise-android-tools";
 const dt = new DeviceTools();
 
 dt.wait() // wait for any device
@@ -30,8 +30,8 @@ dt.wait() // wait for any device
 
 Events are available to log or introspect tool executions.
 
-```javascript
-const { DeviceTools } = require("promise-android-tools");
+```typescript
+import { DeviceTools } from "promise-android-tools";
 const dt = new DeviceTools();
 
 dt.on("exec", r => console.log("exec", r));
@@ -56,8 +56,8 @@ dt.adb.shell("echo", "test");
 
 The library provides most features of the eponymous command-line utilities wrapped in the available classes. This example only serves as a demonstration, confer to the documenation to discover the full power of this library.
 
-```javascript
-const { DeviceTools } = require("promise-android-tools");
+```typescript
+import { DeviceTools } from "promise-android-tools";
 const dt = new DeviceTools();
 
 db.adb
@@ -91,17 +91,69 @@ function progress(p) {
 
 ### Documentation
 
-When using the library with modern editors like VScode/VScodium or Atom, you can make use of IntelliSense. Run `npm run docs` to build html from JSdoc documentation for all API functions.
+Typescript types are bundled and IntelliSense is supported. Run `npm run docs` to build html from JSdoc/Typedoc comments for all methods and types.
 
 ## API Changes, Deprecation Notices, Upgrade Guide
 
 ### Upgrading to 5.x
 
-Version 5.0.0 introduces...
+For version 5.0.0, the library has been migrated to typescript for increased stability and type safety. Many under-the-hood components have been redesigned for more efficient abstraction and ease of use.
 
-typescript
+#### Breaking Changes
+
+- CancelablePromise has been replaced by the the native [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) interface. The `<tool>.kill()` method has been renamed to `<tool>.abort()`.
+- Error handling has been restructured. Tools now throw `AdbError`, `FastbootError`, or `HeimdallError` objects implementing the `ToolError` interface and providing the original unaltered error in the `cause` property. Current standardized error messages include `"aborted" | "no device" | "more than one device" | "unauthorized" | "device offline" | "bootloader locked" | "enable unlocking" | "low battery" | "failed to boot"`.
+- Dependencies have been re-evaluated and many external libraries have been replaced with more solid solutions from modern NodeJS built-ins.
+
+#### Noteworthy new Features
+
+- Global command-line options for tools are now configurable on the `<tool>.config` property and described using an `ArgsModel`. The `<tool>._withConfig()` function allows overriding options temporarily. Additionally, `<tool>.__<option>()` helper functions are provided for all options.
+
+```typescript
+import { Adb, Fastboot } from "promise-android-tools";
+const adb = new Adb();
+console.log(
+  adb.config.serialno, // null
+  adb._withConfig({serialno: "1337"}).config.serialno, // "1337"
+  adb.__serialno("1337").config.serialno // "1337"
+)
+adb.hasAccess(); // will run command `adb devices`
+adb._withConfig({serialno: "1337"}).hasAccess(); // will run command `adb -s 1337 devices`
+adb.__serialno("1337").hasAccess(); // will run command `adb -s 1337 devices`
+```
+
+- Tools can be passed [AbortSignal](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)s to `listen` to to cancel pending operations. The `<tool>._withSignals()` function returns a clone fo the tool instance listening to additional abort signals. A clone that will time out after a specified amount of time can be created using the `<tool>._withTimeout()` function.
+
+```typescript
+import { Adb, HierarchicalAbortController } from "promise-android-tools";
+const adb = new Adb();
+adb.wait(); // will resolve once a device is detected or reject on error/abort
+adb.abort(); // will abort ALL pending promises from the instance
+```
+
+An additional controller can be passed to listen to.
+
+```typescript
+import { Adb, Fastboot, HierarchicalAbortController } from "promise-android-tools";
+const controller = new HierarchicalAbortController();
+const adb = new Adb({signals: [controller.signal]});
+const fastboot = new Fastboot({signals: [controller.signal]});
+Promise.all([ adb.wait(), fastboot.wait() ]);
+controller.abort(); // will abort ALL pending promises from both instances
+```
+
+Helper functions!
+
+```typescript
+import { Adb, HierarchicalAbortController } from "promise-android-tools";
+const adb = new Adb();
+adb._withTimeout(1000).wait(); // will resolve if a device is detected or automatically reject after the timeout of one second
+const controller = new HierarchicalAbortController();
+adb._withSignals(controller.signal).wait(); // will be pending until aborted
+controller.abort(); // will abort only this promise, not the instance overall
+```
+
 argsModel and config
-removes fs-extra dependency
 deprecate execOptions
 
 ### Upgrading to 4.x
