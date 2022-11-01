@@ -76,10 +76,19 @@ export interface ArgsModel {
 }
 
 export type RawError = Partial<ExecException & Mutable<DOMException | Error>>;
-export type ToolErrorMessage = "aborted" | "no device" | "more than one device" | "unauthorized" | "device offline" | "bootloader locked" | "enable unlocking" | "low battery" | "failed to boot";
+export type ToolErrorMessage =
+  | "aborted"
+  | "no device"
+  | "more than one device"
+  | "unauthorized"
+  | "device offline"
+  | "bootloader locked"
+  | "enable unlocking"
+  | "low battery"
+  | "failed to boot";
 export interface ToolError extends Error, Partial<DOMException> {}
 export class ToolError extends Error implements ExecException, ToolError {
-  get message(): ToolErrorMessage|string {
+  get message(): ToolErrorMessage | string {
     if (this.killed) {
       return "aborted";
     } else {

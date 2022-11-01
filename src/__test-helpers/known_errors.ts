@@ -1,7 +1,7 @@
 import { RawError, ToolErrorMessage } from "../tool.js";
 
 interface KnownError {
-  expectedReturn: ToolErrorMessage|string;
+  expectedReturn: ToolErrorMessage | string;
   error: RawError;
   stdout?: string;
   stderr?: string;
