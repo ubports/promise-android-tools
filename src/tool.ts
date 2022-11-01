@@ -106,15 +106,21 @@ export class ToolError extends Error implements ExecException, ToolError {
       );
     }
   }
+
   public get name(): string {
     return this.constructor.name;
   }
+
   cause?: RawError;
+
   stdout?: string;
+
   stderr?: string;
+
   get cmd(): string | undefined {
     return this.cause?.cmd;
   }
+
   get killed(): boolean {
     return (
       this.cause?.killed ||
@@ -270,7 +276,12 @@ export abstract class Tool extends Interface {
   applyConfig(config: typeof this.config): void {
     for (const key in this.config) {
       if (
-        Object.getOwnPropertyDescriptor(this.config, key)?.writable &&
+        (
+          Object.getOwnPropertyDescriptor(
+            this.config,
+            key
+          ) as PropertyDescriptor
+        ).writable &&
         Object.hasOwn(config, key)
       ) {
         this.config[key] = config[key];
@@ -300,7 +311,7 @@ export abstract class Tool extends Interface {
     })
       .then(({ stdout, stderr }) => {
         this.emit("exec", common.removeFalsy({ cmd, stdout, stderr }));
-        return stdout?.trim() || stderr?.trim();
+        return stdout.trim() || stderr.trim();
       })
       .catch(({ message, code, signal, killed, stdout, stderr }) => {
         const error = this.error(

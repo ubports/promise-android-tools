@@ -86,7 +86,7 @@ test("_withConfig() should add config", async t => {
   t.deepEqual(toolWithConfig.args, ["-w"]);
   t.deepEqual(toolFromHelper.config, { wipe: true });
   t.deepEqual(toolFromHelper.args, ["-w"]);
-  tool.applyConfig({ wipe: true });
+  tool.applyConfig({ wipe: true, nonexistent: true });
   t.deepEqual(tool.config, { wipe: true });
   t.deepEqual(tool.args, ["-w"]);
 });
@@ -184,15 +184,22 @@ test("ToolError", async t => {
   genericErrors("tool").forEach(({ error, stdout, stderr, expectedReturn }) => {
     const [[tool]] = fake({ tool: "tool" })([]);
     tool.executable = "/path/to/tool";
-    t.is(
-      new tool.Error(error, stdout, stderr).message,
-      expectedReturn,
-      `expected ${expectedReturn} for ${JSON.stringify({
+    t.like(
+      new tool.Error(error, stdout, stderr),
+      { message: expectedReturn, cmd: error?.cmd },
+      `for ${JSON.stringify({
         error,
         stdout,
         stderr
       })}`
     );
+    t.like(new tool.Error({ killed: true }), {
+      message: "aborted"
+    });
+    t.like(new tool.Error(), { message: "ToolError", cmd: undefined });
+    t.like(new tool.Error({ message: "cause message" }), {
+      message: "cause message"
+    });
   });
 });
 

@@ -14,6 +14,12 @@ export const genericErrors = (tool: string): KnownError[] => [
   },
   {
     expectedReturn: "aborted",
+    error: { message: "aborted" },
+    stdout: undefined,
+    stderr: undefined
+  },
+  {
+    expectedReturn: "aborted",
     error: { killed: false, code: 1, cmd: "command" },
     stdout: undefined,
     stderr: "adb died: Killed"
