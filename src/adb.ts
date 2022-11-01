@@ -671,8 +671,6 @@ export class Adb extends Tool {
     progress: ProgressCallback = () => {}
   ): Promise<UbuntuBackupMetadata> {
     progress(0);
-    const codename = await this.getDeviceName();
-    const serialno = await this.getSerialno();
     const time = new Date().toISOString();
     const dir = path.join(backupBaseDir, time);
     await Promise.all([
@@ -694,9 +692,11 @@ export class Adb extends Tool {
       path.join(dir, "user.tar.gz"),
       p => progress(50 + p * 0.5)
     );
+    const codename = await this.getDeviceName();
+    const serialno = await this.getSerialno();
     const metadata = {
-      codename: await codename,
-      serialno: await serialno,
+      codename,
+      serialno,
       size:
         (await this.getFileSize("/data/user-data")) +
         (await this.getFileSize("/data/system-data")),
@@ -717,15 +717,15 @@ export class Adb extends Tool {
     progress: ProgressCallback = () => {}
   ): Promise<UbuntuBackupMetadata> {
     progress(0); // FIXME report actual push progress
-    const codename = this.getDeviceName();
-    const serialno = this.getSerialno();
     const time = new Date().toISOString();
     const metadata = JSON.parse(
       await readFile(path.join(dir, "metadata.json"), { encoding: "utf-8" })
     );
+    const codename = await this.getDeviceName();
+    const serialno = await this.getSerialno();
     metadata.restorations = [
       ...(metadata.restorations || []),
-      { codename: await codename, serialno: await serialno, time }
+      { codename, serialno, time }
     ];
     await this.ensureState("recovery");
     progress(10);
