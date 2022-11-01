@@ -294,7 +294,7 @@ test("reboot() should resolve", async t => {
 test("reboot() should reject on error", async t => {
   const [[adb]] = fake()(["failed", "", 0]);
   return t.throwsAsync(adb.reboot(), {
-    message: "reboot failed: failed"
+    message: "reboot failed"
   });
 });
 
@@ -358,7 +358,7 @@ test("getprop() should handle error in cat", async t => {
     new Error("this is wrong")
   );
   await t.throwsAsync(adb.getDeviceName(), {
-    message: "getprop error: Error: this is wrong"
+    message: "this is wrong"
   });
 });
 
@@ -428,8 +428,7 @@ testrecoveryfstabs.forEach(device => {
     test(`format() should reject on error with ${partition.mountpoint} for ${device.device}`, async t => {
       const [[adb]] = fake()(["/dev/block/data /data", "", 0]);
       await t.throwsAsync(adb.format("data"), {
-        message:
-          "failed to format data: Error: failed to mount: /dev/block/data /data"
+        message: "failed to mount: /dev/block/data /data"
       });
     });
   });
@@ -456,7 +455,7 @@ test("getFileSize() should resolve size", async t => {
 test("getFileSize() should reject on error", async t => {
   const [[adb]] = fake()(["invalid", "", 0]);
   await t.throwsAsync(adb.getFileSize("/cache/test.txt"), {
-    message: "Unable to get size: Error: Cannot parse size from invalid"
+    message: "Cannot parse size from invalid"
   });
 });
 
@@ -467,7 +466,7 @@ test("getAvailablePartitionSize() should resolve size", async t => {
 test("getAvailablePartitionSize() should reject on error", async t => {
   const [[adb]] = fake()(["invalid", "", 0]);
   await t.throwsAsync(adb.getAvailablePartitionSize("/wtf"), {
-    message: "Unable to get size: Error: Cannot parse size from NaN"
+    message: "Cannot parse size from NaN"
   });
 });
 
@@ -478,7 +477,7 @@ test("getTotalPartitionSize() should resolve size", async t => {
 test("getTotalPartitionSize() should reject on error", async t => {
   const [[adb]] = fake()(["invalid", "", 0]);
   await t.throwsAsync(adb.getTotalPartitionSize("/wtf"), {
-    message: "Unable to get size: Error: Cannot parse size from NaN"
+    message: "Cannot parse size from NaN"
   });
 });
 
@@ -552,7 +551,7 @@ test("restoreUbuntuTouchBackup()", async t => {
   await t.throwsAsync(
     adb.restoreUbuntuTouchBackup("./src/__test-helpers/fake_backup", progress),
     {
-      message: "Failed to restore: Error: Restore failed: Error: file not found"
+      message: "file not found"
     }
   );
   await t.throwsAsync(

@@ -331,7 +331,7 @@ export class Adb extends Tool {
         )
           .then(sizes => sizes.reduce((a, b) => a + b))
           .catch(() => {
-            reject(new Error("file not found"));
+            reject(this.error(new Error("file not found")));
             return 0;
           });
         let pushedSize = 0;
@@ -403,7 +403,7 @@ export class Adb extends Tool {
   public async reboot(state?: RebootState): Promise<void> {
     return this.exec("reboot", state).then(stdout => {
       if (stdout?.includes("failed"))
-        throw new Error(`reboot failed: ${stdout}`);
+        throw this.error(new Error(`reboot failed`), stdout);
       else return;
     });
   }
@@ -432,17 +432,13 @@ export class Adb extends Tool {
   public async getprop(prop: string): Promise<string> {
     return this.shell("getprop", prop).then(stdout => {
       if (!stdout || stdout?.includes("not found")) {
-        return this.shell("cat", "default.prop")
-          .catch(e => {
-            throw new Error("getprop error: " + e);
-          })
-          .then(stdout => {
-            if (stdout && stdout.includes(`${prop}=`)) {
-              return stdout.split(`${prop}=`)[1].split("\n")[0].trim();
-            } else {
-              throw new Error("unknown getprop error");
-            }
-          });
+        return this.shell("cat", "default.prop").then(stdout => {
+          if (stdout && stdout.includes(`${prop}=`)) {
+            return stdout.split(`${prop}=`)[1].split("\n")[0].trim();
+          } else {
+            throw this.error(new Error("unknown getprop error"), stdout);
+          }
+        });
       } else {
         return stdout.trim();
       }
@@ -479,7 +475,8 @@ export class Adb extends Tool {
     return this.shell("echo", ".")
       .then(stdout => {
         if (stdout == ".") return true;
-        else throw new Error("unexpected response: " + stdout);
+        else
+          throw this.error(new Error("unexpected response: " + stdout), stdout);
       })
       .catch(error => {
         if (error.message && error.message.includes("no device")) {
@@ -502,20 +499,17 @@ export class Adb extends Tool {
 
   /** Format partition */
   public async format(partition: string): Promise<void> {
-    return this.shell("cat", "/etc/recovery.fstab")
-      .then(fstab => {
-        const block = this.findPartitionInFstab(partition, fstab);
-        return this.shell("umount", `/${partition}`)
-          .then(() => this.shell("make_ext4fs", block))
-          .then(() => this.shell("mount", `/${partition}`))
-          .then(error => {
-            if (error) throw new Error("failed to mount: " + error);
-            else return;
-          });
-      })
-      .catch(error => {
-        throw new Error("failed to format " + partition + ": " + error);
-      });
+    return this.shell("cat", "/etc/recovery.fstab").then(fstab => {
+      const block = this.findPartitionInFstab(partition, fstab);
+      return this.shell("umount", `/${partition}`)
+        .then(() => this.shell("make_ext4fs", block))
+        .then(() => this.shell("mount", `/${partition}`))
+        .then(error => {
+          if (error)
+            throw this.error(new Error("failed to mount: " + error), error);
+          else return;
+        });
+    });
   }
 
   /** Format cache if possible and rm -rf its contents */
@@ -536,7 +530,7 @@ export class Adb extends Tool {
         )[0]
         .split(" ")[0];
     } catch (error) {
-      throw new Error("failed to parse fstab");
+      throw this.error(error as RawError);
     }
   }
 
@@ -551,7 +545,7 @@ export class Adb extends Tool {
         typeof stdout !== "string" ||
         !stdout.includes("/" + partition)
       ) {
-        throw new Error("partition not found");
+        throw this.error(new Error("partition not found"), stdout);
       } else {
         return stdout.includes(" on /" + partition + " type " + type);
       }
@@ -560,15 +554,11 @@ export class Adb extends Tool {
 
   /** size of a file or directory */
   public async getFileSize(file: string): Promise<number> {
-    return this.shell("du -shk " + file)
-      .then(size => {
-        if (isNaN(parseFloat(size)))
-          throw new Error(`Cannot parse size from ${size}`);
-        else return parseFloat(size);
-      })
-      .catch(e => {
-        throw new Error(`Unable to get size: ${e}`);
-      });
+    return this.shell("du -shk " + file).then(size => {
+      if (isNaN(parseFloat(size)))
+        throw this.error(new Error(`Cannot parse size from ${size}`), size);
+      else return parseFloat(size);
+    });
   }
 
   /** available size of a partition */
@@ -577,11 +567,9 @@ export class Adb extends Tool {
       .then(stdout => stdout.split(/[ ,]+/))
       .then(arr => parseInt(arr[arr.length - 3]))
       .then(size => {
-        if (isNaN(size)) throw new Error(`Cannot parse size from ${size}`);
+        if (isNaN(size))
+          throw this.error(new Error(`Cannot parse size from ${size}`));
         else return size;
-      })
-      .catch(e => {
-        throw new Error(`Unable to get size: ${e}`);
       });
   }
 
@@ -591,11 +579,9 @@ export class Adb extends Tool {
       .then(stdout => stdout.split(/[ ,]+/))
       .then(arr => parseInt(arr[arr.length - 5]))
       .then(size => {
-        if (isNaN(size)) throw new Error(`Cannot parse size from ${size}`);
+        if (isNaN(size))
+          throw this.error(new Error(`Cannot parse size from ${size}`));
         else return size;
-      })
-      .catch(e => {
-        throw new Error(`Unable to get size: ${e}`);
       });
   }
 
@@ -671,10 +657,7 @@ export class Adb extends Tool {
         ])
       )
       .then(() => this.shell("rm", "/restore.pipe"))
-      .then(() => {})
-      .catch(e => {
-        throw new Error(`Restore failed: ${e}`);
-      });
+      .then(() => {});
   }
 
   /**
@@ -776,26 +759,22 @@ export class Adb extends Tool {
       this.getSerialno(),
       new Date().toISOString(),
       this.ensureState("recovery")
-    ])
-      .then(([metadata, codename, serialno, time]) => {
-        metadata.restorations = [
-          ...(metadata.restorations || []),
-          { codename, serialno, time }
-        ];
-        return Promise.resolve(progress(10))
-          .then(() => this.restoreBackupTar(path.join(dir, "system.tar.gz")))
-          .then(() => progress(50))
-          .then(() => this.restoreBackupTar(path.join(dir, "user.tar.gz")))
-          .then(() => progress(90))
-          .then(() =>
-            writeFile(path.join(dir, "metadata.json"), JSON.stringify(metadata))
-          )
-          .then(() => this.reboot())
-          .then(() => progress(100))
-          .then(() => ({ ...metadata, dir }));
-      })
-      .catch(e => {
-        throw new Error(`Failed to restore: ${e}`);
-      });
+    ]).then(([metadata, codename, serialno, time]) => {
+      metadata.restorations = [
+        ...(metadata.restorations || []),
+        { codename, serialno, time }
+      ];
+      return Promise.resolve(progress(10))
+        .then(() => this.restoreBackupTar(path.join(dir, "system.tar.gz")))
+        .then(() => progress(50))
+        .then(() => this.restoreBackupTar(path.join(dir, "user.tar.gz")))
+        .then(() => progress(90))
+        .then(() =>
+          writeFile(path.join(dir, "metadata.json"), JSON.stringify(metadata))
+        )
+        .then(() => this.reboot())
+        .then(() => progress(100))
+        .then(() => ({ ...metadata, dir }));
+    });
   }
 }

@@ -64,17 +64,13 @@ export class Heimdall extends Tool {
 
   /** Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device. */
   printPit(file?: string): Promise<string[]> {
-    return this.exec("print-pit", ...(file ? ["--file", file] : []))
-      .then(r =>
-        r
-          .split("\n\nEnding session...")[0]
-          .split(/--- Entry #\d ---/)
-          .slice(1)
-          .map(r => r.trim())
-      )
-      .catch(error => {
-        throw error;
-      });
+    return this.exec("print-pit", ...(file ? ["--file", file] : [])).then(r =>
+      r
+        .split("\n\nEnding session...")[0]
+        .split(/--- Entry #\d ---/)
+        .slice(1)
+        .map(r => r.trim())
+    );
   }
 
   /** get partitions from pit file */
