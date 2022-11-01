@@ -330,7 +330,6 @@ export abstract class Tool extends Interface {
     error.message &&= error.message
       ?.replaceAll(this.executable, this.tool)
       ?.trim();
-    console.log(error.message, "\n", this.executable);
     return new this.Error(
       error,
       stdout?.replaceAll(this.executable, this.tool),
