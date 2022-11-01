@@ -163,131 +163,127 @@ export class Fastboot extends Tool {
   }
 
   /** Write a file to a flash partition */
-  flash(
+  async flash(
     images: FastbootFlashImage[],
     progress: ProgressCallback = () => {}
   ): Promise<void> {
     progress(0);
     const _this = this;
     // build a promise chain to flash all images sequentially
-    return images
-      .reduce(
-        (prev, { raw, partition, flags, file }, i) =>
-          prev.then(
-            () =>
-              new Promise((resolve, reject) => {
-                let stdout = "";
-                let stderr = "";
-                let offset = i / images.length;
-                let scale = 1 / images.length;
-                let sparseCurr = 1;
-                let sparseTotal = 1;
-                let sparseOffset = () => (sparseCurr - 1) / sparseTotal;
-                let sparseScale = () => 1 / sparseTotal;
-                const cp = _this.spawn(
-                  raw ? "flash:raw" : "flash",
-                  partition,
-                  ...(flags || []),
-                  file
-                );
-                cp.once("exit", (code, signal) => {
-                  if (code || signal) {
-                    reject(
-                      _this.error({ code, signal } as RawError, stdout, stderr)
-                    );
-                  } else {
-                    resolve("bootloader");
-                  }
-                });
-                cp?.stdout?.on("data", d => (stdout += d.toString()));
-                cp?.stderr?.on("data", d => {
-                  d.toString()
-                    .trim()
-                    .split("\n")
-                    .forEach((str: string) => {
-                      // FIXME improve and simplify logic
-                      try {
-                        if (!str.includes("OKAY")) {
-                          if (str.includes(`Sending '${partition}'`)) {
-                            progress(offset + 0.3 * scale);
-                          } else if (
-                            str.includes(`Sending sparse '${partition}'`)
-                          ) {
-                            [sparseCurr, sparseTotal] = str
-                              .split(/' |\/| \(/)
-                              .slice(1, 3)
-                              .map(parseFloat);
-                            progress(
-                              offset +
-                                sparseOffset() * scale +
-                                sparseScale() * 0.33 * scale
-                            );
-                          } else if (str.includes(`Writing '${partition}'`)) {
-                            progress(
-                              offset +
-                                sparseOffset() * scale +
-                                sparseScale() * 0.85 * scale
-                            );
-                          } else if (str.includes(`Finished '${partition}'`)) {
-                            progress(offset + scale);
-                          } else {
-                            throw this.error(
-                              new Error(`failed to parse: ${str}`),
-                              undefined,
-                              d.toString().trim()
-                            );
-                          }
+    await images.reduce(
+      (prev, { raw, partition, flags, file }, i) =>
+        prev.then(
+          () =>
+            new Promise((resolve, reject) => {
+              let stdout = "";
+              let stderr = "";
+              let offset = i / images.length;
+              let scale = 1 / images.length;
+              let sparseCurr = 1;
+              let sparseTotal = 1;
+              let sparseOffset = () => (sparseCurr - 1) / sparseTotal;
+              let sparseScale = () => 1 / sparseTotal;
+              const cp = _this.spawn(
+                raw ? "flash:raw" : "flash",
+                partition,
+                ...(flags || []),
+                file
+              );
+              cp.once("exit", (code, signal) => {
+                if (code || signal) {
+                  reject(
+                    _this.error({ code, signal } as RawError, stdout, stderr)
+                  );
+                } else {
+                  resolve("bootloader");
+                }
+              });
+              cp.stdout.on("data", d => (stdout += d.toString()));
+              cp.stderr.on("data", d => {
+                d.toString()
+                  .trim()
+                  .split("\n")
+                  .forEach((str: string) => {
+                    // FIXME improve and simplify logic
+                    try {
+                      if (!str.includes("OKAY")) {
+                        if (str.includes(`Sending '${partition}'`)) {
+                          progress(offset + 0.3 * scale);
+                        } else if (
+                          str.includes(`Sending sparse '${partition}'`)
+                        ) {
+                          [sparseCurr, sparseTotal] = str
+                            .split(/' |\/| \(/)
+                            .slice(1, 3)
+                            .map(parseFloat);
+                          progress(
+                            offset +
+                              sparseOffset() * scale +
+                              sparseScale() * 0.33 * scale
+                          );
+                        } else if (str.includes(`Writing '${partition}'`)) {
+                          progress(
+                            offset +
+                              sparseOffset() * scale +
+                              sparseScale() * 0.85 * scale
+                          );
+                        } else if (str.includes(`Finished '${partition}'`)) {
+                          progress(offset + scale);
+                        } else {
+                          throw this.error(
+                            new Error(`failed to parse: ${str}`),
+                            undefined,
+                            d.toString().trim()
+                          );
                         }
-                      } catch (e) {
-                        stderr += str;
                       }
-                    });
-                });
-              })
-          ),
-        _this.wait()
-      )
-      .then(() => {});
+                    } catch (e) {
+                      stderr += str;
+                    }
+                  });
+              });
+            })
+        ),
+      _this.wait()
+    );
   }
 
   /** Download and boot kernel */
-  boot(image: string): Promise<void> {
-    return this.exec("boot", image).then(() => {});
+  async boot(image: string): Promise<void> {
+    await this.exec("boot", image);
   }
 
   /** Reflash device from update.zip and set the flashed slot as active */
-  update(image: string, wipe: string | boolean = false): Promise<void> {
-    return this._withConfig({ wipe })
-      .exec("update", image)
-      .then(() => {});
+  async update(image: string, wipe: string | boolean = false): Promise<void> {
+    await this._withConfig({ wipe }).exec("update", image);
   }
 
   /** Reboot device into bootloader */
-  rebootBootloader(): Promise<void> {
-    return this.exec("reboot-bootloader").then(() => {});
+  async rebootBootloader(): Promise<void> {
+    await this.exec("reboot-bootloader");
   }
 
   /**
    * Reboot device into userspace fastboot (fastbootd) mode
    * Note: this only works on devices that support dynamic partitions.
    */
-  rebootFastboot(): Promise<void> {
-    return this.exec("reboot-fastboot").then(() => {});
+  async rebootFastboot(): Promise<void> {
+    await this.exec("reboot-fastboot");
   }
 
   /** Reboot device into recovery */
-  rebootRecovery(): Promise<void> {
-    return this.exec("reboot-recovery").then(() => {});
+  async rebootRecovery(): Promise<void> {
+    await this.exec("reboot-recovery");
   }
 
   /** Reboot device */
-  reboot(): Promise<void> {
-    return this.exec("reboot").then(() => {});
+  async reboot(): Promise<void> {
+    await this.exec("reboot");
   }
 
   /** Continue with autoboot */
-  continue(): Promise<void> {
-    return this.exec("continue").then(() => {});
+  async continue(): Promise<void> {
+    await this.exec("continue");
   }
 
   /** Format a flash partition. Can override the fs type and/or size the bootloader reports */
@@ -301,15 +297,15 @@ export class Fastboot extends Tool {
         message: "size specification requires type to be specified as well"
       });
     }
-    return this.exec(
+    await this.exec(
       `format${type ? ":" + type : ""}${size ? ":" + size : ""}`,
       partition
-    ).then(() => {});
+    );
   }
 
   /** Erase a flash partition */
-  erase(partition: string): Promise<void> {
-    return this.exec("erase", partition).then(() => {});
+  async erase(partition: string): Promise<void> {
+    await this.exec("erase", partition);
   }
 
   /** Sets the active slot */
@@ -336,88 +332,86 @@ export class Fastboot extends Tool {
   }
 
   /** Resize a logical partition with the given name and final size, in the super partition */
-  resizeLogicalPartition(
+  async resizeLogicalPartition(
     partition: string,
     size: string | number
   ): Promise<void> {
-    return this.exec("resize-logical-partition", partition, size).then(
-      () => {}
-    );
+    await this.exec("resize-logical-partition", partition, size);
   }
 
   /** Delete a logical partition with the given name */
-  deleteLogicalPartition(partition: string): Promise<void> {
-    return this.exec("delete-logical-partition", partition).then(() => {});
+  async deleteLogicalPartition(partition: string): Promise<void> {
+    await this.exec("delete-logical-partition", partition);
   }
 
   /** Wipe the super partition and reset the partition layout */
-  wipeSuper(image: string): Promise<void> {
-    return this.exec("wipe-super", image).then(() => {});
+  async wipeSuper(image: string): Promise<void> {
+    await this.exec("wipe-super", image);
   }
 
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
 
-  /**
-   * Lift OEM lock
-   * @param code optional unlock code (including 0x if necessary)
-   */
-  oemUnlock(code?: string | number): Promise<void> {
-    return this.exec("oem", "unlock", code)
-      .then(() => {})
-      .catch(error => {
-        if (
-          error?.message.includes("Already Unlocked") ||
-          error?.message.includes("Not necessary")
+  /** Lift OEM lock */
+  async oemUnlock(
+    /** optional unlock code (including 0x if necessary) */
+    code?: string | number
+  ): Promise<void> {
+    try {
+      await this.exec("oem", "unlock", code);
+    } catch (error) {
+      if (
+        !(
+          error instanceof Error &&
+          error.message.match(/Already Unlocked|Not necessary/)
         )
-          return;
-        else throw error;
-      });
+      )
+        throw error;
+    }
   }
 
   /** Enforce OEM lock */
-  oemLock(): Promise<void> {
-    return this.exec("oem", "lock").then(() => {});
+  async oemLock(): Promise<void> {
+    await this.exec("oem", "lock");
   }
 
   /** unlock partitions for flashing */
-  flashingUnlock(): Promise<void> {
-    return this.exec("flashing", "unlock").then(() => {});
+  async flashingUnlock(): Promise<void> {
+    await this.exec("flashing", "unlock");
   }
 
   /** lock partitions for flashing */
-  flashingLock(): Promise<void> {
-    return this.exec("flashing", "lock").then(() => {});
+  async flashingLock(): Promise<void> {
+    await this.exec("flashing", "lock");
   }
 
   /** unlock 'critical' bootloader partitions */
-  flashingUnlockCritical(): Promise<void> {
-    return this.exec("flashing", "unlock_critical").then(() => {});
+  async flashingUnlockCritical(): Promise<void> {
+    await this.exec("flashing", "unlock_critical");
   }
 
   /** lock 'critical' bootloader partitions */
-  flashingLockCritical(): Promise<void> {
-    return this.exec("flashing", "lock_critical").then(() => {});
+  async flashingLockCritical(): Promise<void> {
+    await this.exec("flashing", "lock_critical");
   }
 
   /** Find out if a device can be flashing-unlocked */
-  getUnlockAbility(): Promise<boolean> {
+  async getUnlockAbility(): Promise<boolean> {
     return this.exec("flashing", "get_unlock_ability")
       .then(stdout => stdout === "1")
       .catch(() => false);
   }
 
   /** Find out if a device can be seen by fastboot */
-  hasAccess(): Promise<boolean> {
-    return this.exec("devices").then(stdout => {
-      return Boolean(stdout?.includes("fastboot"));
-    });
+  async hasAccess(): Promise<boolean> {
+    return (await this.exec("devices")).includes("fastboot");
   }
 
   /** wait for a device */
-  wait(): Promise<"bootloader"> {
-    return super.wait().then(() => "bootloader");
+  async wait(): Promise<"bootloader"> {
+    await super.wait();
+    return "bootloader";
   }
 
   /** get bootloader var */

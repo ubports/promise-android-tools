@@ -325,6 +325,11 @@ test("hasAccess()", async t => {
   ]);
 });
 
+test("wait()", async t => {
+  const [[fastboot]] = fake()(["fastboot", "", 0]);
+  t.is(await fastboot.wait(), "bootloader");
+});
+
 test("getvar()", async t => {
   const [[fastboot_true], [fastboot_false], [fastboot_error]] = fake()(
     ["", "product: FP2\nFinished. Total time: 0.000s", 0],
