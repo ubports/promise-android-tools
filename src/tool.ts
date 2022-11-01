@@ -26,6 +26,10 @@ import * as common from "./common.js";
 import { Interface } from "./interface.js";
 import { sep, normalize } from "node:path";
 
+export type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+
 export type ProgressCallback = (percentage: number) => void;
 
 /** executable in PATH or path to an executable */
@@ -33,6 +37,9 @@ export type ToolString = "adb" | "fastboot" | "heimdall" | string;
 
 export interface ToolOptions {
   tool: ToolString;
+
+  /** error class */
+  Error: typeof ToolError;
 
   /** extra cli args */
   extraArgs?: string[];
@@ -68,6 +75,59 @@ export interface ArgsModel {
   [propName: string]: Arg;
 }
 
+export type RawError = Partial<ExecException & Mutable<DOMException | Error>>;
+export interface ToolError extends Error, Partial<DOMException> {}
+export class ToolError extends Error implements ExecException, ToolError {
+  get message(): string {
+    if (this.killed) {
+      return "aborted";
+    } else {
+      return (
+        this.cause?.message ||
+        (common.removeFalsy(this.cause)
+          ? JSON.stringify(
+              common.removeFalsy({
+                error: this.cause,
+                stdout: this.stdout,
+                stderr: this.stderr
+              })
+            )
+          : this.name)
+      );
+    }
+  }
+  public get name(): string {
+    return this.constructor.name;
+  }
+  cause?: RawError;
+  stdout?: string;
+  stderr?: string;
+  get cmd(): string | undefined {
+    return this.cause?.cmd;
+  }
+  get killed(): boolean {
+    return (
+      this.cause?.killed ||
+      this.cause?.message?.includes("aborted") ||
+      this.stderr?.includes("Killed") ||
+      this.stderr?.includes("killed by remote request") === true
+    );
+  }
+
+  constructor(
+    /** error returned by exec() */
+    error?: RawError,
+    /** standard output */
+    stdout?: string,
+    /** standard error */
+    stderr?: string
+  ) {
+    super(undefined, { cause: error });
+    this.stdout = stdout;
+    this.stderr = stderr;
+  }
+}
+
 /**
  * generic tool class
  */
@@ -77,6 +137,9 @@ export abstract class Tool extends Interface {
 
   /** path to a bundled executable if it has been resolved in bundle */
   executable: ToolString | string;
+
+  /** error class */
+  Error: typeof ToolError;
 
   /** extra cli args */
   extraArgs: string[];
@@ -112,6 +175,7 @@ export abstract class Tool extends Interface {
 
   constructor({
     tool,
+    Error = ToolError,
     signals = [],
     extraArgs = [],
     extraEnv = {},
@@ -123,6 +187,7 @@ export abstract class Tool extends Interface {
     super();
     this.tool = tool;
     this.executable = normalize(toolPath(this.tool as BundledTool));
+    this.Error = Error;
     this.listen(...signals);
     this.extraArgs = extraArgs;
     this.extraEnv = extraEnv;
@@ -226,14 +291,18 @@ export abstract class Tool extends Interface {
       signal: this.signal,
       env: this.env
     })
-      .catch(({ message, code, signal, killed, stdout, stderr }) => {
-        const error = { message, code, signal, killed };
-        this.emit("exec", common.removeFalsy({ cmd, error, stdout, stderr }));
-        throw new Error(this.handleError(error, stdout, stderr));
-      })
       .then(({ stdout, stderr }) => {
         this.emit("exec", common.removeFalsy({ cmd, stdout, stderr }));
         return stdout?.trim() || stderr?.trim();
+      })
+      .catch(({ message, code, signal, killed, stdout, stderr }) => {
+        const error = this.error(
+          { message, code, signal, killed },
+          stdout,
+          stderr
+        );
+        this.emit("exec", common.removeFalsy({ cmd, error, stdout, stderr }));
+        throw error;
       });
   }
 
@@ -256,33 +325,15 @@ export abstract class Tool extends Interface {
     return cp;
   }
 
-  /**
-   * Parse and simplify errors
-   * @returns error message
-   */
-  handleError(
-    /** error returned by exec() hi */
-    error?: ExecException | { [propName: string]: any },
-    /** standard output */
-    stdout?: string,
-    /** standard error */
-    stderr?: string
-  ): string {
-    if (error) error.message &&= error.message
-      .replace(new RegExp(this.executable, "g"), this.tool)
-    // REMOVE
-    console.log("message", error?.message, "\n",
-      "tool", this.tool, "\n",
-      "executable", this.executable, "\n")
-    if (
-      stderr?.includes("Killed") ||
-      stderr?.includes("killed by remote request") ||
-      error?.code == "ABORT_ERR"
-    ) {
-      return "killed";
-    } else {
-      return JSON.stringify(common.removeFalsy({ error, stdout, stderr }));
-    }
+  /** Parse and simplify errors */
+  protected error(error: RawError, stdout?: string, stderr?: string): RawError {
+    const r = new RegExp(this.executable, "g");
+    error.message &&= error.message?.replace(r, this.tool)?.trim();
+    return new this.Error(
+      error,
+      stdout?.replace(r, this.tool),
+      stderr?.replace(r, this.tool)
+    );
   }
 
   /** Wait for a device */

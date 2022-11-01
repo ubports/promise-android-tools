@@ -17,9 +17,15 @@
  */
 
 /** Remove falsy values from any object */
-export function removeFalsy(obj: any): any {
+export function removeFalsy(obj?: {}): any {
   if (typeof obj !== "object" || Array.isArray(obj)) return obj;
   for (var i in obj) {
+    if (Object.getOwnPropertyDescriptor(obj, i)?.get) {
+      Object.defineProperty(obj, i, {
+        value: removeFalsy(obj[i]),
+        writable: true
+      });
+    }
     if (obj[i]?.trim) obj[i] = obj[i].trim();
     if (!obj[i]) {
       delete obj[i];

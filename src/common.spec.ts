@@ -37,14 +37,18 @@ test("removeFalsy()", async t => {
       l: " ",
       m: "\n",
       n: "\r\n",
-      o: " \n\r\n"
+      o: " \n\r\n",
+      get p(): string {
+        return "p";
+      }
     }),
     {
       a: "a",
       f: { test: "this" },
       g: 1337,
       j: ["a", "b"],
-      k: { baz: true }
+      k: { baz: true },
+      p: "p"
     }
   );
 });

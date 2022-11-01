@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ExecException } from "node:child_process";
 import {
   stat,
   readdir,
@@ -27,7 +26,13 @@ import {
 } from "node:fs/promises";
 import { WriteStream } from "fs";
 import * as path from "node:path";
-import { Tool, ToolOptions, ProgressCallback } from "./tool.js";
+import {
+  Tool,
+  ToolOptions,
+  ProgressCallback,
+  ToolError,
+  RawError
+} from "./tool.js";
 
 const SERIALNO = /^([0-9]|[a-z])+([0-9a-z]+)$/i;
 const DEFAULT_PORT = 5037;
@@ -92,6 +97,41 @@ export interface Device {
   product?: string;
 }
 
+export class AdbError extends ToolError {
+  get message(): string {
+    if (
+      this.stderr?.includes("error: device unauthorized") ||
+      this.stderr?.includes("error: device still authorizing")
+    ) {
+      return "unauthorized";
+    } else if (
+      this.stderr?.includes("error: device offline") ||
+      this.stderr?.includes("error: protocol fault") ||
+      this.stderr?.includes("connection reset")
+    ) {
+      return "device offline";
+    } else if (
+      this.stderr?.includes("no devices/emulators found") ||
+      this.stdout?.includes("no devices/emulators found") ||
+      /device '.*' not found/.test(this.stderr || "") ||
+      this.stdout?.includes("adb: error: failed to read copy response") ||
+      this.stdout?.includes("couldn't read from device") ||
+      this.stdout?.includes("remote Bad file number") ||
+      this.stdout?.includes("remote Broken pipe") ||
+      this.stderr?.includes("adb: sideload connection failed: closed") ||
+      this.stderr?.includes(
+        "adb: pre-KitKat sideload connection failed: closed"
+      )
+    ) {
+      return "no device";
+    } else if (this.stderr?.includes("more than one device/emulator")) {
+      return "more than one device";
+    } else {
+      return super.message;
+    }
+  }
+}
+
 /** Android Debug Bridge (ADB) module */
 export class Adb extends Tool {
   config!: AdbConfig;
@@ -99,6 +139,7 @@ export class Adb extends Tool {
   constructor(options: AdbOptions = {}) {
     super({
       tool: "adb",
+      Error: AdbError,
       argsModel: {
         allInterfaces: ["-a", false, true],
         useUsb: ["-d", false, true],
@@ -126,42 +167,6 @@ export class Adb extends Tool {
       },
       ...options
     });
-  }
-
-  /** Generate processable error messages from child_process.exec() callbacks */
-  public handleError(
-    error?: ExecException | {},
-    stdout?: string,
-    stderr?: string
-  ): string {
-    if (
-      stderr?.includes("error: device unauthorized") ||
-      stderr?.includes("error: device still authorizing")
-    ) {
-      return "unauthorized";
-    } else if (
-      stderr?.includes("error: device offline") ||
-      stderr?.includes("error: protocol fault") ||
-      stderr?.includes("connection reset")
-    ) {
-      return "device offline";
-    } else if (
-      stderr?.includes("no devices/emulators found") ||
-      stdout?.includes("no devices/emulators found") ||
-      /device '.*' not found/.test(stderr || "") ||
-      stdout?.includes("adb: error: failed to read copy response") ||
-      stdout?.includes("couldn't read from device") ||
-      stdout?.includes("remote Bad file number") ||
-      stdout?.includes("remote Broken pipe") ||
-      stderr?.includes("adb: sideload connection failed: closed") ||
-      stderr?.includes("adb: pre-KitKat sideload connection failed: closed")
-    ) {
-      return "no device";
-    } else if (stderr?.includes("more than one device/emulator")) {
-      return "more than one device";
-    } else {
-      return super.handleError(error, stdout, stderr);
-    }
   }
 
   /**
@@ -282,9 +287,9 @@ export class Adb extends Tool {
         stdout.includes("adb: error: cannot stat") &&
         stdout.includes("No such file or directory")
       ) {
-        throw new Error("file not found");
+        throw this.error(new Error("file not found"));
       } else {
-        throw new Error(this.handleError({ code, signal }, stdout, stderr));
+        throw this.error({ code, signal } as RawError, stdout, stderr);
       }
     }
   }
@@ -605,7 +610,7 @@ export class Adb extends Tool {
       cp.once("exit", (code, signal) => {
         writableStream.close();
         if (code || signal)
-          reject(new Error(_this.handleError({ code, signal }, "", stderr)));
+          reject(_this.error({ code, signal } as RawError, undefined, stderr));
         else resolve();
       });
     });

@@ -20,6 +20,7 @@ import test from "ava";
 import * as td from "testdouble";
 import { genericErrors } from "./__test-helpers/known_errors.js";
 import { tool as fake } from "./__test-helpers/fake.js";
+import { ToolError } from "./tool.js";
 
 test(`constructor() should construct`, async t => {
   ["adb", "fastboot", "heimdall"].forEach(cmd => {
@@ -116,19 +117,21 @@ test("exec() should reject on error", async t => {
   tool.on("exec", e =>
     t.like(e, {
       cmd: [tool.executable],
-      ...error
+      error,
+      stdout: error.stdout,
+      stderr: error.stderr
     })
   );
   return t.throwsAsync(tool.exec(), {
-    instanceOf: Error,
-    message: JSON.stringify(error)
+    instanceOf: ToolError,
+    message: error.message
   });
 });
 test("exec() should allow aborting", async t => {
   const [[tool]] = fake()([]);
   const cp = t.throwsAsync(tool.exec(), {
     instanceOf: Error,
-    message: "killed"
+    message: "aborted"
   });
   tool.abort();
   return await cp;
@@ -177,12 +180,12 @@ test("spawn() should allow aborting", async t => {
   return cp;
 });
 
-test("handleError()", async t => {
-  genericErrors("adb").forEach(({ error, stdout, stderr, expectedReturn }) => {
-    const [[tool]] = fake({ tool: "adb" })([]);
-    tool.executable = "/path/to/adb";
+test("ToolError", async t => {
+  genericErrors("tool").forEach(({ error, stdout, stderr, expectedReturn }) => {
+    const [[tool]] = fake({ tool: "tool" })([]);
+    tool.executable = "/path/to/tool";
     t.is(
-      tool.handleError(error, stdout, stderr),
+      new tool.Error(error, stdout, stderr).message,
       expectedReturn,
       `expected ${expectedReturn} for ${JSON.stringify({
         error,

@@ -16,8 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ExecException } from "node:child_process";
-import { ProgressCallback, Tool, ToolOptions } from "./tool.js";
+import {
+  ProgressCallback,
+  RawError,
+  Tool,
+  ToolError,
+  ToolOptions
+} from "./tool.js";
 
 export interface FastbootFlashImage {
   /** partition to flash */
@@ -73,6 +78,50 @@ export interface FastbootConfig {
 
 export type FastbootOptions = ToolOptions | FastbootConfig | {};
 
+export class FastbootError extends ToolError {
+  get message(): string {
+    if (
+      this.stderr?.includes(
+        "FAILED (remote: low power, need battery charging.)"
+      )
+    ) {
+      return "low battery";
+    } else if (
+      this.stderr?.includes("not supported in locked device") ||
+      this.stderr?.includes("Bootloader is locked") ||
+      this.stderr?.includes("not allowed in locked state") ||
+      this.stderr?.includes("not allowed in Lock State") ||
+      this.stderr?.includes("Device not unlocked cannot flash or erase") ||
+      this.stderr?.includes("Partition flashing is not allowed") ||
+      this.stderr?.includes("Command not allowed") ||
+      this.stderr?.includes("not allowed when locked") ||
+      this.stderr?.includes("device is locked. Cannot flash images") ||
+      this.stderr?.match(/download for partition '[a-z]+' is not allowed/i)
+    ) {
+      return "bootloader locked";
+    } else if (
+      this.stderr?.includes("Check 'Allow OEM Unlock' in Developer Options") ||
+      this.stderr?.includes("Unlock operation is not allowed") ||
+      this.stderr?.includes("oem unlock is not allowed")
+    ) {
+      return "enable unlocking";
+    } else if (this.stderr?.includes("FAILED (remote failure)")) {
+      return "failed to boot";
+    } else if (
+      this.stderr?.includes("I/O error") ||
+      this.stderr?.includes("FAILED (command write failed (No such device))") ||
+      this.stderr?.includes("FAILED (command write failed (Success))") ||
+      this.stderr?.includes("FAILED (status read failed (No such device))") ||
+      this.stderr?.includes("FAILED (data transfer failure (Broken pipe))") ||
+      this.stderr?.includes("FAILED (data transfer failure (Protocol error))")
+    ) {
+      return "no device";
+    } else {
+      return super.message;
+    }
+  }
+}
+
 /** fastboot android flashing and booting utility */
 export class Fastboot extends Tool {
   config!: FastbootConfig;
@@ -80,6 +129,7 @@ export class Fastboot extends Tool {
   constructor(options: FastbootOptions = {}) {
     super({
       tool: "fastboot",
+      Error: FastbootError,
       argsModel: {
         wipe: ["-w", false, true],
         device: ["-s", null],
@@ -112,47 +162,6 @@ export class Fastboot extends Tool {
     });
   }
 
-  /** Generate processable error messages from child_process.exec() callbacks */
-  handleError(error?: ExecException | {}, stdout?: string, stderr?: string) {
-    if (
-      stderr?.includes("FAILED (remote: low power, need battery charging.)")
-    ) {
-      return "low battery";
-    } else if (
-      stderr?.includes("not supported in locked device") ||
-      stderr?.includes("Bootloader is locked") ||
-      stderr?.includes("not allowed in locked state") ||
-      stderr?.includes("not allowed in Lock State") ||
-      stderr?.includes("Device not unlocked cannot flash or erase") ||
-      stderr?.includes("Partition flashing is not allowed") ||
-      stderr?.includes("Command not allowed") ||
-      stderr?.includes("not allowed when locked") ||
-      stderr?.includes("device is locked. Cannot flash images") ||
-      stderr?.match(/download for partition '[a-z]+' is not allowed/i)
-    ) {
-      return "bootloader locked";
-    } else if (
-      stderr?.includes("Check 'Allow OEM Unlock' in Developer Options") ||
-      stderr?.includes("Unlock operation is not allowed") ||
-      stderr?.includes("oem unlock is not allowed")
-    ) {
-      return "enable unlocking";
-    } else if (stderr?.includes("FAILED (remote failure)")) {
-      return "failed to boot";
-    } else if (
-      stderr?.includes("I/O error") ||
-      stderr?.includes("FAILED (command write failed (No such device))") ||
-      stderr?.includes("FAILED (command write failed (Success))") ||
-      stderr?.includes("FAILED (status read failed (No such device))") ||
-      stderr?.includes("FAILED (data transfer failure (Broken pipe))") ||
-      stderr?.includes("FAILED (data transfer failure (Protocol error))")
-    ) {
-      return "no device";
-    } else {
-      return super.handleError(error, stdout, stderr);
-    }
-  }
-
   /** Write a file to a flash partition */
   flash(
     images: FastbootFlashImage[],
@@ -183,7 +192,9 @@ export class Fastboot extends Tool {
                 );
                 cp.once("exit", (code, signal) => {
                   if (code || signal) {
-                    reject(_this.handleError({ code, signal }, stdout, stderr));
+                    reject(
+                      _this.error({ code, signal } as RawError, stdout, stderr)
+                    );
                   } else {
                     resolve("bootloader");
                   }

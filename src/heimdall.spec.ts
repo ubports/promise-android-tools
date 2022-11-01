@@ -80,12 +80,12 @@ test("constructor()", async t => {
   t.deepEqual(heimdall.args, []);
 });
 
-test("handleError()", async t => {
+test("HeimdallError", async t => {
   const [[heimdall]] = fake({ tool: "heimdall" })([]);
   heimdall.executable = "/path/to/heimdall";
   heimdallErrors.forEach(({ error, stdout, stderr, expectedReturn }) => {
     t.is(
-      heimdall.handleError(error as ExecException, stdout, stderr),
+      new heimdall.Error(error, stdout, stderr).message,
       expectedReturn,
       `expected ${expectedReturn} for ${JSON.stringify({
         error,
@@ -99,7 +99,11 @@ test("handleError()", async t => {
 ["hasAccess", "detect"].forEach(fn => {
   test(`${fn}()`, async t => {
     const [[heimdall_ok], [heimdall_nodevice], [heimdall_error, { stderr }]] =
-      fake()(["", "", 0], ["no device", "", 1], ["", "problem", 1]);
+      fake()(
+        ["", "", 0],
+        ["", "Failed to detect compatible download-mode device.", 1],
+        ["", "problem", 1]
+      );
     t.true(await heimdall_ok[fn]());
     t.false(await heimdall_nodevice[fn]());
     await t.throwsAsync(heimdall_error[fn](), {

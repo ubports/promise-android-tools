@@ -16,33 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ExecException } from "node:child_process";
-import { Tool, ToolOptions } from "./tool.js";
+import { Tool, ToolError, ToolOptions } from "./tool.js";
 
 export type HeimdallOptions = ToolOptions | {};
 export interface HeimdallConfig {}
 
-/**
- * heimdall: flash firmware on samsung devices
- */
+export class HeimdallError extends ToolError {
+  get message(): string {
+    if (this.stderr?.includes("Failed to detect")) {
+      return "no device";
+    } else {
+      return super.message;
+    }
+  }
+}
+
+/** heimdall: flash firmware on samsung devices */
 export class Heimdall extends Tool {
   config!: HeimdallConfig;
 
   constructor(options: HeimdallOptions = {}) {
-    super({ tool: "heimdall", ...options });
-  }
-
-  /** Generate processable error messages from child_process.exec() callbacks */
-  handleError(error?: ExecException | {}, stdout?: string, stderr?: string) {
-    if (
-      stderr?.includes(
-        "ERROR: Failed to detect compatible download-mode device."
-      )
-    ) {
-      return "no device";
-    } else {
-      return super.handleError(error, stdout, stderr);
-    }
+    super({ tool: "heimdall", Error: HeimdallError, ...options });
   }
 
   /** Find out if a device in download mode can be seen by heimdall */

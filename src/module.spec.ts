@@ -17,6 +17,7 @@
  */
 
 import test from "ava";
+import { AdbError } from "./adb.js";
 
 import { deviceTools as fake } from "./__test-helpers/fake.js";
 
@@ -38,7 +39,8 @@ test("wait() should resolve", async t => {
 test("wait() should escalate and reject errors", async t => {
   const [[deviceTools]] = fake()(["", "", 1]);
   await t.throwsAsync(deviceTools.wait(), {
-    message: `{"error":{"message":"Command failed: adb wait-for-any-any","code":1}}`
+    instanceOf: AdbError,
+    message: `Command failed: adb wait-for-any-any`
   });
 });
 

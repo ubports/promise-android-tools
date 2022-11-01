@@ -1,8 +1,7 @@
 import { Adb, AdbOptions } from "../adb.js";
 import { Fastboot, FastbootOptions } from "../fastboot.js";
 import { Heimdall, HeimdallOptions } from "../heimdall.js";
-import { Tool as _Tool, ToolConfig, ToolOptions } from "../tool.js";
-import { ExecException } from "node:child_process";
+import { Tool as _Tool, ToolConfig, ToolError, ToolOptions } from "../tool.js";
 import { resolve } from "node:path";
 import { DeviceTools, DeviceToolsOptions } from "../module.js";
 
@@ -15,13 +14,8 @@ export const EXECUTABLE = resolve(
     process.platform == "win32" ? "bat" : "js"
   }`
 );
-type FakeError = {
-  error?: ExecException | { [propName: string]: any };
-  stdout?: string;
-  stderr?: string;
-};
 type Fakeable = Adb | Fastboot | Heimdall | Tool | DeviceTools;
-type Fake<T extends Fakeable> = [T, FakeError];
+type Fake<T extends Fakeable> = [T, Partial<ToolError>];
 
 type FakeArgs = [
   stdout?: string,
@@ -44,10 +38,7 @@ const fake = (tool: Fakeable) => {
         MOCK_EXIT: JSON.stringify({ stdout, stderr, code, delay })
       }),
       {
-        error: {
-          message: `Command failed: ${EXECUTABLE}\n${stderr || ""}`,
-          code
-        },
+        message: `Command failed: ${tool["tool"] || "adb"}\n${stderr || ""}`,
         stdout,
         stderr
       }
@@ -61,7 +52,7 @@ export const fastboot = (options: FastbootOptions = {}) =>
 export const heimdall = (options: HeimdallOptions = {}) =>
   fake(new Heimdall(options)) as (...fakes: FakeArgs[]) => Fake<Heimdall>[];
 export const tool = (options: ToolOptions | {} = {}) =>
-  fake(new Tool({ tool: EXECUTABLE, ...options })) as (
+  fake(new Tool({ tool: EXECUTABLE, Error: ToolError, ...options })) as (
     ...fakes: FakeArgs[]
   ) => Fake<Tool>[];
 export const deviceTools = (options: DeviceToolsOptions = {}) =>

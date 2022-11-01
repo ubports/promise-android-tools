@@ -21,9 +21,8 @@ import * as td from "testdouble";
 
 import testrecoveryfstabs from "./__test-helpers/testrecoveryfstabs.js";
 
-import { RebootState } from "./adb.js";
+import { AdbError, RebootState } from "./adb.js";
 import { adbErrors } from "./__test-helpers/known_errors.js";
-import { ExecException } from "node:child_process";
 import { WriteStream } from "fs";
 import sandbox from "./__test-helpers/sandbox.js";
 import { readFile } from "node:fs/promises";
@@ -93,12 +92,12 @@ test("killServer()", async t => {
   t.falsy(await adb.killServer());
 });
 
-test("handleError()", async t => {
+test("AdbError", async t => {
   adbErrors.forEach(({ error, stdout, stderr, expectedReturn }) => {
     const [[adb]] = fake({ tool: "adb" })([]);
     adb.executable = "/path/to/adb";
     t.is(
-      adb.handleError(error as ExecException, stdout, stderr),
+      new adb.Error(error, stdout, stderr).message,
       expectedReturn,
       `expected ${expectedReturn} for ${JSON.stringify({
         error,
@@ -379,7 +378,8 @@ test("getSystemImageCapability() should resolve false", async t => {
 test("getSystemImageCapability() should reject", async t => {
   const [[adb]] = fake()(["", "", 1]);
   await t.throwsAsync(adb.getSystemImageCapability(), {
-    message: `{"error":{"message":"Command failed: adb shell getprop ro.ubuntu.recovery","code":1}}`
+    instanceOf: AdbError,
+    message: `Command failed: adb shell getprop ro.ubuntu.recovery`
   });
 });
 
