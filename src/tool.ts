@@ -17,6 +17,7 @@
  */
 
 import { exec, spawn, ChildProcess, ExecException } from "./exec.js";
+import { Readable, Writable } from "node:stream";
 import {
   getAndroidToolPath as toolPath,
   getAndroidToolBaseDir as toolBaseDir,
@@ -296,10 +297,7 @@ export abstract class Tool extends Interface {
       .flat() as string[];
   }
 
-  /**
-   * Execute a command. Used for quick operations that do not require real-time data access.
-   * @returns stdout
-   */
+  /** Execute a command. Used for quick operations that do not require real-time data access. Output is trimmed. */
   async exec(...args: (string | number | null | undefined)[]): Promise<string> {
     this.signal.throwIfAborted();
     const allArgs: string[] = this.constructArgs(args);
@@ -325,7 +323,9 @@ export abstract class Tool extends Interface {
   }
 
   /** Spawn a child process. Used for long-running operations that require real-time data access. */
-  spawn(...args: (string | number | null | undefined)[]): ChildProcess {
+  spawn(
+    ...args: (string | number | null | undefined)[]
+  ): ChildProcess & { stdin: Writable; stdout: Readable; stderr: Readable } {
     this.signal.throwIfAborted();
     const allArgs: string[] = this.constructArgs(args);
     const cmd = [this.tool, ...allArgs];

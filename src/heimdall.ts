@@ -89,11 +89,11 @@ export class Heimdall extends Tool {
   }
 
   /** Flash firmware files to partitions (names or identifiers) */
-  flash(images: { partition: string; file: string }[]): Promise<void> {
+  async flash(images: { partition: string; file: string }[]): Promise<void> {
     // TODO report progress similar to fastboot.flash()
-    return this.exec(
+    await this.exec(
       "flash",
       ...images.map(i => [`--${i.partition}`, i.file]).flat()
-    ).then(() => {});
+    );
   }
 }
