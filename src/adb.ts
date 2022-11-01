@@ -201,7 +201,7 @@ export class Adb extends Tool {
         stdout?.includes("no devices/emulators found") ||
         stdout?.includes("Name or service not known")
       ) {
-        throw new Error(`no device at address ${address}`);
+        throw this.error(new Error("no device"), stdout);
       } else {
         return this.wait();
       }
@@ -217,7 +217,7 @@ export class Adb extends Tool {
         stdout?.includes("no devices/emulators found") ||
         stdout?.includes("No route to host")
       ) {
-        throw new Error("no device");
+        throw this.error(new Error("no device"), stdout);
       } else {
         return this.wait();
       }
@@ -259,7 +259,10 @@ export class Adb extends Tool {
   public async getSerialno(): Promise<string> {
     return this.exec("get-serialno").then(stdout => {
       if (!stdout || stdout?.includes("unknown") || !SERIALNO.test(stdout)) {
-        throw new Error(`invalid serial number: ${stdout?.trim()}`);
+        throw this.error(
+          new Error(`invalid serial number: ${stdout?.trim()}`),
+          stdout
+        );
       } else {
         return stdout.trim();
       }

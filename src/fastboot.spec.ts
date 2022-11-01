@@ -149,10 +149,10 @@ test("flash() should reject on error", async t => {
   const args = [{ partition: "boot", file: "/path/to/boot.img" }];
   await Promise.all([
     t.throwsAsync(fastboot_locked.flash(args), {
-      message: "Flashing failed: FastbootError: bootloader locked"
+      message: "bootloader locked"
     }),
     t.throwsAsync(fastboot_failed.flash(args), {
-      message: `Flashing failed: FastbootError: Command failed: fastboot devices\nSending sparse \'boot\'\neverything exploded`
+      message: `Command failed: fastboot devices\nSending sparse \'boot\'\neverything exploded`
     })
   ]);
 });
@@ -165,7 +165,7 @@ test("boot()", async t => {
   await Promise.all([
     t.falsy(await fastboot.boot("/path/to/image")),
     t.throwsAsync(fastboot_error.boot("/path/to/image"), {
-      message: `booting failed: FastbootError: Command failed: fastboot boot /path/to/image\neverything exploded`
+      message: `Command failed: fastboot boot /path/to/image\neverything exploded`
     })
   ]);
 });
@@ -179,7 +179,7 @@ test("update()", async t => {
     t.falsy(await fastboot.update("/path/to/image")),
     t.falsy(await fastboot.update("/path/to/image", true)),
     t.throwsAsync(fastboot_error.update("/path/to/image"), {
-      message: `update failed: FastbootError: Command failed: fastboot update /path/to/image\neverything exploded`
+      message: `Command failed: fastboot update /path/to/image\neverything exploded`
     })
   ]);
 });
@@ -211,11 +211,10 @@ test("format()", async t => {
   await Promise.all([
     t.falsy(await fastboot.format("boot", "ext4", 1337)),
     t.throwsAsync(fastboot_error.format("cache"), {
-      message: `formatting failed: FastbootError: Command failed: fastboot format cache\neverything exploded`
+      message: `Command failed: fastboot format cache\neverything exploded`
     }),
     t.throwsAsync(fastboot.format("cache", undefined, 1337), {
-      message:
-        "formatting failed: size specification requires type to be specified as well"
+      message: "size specification requires type to be specified as well"
     })
   ]);
 });
@@ -225,7 +224,7 @@ test("erase()", async t => {
   await Promise.all([
     t.falsy(await fastboot.erase("cache")),
     t.throwsAsync(fastboot_error.erase("cache"), {
-      message: `erasing failed: FastbootError: Command failed: fastboot erase cache\nerror`
+      message: `Command failed: fastboot erase cache\nerror`
     })
   ]);
 });
@@ -235,7 +234,7 @@ test("setActive()", async t => {
   await Promise.all([
     t.falsy(await fastboot.setActive("a")),
     t.throwsAsync(fastboot_error.setActive("b"), {
-      message: "failed to set active slot: Error: error"
+      message: "failed to set active slot"
     })
   ]);
 });
@@ -249,7 +248,7 @@ test("setActive()", async t => {
     await Promise.all([
       t.falsy(await fastboot[fn]("cache", 1337)),
       t.throwsAsync(fastboot_error[fn]("cache", 1337), {
-        message: /logical partition failed/
+        message: /Command failed/
       })
     ]);
   });
@@ -335,10 +334,10 @@ test("getvar()", async t => {
   await Promise.all([
     t.is(await fastboot_true.getvar("product"), "FP2"),
     t.throwsAsync(fastboot_false.getvar("product"), {
-      message: "Unexpected getvar return: "
+      message: 'Unexpected getvar return: ""'
     }),
     t.throwsAsync(fastboot_error.getvar("product"), {
-      message: "Unexpected getvar return: error"
+      message: 'Unexpected getvar return: "error"'
     })
   ]);
 });
@@ -351,7 +350,7 @@ test("getDeviceName()", async t => {
   await Promise.all([
     t.is(await fastboot_true.getDeviceName(), "FP2"),
     t.throwsAsync(fastboot_error.getDeviceName(), {
-      message: "Unexpected getvar return: error"
+      message: 'Unexpected getvar return: "error"'
     })
   ]);
 });

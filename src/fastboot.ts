@@ -231,7 +231,11 @@ export class Fastboot extends Tool {
                           } else if (str.includes(`Finished '${partition}'`)) {
                             progress(offset + scale);
                           } else {
-                            throw new Error(`failed to parse '${str}'`);
+                            throw this.error(
+                              new Error(`failed to parse: ${str}`),
+                              undefined,
+                              d.toString().trim()
+                            );
                           }
                         }
                       } catch (e) {
@@ -243,38 +247,24 @@ export class Fastboot extends Tool {
           ),
         _this.wait()
       )
-      .then(() => {})
-      .catch(e => {
-        throw new Error(`Flashing failed: ${e}`);
-      });
+      .then(() => {});
   }
 
   /** Download and boot kernel */
   boot(image: string): Promise<void> {
-    return this.exec("boot", image)
-      .then(() => {})
-      .catch(error => {
-        throw new Error("booting failed: " + error);
-      });
+    return this.exec("boot", image).then(() => {});
   }
 
   /** Reflash device from update.zip and set the flashed slot as active */
   update(image: string, wipe: string | boolean = false): Promise<void> {
     return this._withConfig({ wipe })
       .exec("update", image)
-      .then(() => {})
-      .catch(error => {
-        throw new Error("update failed: " + error);
-      });
+      .then(() => {});
   }
 
   /** Reboot device into bootloader */
   rebootBootloader(): Promise<void> {
-    return this.exec("reboot-bootloader")
-      .then(() => {})
-      .catch(error => {
-        throw new Error("rebooting to bootloader failed: " + error);
-      });
+    return this.exec("reboot-bootloader").then(() => {});
   }
 
   /**
@@ -282,38 +272,22 @@ export class Fastboot extends Tool {
    * Note: this only works on devices that support dynamic partitions.
    */
   rebootFastboot(): Promise<void> {
-    return this.exec("reboot-fastboot")
-      .then(() => {})
-      .catch(error => {
-        throw new Error("rebooting to fastboot failed: " + error);
-      });
+    return this.exec("reboot-fastboot").then(() => {});
   }
 
   /** Reboot device into recovery */
   rebootRecovery(): Promise<void> {
-    return this.exec("reboot-recovery")
-      .then(() => {})
-      .catch(error => {
-        throw new Error("rebooting to recovery failed: " + error);
-      });
+    return this.exec("reboot-recovery").then(() => {});
   }
 
   /** Reboot device */
   reboot(): Promise<void> {
-    return this.exec("reboot")
-      .then(() => {})
-      .catch(error => {
-        throw new Error("rebooting failed: " + error);
-      });
+    return this.exec("reboot").then(() => {});
   }
 
   /** Continue with autoboot */
   continue(): Promise<void> {
-    return this.exec("continue")
-      .then(() => {})
-      .catch(error => {
-        throw new Error("continuing boot failed: " + error);
-      });
+    return this.exec("continue").then(() => {});
   }
 
   /** Format a flash partition. Can override the fs type and/or size the bootloader reports */
@@ -323,27 +297,19 @@ export class Fastboot extends Tool {
     size?: string | number
   ): Promise<void> {
     if (!type && size) {
-      throw new Error(
-        "formatting failed: size specification requires type to be specified as well"
-      );
+      throw this.error({
+        message: "size specification requires type to be specified as well"
+      });
     }
     return this.exec(
       `format${type ? ":" + type : ""}${size ? ":" + size : ""}`,
       partition
-    )
-      .then(() => {})
-      .catch(error => {
-        throw new Error("formatting failed: " + error);
-      });
+    ).then(() => {});
   }
 
   /** Erase a flash partition */
   erase(partition: string): Promise<void> {
-    return this.exec("erase", partition)
-      .then(() => {})
-      .catch(error => {
-        throw new Error("erasing failed: " + error);
-      });
+    return this.exec("erase", partition).then(() => {});
   }
 
   /** Sets the active slot */
@@ -352,13 +318,10 @@ export class Fastboot extends Tool {
       .exec()
       .then(stdout => {
         if (stdout && stdout.includes("error")) {
-          throw new Error(stdout);
+          throw this.error(new Error("failed to set active slot"), stdout);
         } else {
           return;
         }
-      })
-      .catch(error => {
-        throw new Error(`failed to set active slot: ${error}`);
       });
   }
 
@@ -367,11 +330,9 @@ export class Fastboot extends Tool {
     partition: string,
     size: string | number
   ): Promise<void> {
-    return this.exec("create-logical-partition", partition, size)
-      .then(() => {})
-      .catch(error => {
-        throw new Error("creating logical partition failed: " + error);
-      });
+    return this.exec("create-logical-partition", partition, size).then(
+      () => {}
+    );
   }
 
   /** Resize a logical partition with the given name and final size, in the super partition */
@@ -379,29 +340,19 @@ export class Fastboot extends Tool {
     partition: string,
     size: string | number
   ): Promise<void> {
-    return this.exec("resize-logical-partition", partition, size)
-      .then(() => {})
-      .catch(error => {
-        throw new Error("resizing logical partition failed: " + error);
-      });
+    return this.exec("resize-logical-partition", partition, size).then(
+      () => {}
+    );
   }
 
   /** Delete a logical partition with the given name */
   deleteLogicalPartition(partition: string): Promise<void> {
-    return this.exec("delete-logical-partition", partition)
-      .then(() => {})
-      .catch(error => {
-        throw new Error("deleting logical partition failed: " + error);
-      });
+    return this.exec("delete-logical-partition", partition).then(() => {});
   }
 
   /** Wipe the super partition and reset the partition layout */
   wipeSuper(image: string): Promise<void> {
-    return this.exec("wipe-super", image)
-      .then(() => {})
-      .catch(error => {
-        throw new Error("wiping super failed: " + error);
-      });
+    return this.exec("wipe-super", image).then(() => {});
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -421,17 +372,13 @@ export class Fastboot extends Tool {
           error?.message.includes("Not necessary")
         )
           return;
-        else throw new Error("oem unlock failed: " + error);
+        else throw error;
       });
   }
 
   /** Enforce OEM lock */
   oemLock(): Promise<void> {
-    return this.exec("oem", "lock")
-      .then(() => {})
-      .catch(error => {
-        throw new Error("oem lock failed: " + error);
-      });
+    return this.exec("oem", "lock").then(() => {});
   }
 
   /** unlock partitions for flashing */
@@ -463,13 +410,9 @@ export class Fastboot extends Tool {
 
   /** Find out if a device can be seen by fastboot */
   hasAccess(): Promise<boolean> {
-    return this.exec("devices")
-      .then(stdout => {
-        return Boolean(stdout?.includes("fastboot"));
-      })
-      .catch(error => {
-        throw error;
-      });
+    return this.exec("devices").then(stdout => {
+      return Boolean(stdout?.includes("fastboot"));
+    });
   }
 
   /** wait for a device */
@@ -486,7 +429,10 @@ export class Fastboot extends Tool {
       .split(": ");
 
     if (name !== variable) {
-      throw new Error(`Unexpected getvar return: ${name}`);
+      throw this.error(
+        new Error(`Unexpected getvar return: "${name}"`),
+        result
+      );
     }
 
     return value;

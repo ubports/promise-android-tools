@@ -117,7 +117,7 @@ test("connect() should connect", async t => {
     test(`connect() should reject on '${stdout}'`, async t => {
       const [[adb]] = fake()([stdout, "", 0]);
       return t.throwsAsync(adb.connect("abc"), {
-        message: "no device at address abc"
+        message: "no device"
       });
     });
   }
