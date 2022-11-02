@@ -7,7 +7,7 @@
   "main": "./lib/module.cjs",
   "types": "./lib/module.d.ts",
   "scripts": {
-    "test": "npx c8 -r text -r html --all --src src/ -x \"**/*.spec.*\" -x \"**/__test-helpers\" ava src/*.spec.ts",
+    "test": "npx c8 -r text -r html -r lcov --all --src src/ -x \"**/*.spec.*\" -x \"**/__test-helpers\" ava src/*.spec.ts",
     "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none --end-of-line=lf -uw",
     "docs": "npx typedoc",
     "build": "rm -rf lib && npx tsc --build ./tsconfig.build.json"
