@@ -14,6 +14,7 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ### Added
 
+- adb.connect() function to connect to network devices ([#65](https://github.com/ubports/promise-android-tools/pull/65))
 - Introduce a setPath option for tools ([#72](https://github.com/ubports/promise-android-tools/pull/72))
 
 ## [4.0.13] - 2022-09-07
