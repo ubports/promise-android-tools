@@ -3,7 +3,6 @@
   "version": "5.0.0",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "type": "module",
-  "source": "./src/module.ts",
   "main": "./lib/module.cjs",
   "types": "./lib/module.d.ts",
   "scripts": {
@@ -13,7 +12,7 @@
     "build": "rm -rf lib && npx tsc --build ./tsconfig.build.json"
   },
   "files": [
-    "lib/module.cjs",
+    "lib",
     "LICENSE",
     "README.md"
   ],
