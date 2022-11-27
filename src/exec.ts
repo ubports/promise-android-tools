@@ -1,5 +1,3 @@
-"use strict";
-
 /*
  * Copyright (C) 2022 UBports Foundation <info@ubports.com>
  * Copyright (C) 2022 Johannah Sprinz <hannah@ubports.com>
@@ -18,20 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { jest, expect } from "@jest/globals";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
-import cp from "cancelable-promise";
-
-describe("CancelablePromise", function () {
-  it("should export tool when packaged", function () {
-    cp.CancelablePromise = null;
-    return import("./cancelable-promise.js").then(cp =>
-      expect(cp).toBeTruthy()
-    );
-  });
-  it("should export tool when native", function () {
-    return import("./cancelable-promise.js").then(cp =>
-      expect(cp).toBeTruthy()
-    );
-  });
-});
+export const exec = promisify(execFile);
+export { spawn, ChildProcess, ExecException } from "node:child_process";

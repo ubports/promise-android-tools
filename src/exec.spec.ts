@@ -1,8 +1,6 @@
-"use strict";
-
 /*
- * Copyright (C) 2020-2022 UBports Foundation <info@ubports.com>
- * Copyright (C) 2020-2022 Johannah Sprinz <hannah@ubports.com>
+ * Copyright (C) 2022 UBports Foundation <info@ubports.com>
+ * Copyright (C) 2022 Johannah Sprinz <hannah@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// What is this, you ask? Think hexagonal arch pattern, but stupid. Since CommonJS
-// and ES6 modules handle default exports differently, we need to ensure the correct
-// object is exported if we want to run both natively and when transpiled with rollup.
-import cp from "cancelable-promise";
-export const CancelablePromise = cp?.CancelablePromise
-  ? cp.CancelablePromise
-  : cp;
+import test from "ava";
+import { exec } from "./exec.js";
+
+test("exec", async t => {
+  t.truthy(exec);
+});
