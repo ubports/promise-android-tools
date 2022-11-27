@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3>promise-android-tools 4.0.14</h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>promise-android-tools <img src="https://github.com/ubports/promise-android-tools/workflows/Continuous%20Integration/badge.svg" alt="Continuous Integration"> <a href="https://www.npmjs.com/package/promise-android-tools"><img src="https://img.shields.io/npm/v/promise-android-tools" alt="npm"></a> <a href="https://codecov.io/gh/ubports/promise-android-tools/"><img src="https://codecov.io/gh/ubports/promise-android-tools/branch/master/graph/badge.svg?token=cEneFUUbgt" alt="codecov"></a></h1>
+<p>A wrapper for Adb, Fastboot, and Heimall that returns convenient promises.</p>
+<h2>IMPORTANT NOTE</h2>
+<p>This is still a work in progress. Not all functions have been added and API stability is not guaranteed. The package was originally developed for use in the <a href="https://devices.ubuntu-touch.io/installer/">UBports Installer</a>.</p>
+<h2>Usage</h2>
+<p>Install the package by running <code>npm i promise-android-tools</code>.</p>
+<h3>Quick-start example</h3>
+<p>The default settings should cover most usecases.</p>
+<pre class="prettyprint source lang-javascript"><code>const { DeviceTools } = require(&quot;promise-android-tools&quot;);
+const dt = new DeviceTools();
+
+dt.wait() // wait for any device
+  .then(state =>
+    dt
+      .getDeviceName()
+      .then(name => console.log(`detected ${name} in ${state} state`))
+  );
+</code></pre>
+<h3>Log execution events</h3>
+<p>Events are available to log or introspect tool executions.</p>
+<pre class="prettyprint source lang-javascript"><code>const { DeviceTools } = require(&quot;promise-android-tools&quot;);
+const dt = new DeviceTools();
+
+dt.on(&quot;exec&quot;, r => console.log(&quot;exec&quot;, r));
+dt.on(&quot;spawn:start&quot;, r => console.log(&quot;spawn:start&quot;, r));
+dt.on(&quot;spawn:exit&quot;, r => console.log(&quot;spawn:exit&quot;, r));
+dt.on(&quot;spawn:error&quot;, r => console.log(&quot;spawn:error&quot;, r));
+
+dt.adb.shell(&quot;echo&quot;, &quot;test&quot;);
+// will log a compact object (i.e. no falsy values) consisting of the command array cmd, the error object, and the stderr and stdout buffers. The path to the executable will be replaced with the tool name for brevity:
+// exec {
+//   cmd: [ 'adb', '-P', 5037, 'shell', 'echo test' ],
+//   error: {
+//     message: 'Command failed: adb -P 5037 shell echo test\n' +
+//       'adb: no devices/emulators found',
+//     code: 1
+//   },
+//   stderr: 'adb: no devices/emulators found'
+// }
+</code></pre>
+<h3>Complex example</h3>
+<p>The library provides most features of the eponymous command-line utilities wrapped in the available classes. This example only serves as a demonstration, confer to the documenation to discover the full power of this library.</p>
+<pre class="prettyprint source lang-javascript"><code>const { DeviceTools } = require(&quot;promise-android-tools&quot;);
+const dt = new DeviceTools();
+
+db.adb
+  .wait() // wait for any device over adb
+  .then(() => dt.adb.ensureState(&quot;recovery&quot;)) // reboot to recovery if we have to
+  .then(() => dt.adb.push([&quot;./config.json&quot;], &quot;/tmp&quot;, progress)) // push a config file to the device
+  .then(() => dt.adb.getDeviceName()) // read device codename
+  .then(name => {
+    // samsung devices do not use fastbooot
+    if (name.includes(&quot;samsung&quot;)) {
+      return dt.adb
+        .reboot(&quot;bootloader&quot;) // reboot to samsung's download mode
+        .then(() => dt.heimdall.wait()) // wait for device to respond to heimdall
+        .then(() => dt.heimdall.flash(&quot;boot&quot;, &quot;boot.img&quot;)) // flash an image to a partition
+        .then(() => dt.heimdall.reboot()); // reboot to system
+    } else {
+      return dt.adb
+        .reboot(&quot;bootloader&quot;) // reboot to bootloader (aka. fastboot mode)
+        .then(() => dt.fastboot.wait()) // wait for device to respond to fastboot commands
+        .then(() => dt.fastboot.flash(&quot;boot&quot;, &quot;boot.img&quot;)) // flash an image
+        .then(() => dt.fastboot.continue()); // auto-boot to system
+    }
+  })
+  .then(() => dt.adb.wait(&quot;device&quot;)) // ignore devices in recovery or a different mode
+  .then(() => console.log(&quot;flashing complete, that was easy!&quot;)); // yay
+
+function progress(p) {
+  console.log(&quot;operation&quot;, p * 100, &quot;% complete&quot;);
+}
+</code></pre>
+<h3>Documentation</h3>
+<p>When using the library with modern editors like VScode/VScodium or Atom, you can make use of IntelliSense. Run <code>npm run docs</code> to build html from JSdoc documentation for all API functions.</p>
+<h2>API Changes, Deprecation Notices, Upgrade Guide</h2>
+<h3>Upgrading to 4.x</h3>
+<p>Version 4.0.0 includes a major re-factoring effort that touched almost every function. The APIs of most functions remained intact, but in most cases you will have to make changes to your code. This has been done to correct some early design decisions.</p>
+<ul>
+<li>A new convenience class <code>DeviceTools</code> has been implemented that provides instances of all tool classes as well as some generic convenience functions such as <code>deviceTools.wait()</code> (wait for any device to be visible with any adb, fastboot, or heimdall) and <code>deviceTools.getDeviceName()</code> (read the device name from fastboot or adb). In most cases you will no longer need to instantiate any of the tool classes directly.</li>
+<li>In order to properly follow the object-oriented paradigm, all tool wrapper classes now inherit from a new <code>Tool</code> class that implements the <code>child_process</code> wrappers along with some common interfaces. The implications of this are:
+<ul>
+<li>Our <a href="https://www.npmjs.com/package/android-tools-bin">android-tools-bin</a> package is now included as a dependency. If you require custom executables, you can use <a href="https://www.npmjs.com/package/android-tools-bin#requesting-native-tools-using-environment-variables">environment variables</a>.</li>
+<li>Specifying a custom <code>exec</code> function in the constructor arguments is no longer supported.
+<ul>
+<li>We no longer use <code>child_process.exec</code> to avoid spawining a shell. Confer with the <a href="https://nodejs.org/api/child_process.html">official documentation</a> to learn what this entails in detail. Most short-lived commands now use <code>child_process.execFile</code>. Long-running commands use</li>
+</ul>
+</li>
+<li>Specifying a custom <code>log</code> function in the constructor arguments is no longer supported. You can instead listen to the events <code>exec</code>, <code>spawn:start</code>, <code>spawn:exit</code>, and <code>spawn:error</code> on the tool object to implement your own logging or introspection logic.</li>
+<li>The <code>&lt;tool&gt;.&lt;tool&gt;Event</code> event emitter has been deprecated. Instead, the tool class now inherits from the event emitter class directly.</li>
+</ul>
+</li>
+<li><code>&lt;tool&gt;.waitForDevice()</code> and <code>&lt;tool&gt;.stopWaiting()</code> have been deprecated in favor of <code>&lt;tool&gt;.wait()</code>.
+<ul>
+<li>On <code>fastboot</code> and <code>heimdall</code>, <code>&lt;tool&gt;.wait()</code> will poll using <code>&lt;tool&gt;.hasAccess()</code> at a fixed interval. It does not take arguments.</li>
+<li><code>adb.wait()</code> uses the <code>adb wait-for-[-TRANSPORT]-STATE</code> command instead. You can optionally specify the state or transport as arguments, eg <code>adb.wait(&quot;recovery&quot;, &quot;usb&quot;)</code>.</li>
+<li>The <code>&lt;tool&gt;.wait()</code> function returns a <a href="https://github.com/alkemics/CancelablePromise">CancelablePromise</a>, which extends the native ES promise to support cancelling pending promises. Calling <code>const p = adb.wait(); setTimeout(() =&gt; p.cancel(), 5000);</code> will kill the waiting child-process and settle the pending promise.</li>
+</ul>
+</li>
+<li><code>adb.pushArray()</code> has been deprecated and incorporated into the <code>adb.push()</code> API.
+<ul>
+<li>Since the <code>adb push</code> command supports pushing multiple files to the same location and this is the most common usecase, the <code>adb.pushArray()</code> function has been deprecated. The <code>adb.push()</code> function now takes an array of source file paths, a target destination path on the device, and a progress callback.</li>
+<li>The progress is now reported on-the-fly and no longer requires polling via <code>adb shell stat &lt;file&gt;</code>. This results in faster and more accurate reporting.</li>
+</ul>
+</li>
+<li>Functions that are considered unstable or experimental have been makred as such in their documentation comments. If you're building a product around any of those, you're welcome to help us improve the library to ensure your needs will be accounted for in the future.</li>
+</ul>
+<h3>Upgrading to 3.x</h3>
+<ul>
+<li>Version 3.0.0 introduced a breaking API change in <code>fastboot.flash()</code> and <code>fastboot.flashRaw()</code>. Pervious the third and fourth arguments of <code>fastboot.flash()</code> were boolean arguments for indicating force and raw flashing. Similarly <code>fastboot.flashRaw()</code> is a convenience function that forwarded the third argument as a boolean flag for the force option. The new API of <code>fastboot.flash()</code> accepts a boolean value for raw flashing as the third argument, followed by any number of string arguments for additional flags. The <code>fastboot.flashRaw()</code> function similarly accepts any number of arguments for additional flags starting at the third argument. The <code>fastboot.flashArray()</code> function now takes an array like <code>[ {partition, file, raw, flags}, ... ]</code> as an argument. We believe that this change is more in line with the latest developments in the fastboot cli and provides better access to options like <code>--force</code>, <code>--disable-verity</code>, and <code>--disable-verification</code>.</li>
+<li>NodeJS version 8 and below have been deprecated and are no longer supported. Versions 10, 12, and 14 are actively tested and supported.</li>
+<li>New experimental backup and restore functions for use with Ubuntu Touch have been added to the ADB module. The API of these might change in the future.</li>
+</ul>
+<h3>Upgrading to 2.x</h3>
+<ul>
+<li>No breaking API changes were introduced in version 2.0.0.</li>
+<li>A new <code>Heimdall</code> module provides access to Samsung devices.</li>
+</ul>
+<h2>License</h2>
+<p>Original development by <a href="https://spri.nz">Johannah Sprinz</a> and <a href="http://mariogrip.com/">Marius Gripsgård</a>. Copyright (C) 2017-2022 <a href="https://ubports.com">UBports Foundation</a>.</p>
+<p>This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License along with this program. If not, see <a href="http:%5C/%5C/www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Adb.html">Adb</a></li><li><a href="DeviceTools.html">DeviceTools</a></li><li><a href="Fastboot.html">Fastboot</a></li><li><a href="Heimdall.html">Heimdall</a></li><li><a href="Tool.html">Tool</a></li></ul><h3>Global</h3><ul><li><a href="global.html#removeFalsy">removeFalsy</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a> on Sun Nov 27 2022 14:05:10 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

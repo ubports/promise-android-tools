@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: heimdall.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: heimdall.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+
+/*
+ * Copyright (C) 2019-2022 UBports Foundation &lt;info@ubports.com>
+ * Copyright (C) 2019-2022 Johannah Sprinz &lt;hannah@ubports.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { Tool } from "./tool.js";
+import { CancelablePromise } from "./cancelable-promise.js";
+
+/**
+ * heimdall: flash firmware on samsung devices
+ */
+export class Heimdall extends Tool {
+  constructor(options) {
+    super({
+      tool: "heimdall",
+      ...options
+    });
+  }
+
+  /**
+   * Generate processable error messages from child_process.exec() callbacks
+   * @param {child_process.ExecException} error error returned by child_process.exec()
+   * @param {String} stdout stdandard output
+   * @param {String} stderr standard error
+   * @private
+   * @returns {String} error message
+   */
+  handleError(error, stdout, stderr) {
+    if (
+      stderr?.includes(
+        "ERROR: Failed to detect compatible download-mode device."
+      )
+    ) {
+      return "no device";
+    } else {
+      return super.handleError(error, stdout, stderr);
+    }
+  }
+
+  /**
+   * Find out if a device in download mode can be seen by heimdall
+   * @returns {Promise&lt;Boolean>}
+   */
+  detect() {
+    return this.hasAccess();
+  }
+
+  /**
+   * Find out if a device in download mode can be seen by heimdall
+   * @returns {Promise&lt;Boolean>}
+   */
+  hasAccess() {
+    return this.exec("detect")
+      .then(() => true)
+      .catch(error => {
+        if (error.message.includes("no device")) {
+          return false;
+        } else {
+          throw error;
+        }
+      });
+  }
+
+  /**
+   * Wait for a device
+   * @returns {CancelablePromise&lt;String>}
+   */
+  wait() {
+    return super.wait().then(() => "download");
+  }
+
+  /**
+   * Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device.
+   * @param {String} file pit file to print
+   * @returns {Promise&lt;String>}
+   */
+  printPit(file) {
+    return this.exec("print-pit", ...(file ? ["--file", file] : []))
+      .then(r =>
+        r
+          .split("\n\nEnding session...")[0]
+          .split(/--- Entry #\d ---/)
+          .slice(1)
+          .map(r => r.trim())
+      )
+      .catch(error => {
+        throw error;
+      });
+  }
+
+  /**
+   * get partitions from pit file
+   * @returns {Promise&lt;String>}
+   */
+  getPartitions() {
+    return this.printPit().then(r =>
+      r.map(r =>
+        r
+          .split("\n")
+          .map(r => r.split(":").map(r => r.trim()))
+          .reduce((result, item) => {
+            result[item[0]] = item[1];
+            return result;
+          }, {})
+      )
+    );
+  }
+
+  /**
+   * @typedef HeimdallFlashImage
+   * @property {String} partition partition to flash
+   * @property {String} file path to an image file
+   */
+
+  /**
+   * Flash firmware files to partitions (names or identifiers)
+   * @param {Array&lt;HeimdallFlashImage>} images Images to flash
+   * @returns {Promise}
+   */
+  flash(images) {
+    // TODO report progress similar to fastboot.flash()
+    return this.exec(
+      "flash",
+      ...images.map(i => [`--${i.partition}`, i.file]).flat()
+    ).then(() => null);
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Adb.html">Adb</a></li><li><a href="DeviceTools.html">DeviceTools</a></li><li><a href="Fastboot.html">Fastboot</a></li><li><a href="Heimdall.html">Heimdall</a></li><li><a href="Tool.html">Tool</a></li></ul><h3>Global</h3><ul><li><a href="global.html#removeFalsy">removeFalsy</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a> on Sun Nov 27 2022 14:05:10 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
