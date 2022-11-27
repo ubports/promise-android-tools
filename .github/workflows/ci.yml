@@ -95,7 +95,7 @@ jobs:
           npm ci
           npm run docs
           cd docs
-          tar czf ../../../pages.tgz .
+          tar czf ../pages.tgz .
 
       - name: Upload docs
         uses: actions/upload-artifact@v3
