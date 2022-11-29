@@ -214,7 +214,7 @@ export abstract class Tool extends Interface {
   }
 
   /** return a clone with a specified variation in the config options */
-  protected _withConfig(config: typeof this.config): this {
+  public _withConfig(config: typeof this.config): this {
     const ret = Object.create(this);
     ret.config = { ...this.config };
     for (const key in config) {
@@ -274,7 +274,7 @@ export abstract class Tool extends Interface {
   [key: `__${keyof typeof this.argsModel}`]: (val?: any) => this;
 
   /** apply config options to the tool instance */
-  protected applyConfig(config: typeof this.config): void {
+  public applyConfig(config: typeof this.config): void {
     for (const key in this.config) {
       if (
         (
@@ -298,7 +298,7 @@ export abstract class Tool extends Interface {
   }
 
   /** Execute a command. Used for quick operations that do not require real-time data access. Output is trimmed. */
-  protected async exec(
+  public async exec(
     ...args: (string | number | null | undefined)[]
   ): Promise<string> {
     this.signal.throwIfAborted();
@@ -325,7 +325,7 @@ export abstract class Tool extends Interface {
   }
 
   /** Spawn a child process. Used for long-running operations that require real-time data access. */
-  protected spawn(
+  public spawn(
     ...args: (string | number | null | undefined)[]
   ): ChildProcess & { stdin: Writable; stdout: Readable; stderr: Readable } {
     this.signal.throwIfAborted();

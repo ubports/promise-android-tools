@@ -64,7 +64,7 @@ export class DeviceTools extends Interface {
   }
 
   /** returns clone with variation in env vars */
-  protected _withEnv(env: NodeJS.ProcessEnv): this {
+  public _withEnv(env: NodeJS.ProcessEnv): this {
     const ret = Object.create(this);
     ret.adb = this.adb._withEnv(env);
     ret.fastboot = this.fastboot._withEnv(env);
