@@ -309,7 +309,7 @@ export class Fastboot extends Tool {
   }
 
   /** Sets the active slot */
-  setActive(slot: string) {
+  async setActive(slot: string): Promise<void> {
     return this._withConfig({ setActive: slot })
       .exec()
       .then(stdout => {
@@ -322,7 +322,7 @@ export class Fastboot extends Tool {
   }
 
   /** Create a logical partition with the given name and size, in the super partition */
-  createLogicalPartition(
+  async createLogicalPartition(
     partition: string,
     size: string | number
   ): Promise<void> {
@@ -433,7 +433,7 @@ export class Fastboot extends Tool {
   }
 
   /** get device codename from product bootloader var */
-  getDeviceName(): Promise<string> {
+  async getDeviceName(): Promise<string> {
     return this.getvar("product");
   }
 }
