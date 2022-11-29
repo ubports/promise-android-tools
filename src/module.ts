@@ -69,7 +69,7 @@ export class DeviceTools extends Interface {
   }
 
   /** Wait for a device */
-  wait(): Promise<ActualDeviceState | "bootloader" | "download"> {
+  async wait(): Promise<ActualDeviceState | "bootloader" | "download"> {
     const controller = new AbortController();
     const _this = this._withSignals(controller.signal);
     return Promise.race([
@@ -80,7 +80,7 @@ export class DeviceTools extends Interface {
   }
 
   /** Resolve device name */
-  getDeviceName(): Promise<string> {
+  async getDeviceName(): Promise<string> {
     // TODO support heimdall
     return this.adb
       .getDeviceName()
