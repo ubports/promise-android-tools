@@ -48,19 +48,23 @@ export class DeviceTools extends Interface {
     this.heimdall = new Heimdall({ ...heimdallOptions, signals });
 
     ["adb", "fastboot", "heimdall"].forEach(tool => {
-      //@ts-ignore
-      this[tool].on("exec", r => this.emit("exec", r));
-      //@ts-ignore
-      this[tool].on("spawn:start", r => this.emit("spawn:start", r));
-      //@ts-ignore
-      this[tool].on("spawn:exit", r => this.emit("spawn:exit", r));
-      //@ts-ignore
-      this[tool].on("spawn:error", r => this.emit("spawn:error", r));
+      this[tool].on("exec", (r: (string | number | null | undefined)[]) =>
+        this.emit("exec", r)
+      );
+      this[tool].on("spawn:start", (r: { cmd: string[] }) =>
+        this.emit("spawn:start", r)
+      );
+      this[tool].on("spawn:exit", (r: { cmd: string[]; error?: Error }) =>
+        this.emit("spawn:exit", r)
+      );
+      this[tool].on("spawn:error", (r: { cmd: string[]; error?: Error }) =>
+        this.emit("spawn:error", r)
+      );
     });
   }
 
   /** returns clone with variation in env vars */
-  _withEnv(env: NodeJS.ProcessEnv): this {
+  protected _withEnv(env: NodeJS.ProcessEnv): this {
     const ret = Object.create(this);
     ret.adb = this.adb._withEnv(env);
     ret.fastboot = this.fastboot._withEnv(env);
@@ -69,7 +73,7 @@ export class DeviceTools extends Interface {
   }
 
   /** Wait for a device */
-  async wait(): Promise<ActualDeviceState | "bootloader" | "download"> {
+  public async wait(): Promise<ActualDeviceState | "bootloader" | "download"> {
     const controller = new AbortController();
     const _this = this._withSignals(controller.signal);
     return Promise.race([
@@ -80,7 +84,7 @@ export class DeviceTools extends Interface {
   }
 
   /** Resolve device name */
-  async getDeviceName(): Promise<string> {
+  public async getDeviceName(): Promise<string> {
     // TODO support heimdall
     return this.adb
       .getDeviceName()

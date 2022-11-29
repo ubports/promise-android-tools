@@ -163,7 +163,7 @@ export class Fastboot extends Tool {
   }
 
   /** Write a file to a flash partition */
-  async flash(
+  public async flash(
     images: FastbootFlashImage[],
     progress: ProgressCallback = () => {}
   ): Promise<void> {
@@ -249,17 +249,20 @@ export class Fastboot extends Tool {
   }
 
   /** Download and boot kernel */
-  async boot(image: string): Promise<void> {
+  public async boot(image: string): Promise<void> {
     await this.exec("boot", image);
   }
 
   /** Reflash device from update.zip and set the flashed slot as active */
-  async update(image: string, wipe: string | boolean = false): Promise<void> {
+  public async update(
+    image: string,
+    wipe: string | boolean = false
+  ): Promise<void> {
     await this._withConfig({ wipe }).exec("update", image);
   }
 
   /** Reboot device into bootloader */
-  async rebootBootloader(): Promise<void> {
+  public async rebootBootloader(): Promise<void> {
     await this.exec("reboot-bootloader");
   }
 
@@ -267,27 +270,27 @@ export class Fastboot extends Tool {
    * Reboot device into userspace fastboot (fastbootd) mode
    * Note: this only works on devices that support dynamic partitions.
    */
-  async rebootFastboot(): Promise<void> {
+  public async rebootFastboot(): Promise<void> {
     await this.exec("reboot-fastboot");
   }
 
   /** Reboot device into recovery */
-  async rebootRecovery(): Promise<void> {
+  public async rebootRecovery(): Promise<void> {
     await this.exec("reboot-recovery");
   }
 
   /** Reboot device */
-  async reboot(): Promise<void> {
+  public async reboot(): Promise<void> {
     await this.exec("reboot");
   }
 
   /** Continue with autoboot */
-  async continue(): Promise<void> {
+  public async continue(): Promise<void> {
     await this.exec("continue");
   }
 
   /** Format a flash partition. Can override the fs type and/or size the bootloader reports */
-  async format(
+  public async format(
     partition: string,
     type?: string,
     size?: string | number
@@ -304,12 +307,12 @@ export class Fastboot extends Tool {
   }
 
   /** Erase a flash partition */
-  async erase(partition: string): Promise<void> {
+  public async erase(partition: string): Promise<void> {
     await this.exec("erase", partition);
   }
 
   /** Sets the active slot */
-  async setActive(slot: string): Promise<void> {
+  public async setActive(slot: string): Promise<void> {
     return this._withConfig({ setActive: slot })
       .exec()
       .then(stdout => {
@@ -322,7 +325,7 @@ export class Fastboot extends Tool {
   }
 
   /** Create a logical partition with the given name and size, in the super partition */
-  async createLogicalPartition(
+  public async createLogicalPartition(
     partition: string,
     size: string | number
   ): Promise<void> {
@@ -332,7 +335,7 @@ export class Fastboot extends Tool {
   }
 
   /** Resize a logical partition with the given name and final size, in the super partition */
-  async resizeLogicalPartition(
+  public async resizeLogicalPartition(
     partition: string,
     size: string | number
   ): Promise<void> {
@@ -340,12 +343,12 @@ export class Fastboot extends Tool {
   }
 
   /** Delete a logical partition with the given name */
-  async deleteLogicalPartition(partition: string): Promise<void> {
+  public async deleteLogicalPartition(partition: string): Promise<void> {
     await this.exec("delete-logical-partition", partition);
   }
 
   /** Wipe the super partition and reset the partition layout */
-  async wipeSuper(image: string): Promise<void> {
+  public async wipeSuper(image: string): Promise<void> {
     await this.exec("wipe-super", image);
   }
 
@@ -354,7 +357,7 @@ export class Fastboot extends Tool {
   //////////////////////////////////////////////////////////////////////////////
 
   /** Lift OEM lock */
-  async oemUnlock(
+  public async oemUnlock(
     /** optional unlock code (including 0x if necessary) */
     code?: string | number
   ): Promise<void> {
@@ -372,50 +375,50 @@ export class Fastboot extends Tool {
   }
 
   /** Enforce OEM lock */
-  async oemLock(): Promise<void> {
+  public async oemLock(): Promise<void> {
     await this.exec("oem", "lock");
   }
 
   /** unlock partitions for flashing */
-  async flashingUnlock(): Promise<void> {
+  public async flashingUnlock(): Promise<void> {
     await this.exec("flashing", "unlock");
   }
 
   /** lock partitions for flashing */
-  async flashingLock(): Promise<void> {
+  public async flashingLock(): Promise<void> {
     await this.exec("flashing", "lock");
   }
 
   /** unlock 'critical' bootloader partitions */
-  async flashingUnlockCritical(): Promise<void> {
+  public async flashingUnlockCritical(): Promise<void> {
     await this.exec("flashing", "unlock_critical");
   }
 
   /** lock 'critical' bootloader partitions */
-  async flashingLockCritical(): Promise<void> {
+  public async flashingLockCritical(): Promise<void> {
     await this.exec("flashing", "lock_critical");
   }
 
   /** Find out if a device can be flashing-unlocked */
-  async getUnlockAbility(): Promise<boolean> {
+  public async getUnlockAbility(): Promise<boolean> {
     return this.exec("flashing", "get_unlock_ability")
       .then(stdout => stdout === "1")
       .catch(() => false);
   }
 
   /** Find out if a device can be seen by fastboot */
-  async hasAccess(): Promise<boolean> {
+  public async hasAccess(): Promise<boolean> {
     return (await this.exec("devices")).includes("fastboot");
   }
 
   /** wait for a device */
-  async wait(): Promise<"bootloader"> {
+  public async wait(): Promise<"bootloader"> {
     await super.wait();
     return "bootloader";
   }
 
   /** get bootloader var */
-  async getvar(variable: string): Promise<string> {
+  public async getvar(variable: string): Promise<string> {
     const result = await this.exec("getvar", variable);
     const [name, value] = result
       .replace(/\r\n/g, "\n")
@@ -433,7 +436,7 @@ export class Fastboot extends Tool {
   }
 
   /** get device codename from product bootloader var */
-  async getDeviceName(): Promise<string> {
+  public async getDeviceName(): Promise<string> {
     return this.getvar("product");
   }
 }

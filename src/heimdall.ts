@@ -40,12 +40,12 @@ export class Heimdall extends Tool {
   }
 
   /** Find out if a device in download mode can be seen by heimdall */
-  async detect(): Promise<boolean> {
+  public async detect(): Promise<boolean> {
     return this.hasAccess();
   }
 
   /** Find out if a device in download mode can be seen by heimdall */
-  async hasAccess(): Promise<boolean> {
+  public async hasAccess(): Promise<boolean> {
     return this.exec("detect")
       .then(() => true)
       .catch(error => {
@@ -58,12 +58,12 @@ export class Heimdall extends Tool {
   }
 
   /** Wait for a device */
-  async wait(): Promise<"download"> {
+  public async wait(): Promise<"download"> {
     return super.wait().then(() => "download");
   }
 
   /** Prints the contents of a PIT file in a human readable format. If a filename is not provided then Heimdall retrieves the PIT file from the connected device. */
-  async printPit(file?: string): Promise<string[]> {
+  public async printPit(file?: string): Promise<string[]> {
     return this.exec("print-pit", ...(file ? ["--file", file] : [])).then(r =>
       r
         .split("\n\nEnding session...")[0]
@@ -74,7 +74,7 @@ export class Heimdall extends Tool {
   }
 
   /** get partitions from pit file */
-  async getPartitions(): Promise<{}[]> {
+  public async getPartitions(): Promise<{}[]> {
     return this.printPit().then(r =>
       r.map(r =>
         r
@@ -89,7 +89,9 @@ export class Heimdall extends Tool {
   }
 
   /** Flash firmware files to partitions (names or identifiers) */
-  async flash(images: { partition: string; file: string }[]): Promise<void> {
+  public async flash(
+    images: { partition: string; file: string }[]
+  ): Promise<void> {
     // TODO report progress similar to fastboot.flash()
     await this.exec(
       "flash",
