@@ -290,7 +290,7 @@ test("reboot() should resolve", async t => {
   const [[adb]] = fake()(["ok", "", 0]);
   return Promise.all(
     (
-      ["system", "recovery", "bootloader", "download", "edl"] as RebootState[]
+      ["system", "recovery", "bootloader", "download", "edl", "sideload", "sideload-auto-reboot"] as RebootState[]
     ).map(async state => t.falsy(await adb.reboot(state), state))
   );
 });
