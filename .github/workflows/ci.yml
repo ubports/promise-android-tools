@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Use Node.js 20
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -50,9 +50,9 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Use Node.js 20
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -85,9 +85,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use Node.js 20
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
       - name: Build docs
@@ -105,7 +105,7 @@ jobs:
           retention-days: 1
 
       - name: Change to pages branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
 
