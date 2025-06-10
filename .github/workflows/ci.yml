@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Use Node.js 18
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
 
@@ -50,9 +50,9 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Use Node.js 18
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
 
@@ -85,9 +85,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use Node.js 16
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: "16"
       - name: Build docs
@@ -98,19 +98,19 @@ jobs:
           tar czf ../pages.tgz .
 
       - name: Upload docs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pages
           path: pages.tgz
           retention-days: 1
 
       - name: Change to pages branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
 
       - name: Download docs
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name: pages
 
