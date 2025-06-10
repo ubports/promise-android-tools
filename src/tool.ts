@@ -305,7 +305,8 @@ export abstract class Tool extends Interface {
     return exec(this.executable, allArgs, {
       encoding: "utf8",
       signal: this.signal,
-      env: this.env
+      env: this.env,
+      shell: true
     })
       .then(({ stdout, stderr }) => {
         this.emit("exec", common.removeFalsy({ cmd, stdout, stderr }));
@@ -333,7 +334,7 @@ export abstract class Tool extends Interface {
     const cp = spawn(this.executable, allArgs, {
       env: this.env,
       signal: this.signal,
-      shell: "true"
+      shell: true
     });
     cp.on("exit", (code, signal) =>
       this.emit("spawn:exit", common.removeFalsy({ cmd, code, signal }))
