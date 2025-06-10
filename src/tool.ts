@@ -214,7 +214,7 @@ export abstract class Tool extends Interface {
   }
 
   /** return a clone with a specified variation in the config options */
-  _withConfig(config: typeof this.config): this {
+  _withConfig(config: ToolConfig): this {
     const ret = Object.create(this);
     ret.config = { ...this.config };
     for (const key in config) {
@@ -274,7 +274,7 @@ export abstract class Tool extends Interface {
   [key: `__${keyof typeof this.argsModel}`]: (val?: any) => this;
 
   /** apply config options to the tool instance */
-  applyConfig(config: typeof this.config): void {
+  applyConfig(config: ToolConfig): void {
     for (const key in this.config) {
       if (
         (
