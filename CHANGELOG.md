@@ -6,6 +6,13 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [Unreleased]
 
+## [5.0.1] - 2025-06-10
+
+### Added
+
+- Enforce Node v18 in package.json
+- Use `tsup` to generate cjs and esm code
+
 ## [5.0.0] - 2025-06-10
 
 ### Changed
