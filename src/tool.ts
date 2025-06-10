@@ -332,7 +332,8 @@ export abstract class Tool extends Interface {
     this.emit("spawn:start", common.removeFalsy({ cmd }));
     const cp = spawn(this.executable, allArgs, {
       env: this.env,
-      signal: this.signal
+      signal: this.signal,
+      shell: true
     });
     cp.on("exit", (code, signal) =>
       this.emit("spawn:exit", common.removeFalsy({ cmd, code, signal }))
