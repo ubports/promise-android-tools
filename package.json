@@ -3,16 +3,22 @@
   "version": "5.0.0",
   "description": "A wrapper for adb, fastboot, and heimdall that returns convenient promises.",
   "type": "module",
-  "main": "./lib/module.cjs",
-  "types": "./lib/module.d.ts",
+  "main": "./dist/module.cjs",
+  "module": "./dist/module.js",
+  "types": "./dist/module.d.ts",
+  "exports": {
+    "require": "./dist/module.cjs",
+    "import": "./dist/module.js"
+  },
   "scripts": {
     "test": "npx c8 -r text -r html -r lcov --all --src src/ -x \"**/*.spec.*\" -x \"**/__test-helpers\" ava src/*.spec.ts",
     "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none --end-of-line=lf -uw",
     "docs": "npx typedoc",
-    "build": "rm -rf lib && npx tsc --build ./tsconfig.build.json"
+    "build": "npx tsup",
+    "prepublishOnly": "npm run build"
   },
   "files": [
-    "lib",
+    "dist",
     "LICENSE",
     "README.md"
   ],
@@ -63,5 +69,16 @@
   },
   "engines": {
     "node": "^18"
+  },
+  "tsup": {
+    "entry": [
+      "src/module.ts"
+    ],
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "clean": true
   }
 }
