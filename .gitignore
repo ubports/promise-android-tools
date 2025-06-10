@@ -72,3 +72,6 @@ test
 
 # ignore playground
 example.*s
+
+# packaged files
+/dist/
