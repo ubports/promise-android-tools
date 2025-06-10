@@ -6,11 +6,14 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [Unreleased]
 
-## [5.0.0]
+## [5.0.0] - 2025-06-10
 
 ### Changed
 
+- Bump to Node v18
 - Major refactoring and Typescript migration, see the [README.md](./README.md) upgrade guide ([#73](https://github.com/ubports/promise-android-tools/pull/73))
+- Dependency updates
+- Removal of unused code
 
 ### Added
 
