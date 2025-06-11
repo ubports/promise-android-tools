@@ -54,9 +54,6 @@ export interface FastbootConfig {
   // --slot SLOT                Use SLOT; 'all' for both slots, 'other' for non-current slot (default: current active slot).
   slot?: "all" | "current" | "other";
 
-  // --set-active[=SLOT]        Sets the active slot before rebooting.
-  setActive?: "all" | "current" | "other";
-
   // --skip-secondary           Don't flash secondary slots in flashall/update.
   skipSecondary: boolean;
 
@@ -136,7 +133,6 @@ export class Fastboot extends Tool {
         maxSize: ["-S", null],
         force: ["--force", false, true],
         slot: ["--slot", null],
-        setActive: ["--set-active", null],
         skipSecondary: ["--skip-secondary", false, true],
         skipReboot: ["--skip-reboot", false, true],
         disableVerity: ["--disable-verity", false, true],
@@ -150,7 +146,6 @@ export class Fastboot extends Tool {
         maxSize: null,
         force: false,
         slot: null,
-        setActive: null,
         skipSecondary: false,
         skipReboot: false,
         disableVerity: false,
@@ -310,8 +305,7 @@ export class Fastboot extends Tool {
 
   /** Sets the active slot */
   setActive(slot: string) {
-    return this._withConfig({ setActive: slot })
-      .exec()
+    return this.exec(`--set-active=${slot}`)
       .then(stdout => {
         if (stdout && stdout.includes("error")) {
           throw this.error(new Error("failed to set active slot"), stdout);
