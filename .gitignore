@@ -75,3 +75,4 @@ example.*s
 
 # packaged files
 /dist/
+/download/

@@ -22,7 +22,7 @@ import {
   getAndroidToolPath as toolPath,
   getAndroidToolBaseDir as toolBaseDir,
   Tool as BundledTool
-} from "android-tools-bin";
+} from "./android_tools.js";
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
 import { normalize } from "node:path";
