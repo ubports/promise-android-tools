@@ -16,8 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 import { existsSync } from "fs";
 
 // HACK: Currently required for CommonJS compatibility.
@@ -28,7 +27,8 @@ export function getAndroidToolBaseDir(
   platform: NodeJS.Platform = process.platform,
   arch: NodeJS.Architecture = process.arch
 ): string {
-  return join(__dirname, "..", "dist", platform, normalizedArch(arch));
+  const baseDir = join(__dirname, "..", "dist", platform, normalizedArch(arch));
+  return 'electron' in process.versions ? baseDir.replace('app.asar', 'app.asar.unpacked') : baseDir;
 }
 
 /** Group architectures together */
