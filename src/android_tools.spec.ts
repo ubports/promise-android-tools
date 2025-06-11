@@ -28,7 +28,7 @@ const ARCHITECTURES: NodeJS.Architecture[] = [
   "arm64",
   "ia32",
   "x64",
-  "ppc"
+  "ppc64"
 ];
 
 test("default exports", async t => {
@@ -49,18 +49,18 @@ TOOLS.forEach(tool =>
   )
 );
 test("getAndroidToolPath(), should throw if tool was not packaged and optimistic false", async t => {
-  t.throws(() => getAndroidToolPath("adb", false, {}, "darwin", "ppc"), {
-    message: "Failed to get tool: Error: No binary of adb for ppc darwin"
+  t.throws(() => getAndroidToolPath("adb", false, {}, "darwin", "ppc64"), {
+    message: "Failed to get tool: Error: No binary of adb for ppc64 darwin"
   });
 });
 test("getAndroidToolPath(), should return native if tool was not packaged but optimistic is true", async t => {
-  t.is(getAndroidToolPath("adb", true, {}, "darwin", "ppc"), "adb");
+  t.is(getAndroidToolPath("adb", true, {}, "darwin", "ppc64"), "adb");
 });
 test.serial(
   "getAndroidToolPath(), should return native if env var is set",
   async t => {
     td.replace(process.env, "USE_SYSTEM_ADB", true);
-    t.is(getAndroidToolPath("adb", false, {}, "darwin", "ppc"), "adb");
+    t.is(getAndroidToolPath("adb", false, {}, "darwin", "ppc64"), "adb");
     td.reset();
   }
 );

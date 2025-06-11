@@ -16,25 +16,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export class HierarchicalAbortController extends AbortController {
-  constructor(
-    /** abort signals to listen to */
-    ...signals: AbortSignal[]
-  ) {
-    super();
-    this.listen(...signals);
+export class HierarchicalAbortController {
+  controller: AbortController;
+  signal: AbortSignal;
+
+  constructor(...abortSignals: AbortSignal[]) {
+    this.controller = new AbortController();
+    this.signal = this.controller.signal;
+    this.listen(...abortSignals);
   }
 
-  listen(
-    /** abort signals to listen to */
-    ...signals: AbortSignal[]
-  ) {
-    for (const signal of signals) {
-      if (signal.aborted) return this.abort();
-      // @ts-ignore
-      signal.addEventListener("abort", this.abort.bind(this), {
-        signal: this.signal
-      });
-    }
+  abort() {
+    this.controller.abort();
+  }
+
+  listen(...abortSignals: AbortSignal[]) {
+    abortSignals.forEach(abortSignal => {
+      if (abortSignal.aborted) return this.controller.abort(abortSignal.reason);
+      abortSignal.onabort = () => {
+        this.controller.abort(this.signal.reason);
+      };
+    });
+    if (this.signal.aborted) return this.controller.abort(this.signal.reason);
+
+    this.signal = AbortSignal.any([this.controller.signal, ...abortSignals]);
+    this.signal.onabort = () => {
+      this.controller.abort(this.signal.reason);
+    };
   }
 }

@@ -359,7 +359,7 @@ export abstract class Tool extends Interface {
 
   /** Wait for a device */
   public async wait(): Promise<string | any> {
-    return new Promise(resolve => setTimeout(resolve, 2000))
+    return new Promise(resolve => setTimeout(resolve, 500))
       .then(() => this.hasAccess())
       .then(access => {
         if (!access) {
