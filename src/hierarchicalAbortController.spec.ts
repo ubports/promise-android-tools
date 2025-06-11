@@ -52,7 +52,7 @@ test("aborting child should not abort parent", async t => {
   t.is(parentController.signal.aborted, false);
   t.is(childController.signal.aborted, true);
 });
-test("aborting parent should abort child #mybodymychoice", async t => {
+test("aborting parent should abort child", async t => {
   t.plan(6);
   const parentController = new HierarchicalAbortController();
   parentController.signal.addEventListener("abort", ({ type }) =>
