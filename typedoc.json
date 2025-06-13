@@ -1,11 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": [
-    "./src/module.ts"
-  ],
-  "exclude": [
-    "src/__test-helpers",
-    "**/*.spec.ts"
-  ],
+  "entryPoints": ["./src/module.ts"],
+  "exclude": ["src/__test-helpers", "**/*.spec.ts"],
   "tsconfig": "./tsconfig.json"
 }

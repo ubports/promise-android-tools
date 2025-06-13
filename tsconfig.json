@@ -3,11 +3,7 @@
     /* Basic Options */
     "target": "es2015",
     "module": "es2022",
-    "lib": [
-      "DOM",
-      "es2022",
-      "es2021"
-    ],
+    "lib": ["DOM", "es2022", "es2021"],
     "outDir": "./test",
     "allowJs": false,
     "declaration": true,
@@ -33,7 +29,5 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
