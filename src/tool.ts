@@ -22,7 +22,7 @@ import {
   getAndroidToolPath as toolPath,
   getAndroidToolBaseDir as toolBaseDir,
   Tool as BundledTool
-} from "android-tools-bin";
+} from "./android_tools.js";
 import * as common from "./common.js";
 import { Interface } from "./interface.js";
 import { normalize } from "node:path";
@@ -359,7 +359,7 @@ export abstract class Tool extends Interface {
 
   /** Wait for a device */
   public async wait(): Promise<string | any> {
-    return new Promise(resolve => setTimeout(resolve, 2000))
+    return new Promise(resolve => setTimeout(resolve, 500))
       .then(() => this.hasAccess())
       .then(access => {
         if (!access) {
