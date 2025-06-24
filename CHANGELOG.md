@@ -6,6 +6,25 @@ promise-android-tools versioning started at 1.0.0, but this changelog was not ad
 
 ## [Unreleased]
 
+## [6.0.0] - 2025-06-25
+
+### Added
+
+- Support Node v20 and above
+- Merge `android-tools-bin` into `promise-android-tools`
+- Support running within electron
+
+### Changed
+
+- `fastboot getvar` is more robust now
+
+### Fixed
+
+- `adb sideload` is not cancelling when finishing anymore
+  - This was caused by `adb: failed to read command: Success` being sent via stderr
+- `fastboot --set-active` is working again
+  - This got broken with 5.0.0
+
 ## [5.0.1] - 2025-06-10
 
 ### Added

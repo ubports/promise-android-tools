@@ -6,7 +6,7 @@ A wrapper for Adb, Fastboot, and Heimall written in modern asynchronous TypeScri
 
 ## Usage
 
-Install the package by running `npm i promise-android-tools android-tools-bin`.
+Install the package by running `npm i promise-android-tools`.
 
 ### Quick-start example
 
@@ -146,6 +146,10 @@ function progress(p) {
 Typescript types are bundled and IntelliSense is supported. Run `npm run docs` to build html from JSdoc/Typedoc comments for all methods and types.
 
 ## API Changes, Deprecation Notices, Upgrade Guide
+
+### Upgrading to 6.x
+
+Version 6.0.0 required Node v20 and above and has also dropped the dependency on `android-tools-bin`, as the dependency got added to this package instead to reduce maintanance burden.
 
 ### Upgrading to 5.x
 
