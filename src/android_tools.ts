@@ -28,7 +28,9 @@ export function getAndroidToolBaseDir(
   arch: NodeJS.Architecture = process.arch
 ): string {
   const baseDir = join(__dirname, "..", "dist", platform, normalizedArch(arch));
-  return 'electron' in process.versions ? baseDir.replace('app.asar', 'app.asar.unpacked') : baseDir;
+  return "electron" in process.versions
+    ? baseDir.replace("app.asar", "app.asar.unpacked")
+    : baseDir;
 }
 
 /** Group architectures together */

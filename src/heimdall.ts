@@ -80,10 +80,13 @@ export class Heimdall extends Tool {
         r
           .split("\n")
           .map(r => r.split(":").map(r => r.trim()))
-          .reduce((result, item) => {
-            result[item[0]] = item[1];
-            return result;
-          }, {} as { [k: string]: string })
+          .reduce(
+            (result, item) => {
+              result[item[0]] = item[1];
+              return result;
+            },
+            {} as { [k: string]: string }
+          )
       )
     );
   }

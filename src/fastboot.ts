@@ -305,14 +305,13 @@ export class Fastboot extends Tool {
 
   /** Sets the active slot */
   setActive(slot: string) {
-    return this.exec(`--set-active=${slot}`)
-      .then(stdout => {
-        if (stdout && stdout.includes("error")) {
-          throw this.error(new Error("failed to set active slot"), stdout);
-        } else {
-          return;
-        }
-      });
+    return this.exec(`--set-active=${slot}`).then(stdout => {
+      if (stdout && stdout.includes("error")) {
+        throw this.error(new Error("failed to set active slot"), stdout);
+      } else {
+        return;
+      }
+    });
   }
 
   /** Create a logical partition with the given name and size, in the super partition */
