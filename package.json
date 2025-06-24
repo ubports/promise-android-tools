@@ -16,8 +16,7 @@
     "docs": "npx typedoc",
     "download": "npx tsx src/download.ts",
     "build": "npx tsup",
-    "prepublishOnly": "npm run build",
-    "package": "npm run build && npm run download && npm pack"
+    "prepare": "npm run build && npm run download"
   },
   "files": [
     "dist",
