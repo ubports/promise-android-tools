@@ -11,7 +11,7 @@
     "import": "./dist/module.js"
   },
   "scripts": {
-    "test": "npx c8 -r text -r html -r lcov --all --src src/ -x \"**/*.spec.*\" -x \"**/__test-helpers\" ava src/*.spec.ts",
+    "test": "npx c8 -r text -r html -r lcov --all --src src/ -x \"**/*.spec.*\" -x \"**/__test-helpers\" -x \"src/download.ts\" ava src/*.spec.ts",
     "lint": "npx prettier \"**\" --ignore-path=.gitignore --arrow-parens=avoid --trailing-comma=none --end-of-line=lf -uw",
     "docs": "npx typedoc",
     "download": "npx tsx src/download.ts",
