@@ -409,11 +409,34 @@ export class Fastboot extends Tool {
 
   /** get bootloader var */
   async getvar(variable: string): Promise<string> {
+    // This could be multiple things, such as when `variable == product`:
+    // - `product: sdm845\nFinished. Total time: 0.001s`
+    // - `< waiting for any device >\nproduct: sdm845\nFinished. Total time: 0.001s`
+    // - `< waiting for any device >\n\tproduct: sdm845\nFinished. Total time: 0.001s`
+    // - `< waiting for any device >\n    product: sdm845\nFinished. Total time: 0.001s`
     const result = await this.exec("getvar", variable);
-    const [name, value] = result
+
+    // Split result into multiple lines
+    const resultParts = result
+      // replace CR line endings with LF
       .replace(/\r\n/g, "\n")
-      .split("\n")[0]
-      .split(": ");
+      // split by new lines
+      .split("\n")
+      // remove whitespaces
+      .map(element => element.trim());
+
+    // check for lines starting with the wanted variable, e.g.: `product`
+    const resultPart = resultParts.find(element =>
+      element.startsWith(variable)
+    );
+
+    const [name, value] = resultPart
+      ? resultPart.split(": ")
+      : resultParts && resultParts.length
+        ? // for backwards compatibility return the first line as name, if it exists
+          [resultParts[0], ""]
+        : // otherwise just return empty name and value
+          ["", ""];
 
     if (name !== variable) {
       throw this.error(
