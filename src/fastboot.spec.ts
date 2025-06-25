@@ -277,6 +277,7 @@ test("oemUnlock()", async t => {
 });
 
 [
+  "oem",
   "oemLock",
   "flashingUnlock",
   "flashingLock",
