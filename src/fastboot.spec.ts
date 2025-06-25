@@ -344,12 +344,49 @@ test("getvar()", async t => {
 });
 
 test("getDeviceName()", async t => {
-  const [[fastboot_true], [fastboot_error]] = fake()(
+  const [
+    [fastboot_true],
+    [fastboot_tab_at_beginning],
+    [fastboot_whitespaces_all_around],
+    [fastboot_waiting],
+    [fastboot_waiting_with_tab],
+    [fastboot_waiting_with_whitespace],
+    [fastboot_weird_output],
+    [fastboot_error]
+  ] = fake()(
     ["", "product: FP2\nFinished. Total time: 0.000s", 0],
+    ["", "\tproduct: sdm845\nFinished. Total time: 0.001s", 0],
+    ["", "     product: lahaina    \nFinished. Total time: 0.001s", 0],
+    [
+      "",
+      "< waiting for any device >\nproduct: axolotl\nFinished. Total time: 0.001s",
+      0
+    ],
+    [
+      "",
+      "< waiting for any device >\n\tproduct: otter \t \nFinished. Total time: 0.001s",
+      0
+    ],
+    [
+      "",
+      "< waiting for any device >\n    product: FP5  \nFinished. Total time: 0.001s",
+      0
+    ],
+    [
+      "",
+      "\t\n\n  \n< waiting for any device >\nThis\nis\npretty\nweird\output\n\n    product: qcm6490  \nFinished. Total time: 0.001s",
+      0
+    ],
     ["error", "", 0]
   );
   await Promise.all([
     t.is(await fastboot_true.getDeviceName(), "FP2"),
+    t.is(await fastboot_tab_at_beginning.getDeviceName(), "sdm845"),
+    t.is(await fastboot_whitespaces_all_around.getDeviceName(), "lahaina"),
+    t.is(await fastboot_waiting.getDeviceName(), "axolotl"),
+    t.is(await fastboot_waiting_with_tab.getDeviceName(), "otter"),
+    t.is(await fastboot_waiting_with_whitespace.getDeviceName(), "FP5"),
+    t.is(await fastboot_weird_output.getDeviceName(), "qcm6490"),
     t.throwsAsync(fastboot_error.getDeviceName(), {
       message: 'Unexpected getvar return: "error"'
     })
