@@ -281,6 +281,11 @@ export class Adb extends Tool {
     stdout: string,
     stderr: string
   ): Promise<void> {
+    // ADB sideload is broken since what feels like forever
+    if (stderr?.includes("adb: failed to read command: Success")) {
+      return;
+    }
+
     if (code || signal) {
       // truthy value (i.e. non-zero exit code) indicates error
       if (
