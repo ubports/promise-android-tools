@@ -342,6 +342,11 @@ export class Fastboot extends Tool {
     await this.exec("wipe-super", image);
   }
 
+  /** run custom fastboot oem commands and resolve stdout */
+  public async oem(...args: (string | number)[]): Promise<string> {
+    return this.exec("oem", args.join(" "));
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Convenience functions
   //////////////////////////////////////////////////////////////////////////////
