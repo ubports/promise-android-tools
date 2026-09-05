@@ -339,8 +339,10 @@ export class Adb extends Tool {
         let pushedSize = 0;
         let stdout = "";
         let stderr = "";
+        let newEnv = process.env;
+        newEnv["ADB_TRACE"] = "rwx";
         const cp = _this
-          ._withEnv({ ADB_TRACE: "rwx" })
+          ._withEnv(newEnv)
           .spawn(command, ...files, ...args)
           .once("exit", (code, signal) =>
             resolve(_this.onCpExit(code, signal, stdout, stderr))
